@@ -12,29 +12,144 @@ export class DebtsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string, query: any) {
-    const { skip, pageSize, sortOrder } = parsePagination(query);
+    const { sortOrder } = parsePagination(query);
     const where: any = { tenantId, deletedAt: null };
     if (query.status) where.status = query.status;
 
-    const [data, total] = await Promise.all([
-      this.prisma.debt.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { createdAt: sortOrder },
-        include: { installments: { orderBy: { number: "asc" } } },
-      }),
-      this.prisma.debt.count({ where }),
-    ]);
+    const [debts, expenseInstallments, merchants, categories, accounts] =
+      await Promise.all([
+        this.prisma.debt.findMany({
+          where,
+          orderBy: { createdAt: sortOrder },
+          include: { installments: { orderBy: { number: "asc" } } },
+        }),
+        this.prisma.expenseTransaction.findMany({
+          where: { tenantId, deletedAt: null, installmentPlanId: { not: null } },
+          orderBy: { transactionDate: "asc" },
+        }),
+        this.prisma.merchant.findMany({ where: { tenantId, deletedAt: null } }),
+        this.prisma.category.findMany({ where: { tenantId, deletedAt: null } }),
+        this.prisma.account.findMany({ where: { tenantId, deletedAt: null } }),
+      ]);
+
+    const merchantMap = new Map(merchants.map((m) => [m.id, m.name]));
+    const categoryMap = new Map(categories.map((c) => [c.id, c]));
+    const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
+
+    const now = new Date();
+    const groupedPlans = new Map<string, any[]>();
+    for (const exp of expenseInstallments) {
+      if (!exp.installmentPlanId) continue;
+      if (!groupedPlans.has(exp.installmentPlanId)) {
+        groupedPlans.set(exp.installmentPlanId, []);
+      }
+      groupedPlans.get(exp.installmentPlanId)!.push(exp);
+    }
+
+    const expensePlans: any[] = [];
+    for (const [planId, items] of groupedPlans.entries()) {
+      const firstItem = items[0];
+      const lastItem = items[items.length - 1];
+      const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+
+      const paidItems = items.filter(
+        (item) => new Date(item.transactionDate) <= now,
+      );
+      const paidAmount = paidItems.reduce((sum, item) => sum + item.amount, 0);
+      const remainingAmount = Math.max(0, totalAmount - paidAmount);
+
+      const category = firstItem.categoryId
+        ? categoryMap.get(firstItem.categoryId)
+        : null;
+      const merchantName = firstItem.merchantId
+        ? merchantMap.get(firstItem.merchantId)
+        : null;
+      const accountName = firstItem.accountId
+        ? accountMap.get(firstItem.accountId)
+        : null;
+
+      const rawDesc = firstItem.description || "";
+      const cleanDesc =
+        rawDesc.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim() ||
+        (category ? category.name : "Taksitli Borç");
+
+      const planInstallments = items.map((item, idx) => {
+        const isPaid = new Date(item.transactionDate) <= now;
+        return {
+          id: item.id,
+          debtId: `plan_${planId}`,
+          number: idx + 1,
+          amount: item.amount,
+          dueDate: item.transactionDate,
+          paidDate: isPaid ? item.transactionDate : null,
+          paidAmount: isPaid ? item.amount : 0,
+          status: isPaid ? ("PAID" as const) : ("PLANNED" as const),
+          description: item.description,
+          categoryId: item.categoryId,
+          categoryName: category?.name || null,
+          merchantId: item.merchantId,
+          merchantName: merchantName || null,
+        };
+      });
+
+      expensePlans.push({
+        id: `plan_${planId}`,
+        planId: planId,
+        sourceType: "EXPENSE_TRANSACTION",
+        creditor: merchantName || (accountName ? accountName : "Taksitli Borç"),
+        description: cleanDesc,
+        principalAmount: totalAmount,
+        totalAmount,
+        paidAmount,
+        remainingAmount,
+        currency: firstItem.currency || "TRY",
+        startDate: firstItem.transactionDate,
+        firstPaymentDate: firstItem.transactionDate,
+        lastPaymentDate: lastItem.transactionDate,
+        installmentCount: items.length,
+        installmentAmount: items[0]?.amount || totalAmount / items.length,
+        status: remainingAmount <= 0 ? "PAID" : "ACTIVE",
+        category: category
+          ? {
+              id: category.id,
+              name: category.name,
+              icon: category.icon,
+              color: category.color,
+            }
+          : null,
+        merchantName,
+        accountName,
+        installments: planInstallments,
+        createdAt: firstItem.createdAt,
+      });
+    }
+
+    const mappedDebts = debts.map((debt) => ({
+      ...debt,
+      sourceType: "DEBT",
+    }));
+
+    const allData = [...expensePlans, ...mappedDebts];
+    allData.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
     return {
-      data,
-      total,
-      page: query.page ? parseInt(query.page) : 1,
-      pageSize,
+      data: allData,
+      total: allData.length,
+      page: 1,
+      pageSize: allData.length,
     };
   }
 
   async findOne(id: string, tenantId: string) {
+    if (id.startsWith("plan_")) {
+      const all = await this.findAll(tenantId, {});
+      const item = all.data.find((d: any) => d.id === id);
+      if (!item) throw new NotFoundException("Taksit planı bulunamadı.");
+      return item;
+    }
     const debt = await this.prisma.debt.findFirst({
       where: { id, tenantId, deletedAt: null },
       include: { installments: { orderBy: { number: "asc" } } },
@@ -140,6 +255,13 @@ export class DebtsService {
   }
 
   async remove(id: string, tenantId: string) {
+    if (id.startsWith("plan_")) {
+      const planId = id.replace("plan_", "");
+      return this.prisma.expenseTransaction.updateMany({
+        where: { tenantId, installmentPlanId: planId, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+    }
     await this.findOne(id, tenantId);
     return this.prisma.debt.update({
       where: { id },

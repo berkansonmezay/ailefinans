@@ -37,8 +37,8 @@ export default function ComparePage() {
       setIsLoading(true);
       try {
         const yearsQuery = selectedYears.join(',');
-        const result = await fetchApi(`/dashboard/compare-years?years=${yearsQuery}`);
-        setData(result);
+        const result = await fetchApi<any>(`/dashboard/compare-years?years=${yearsQuery}`);
+        setData(Array.isArray(result) ? result : (result?.data || []));
       } catch (error) {
         console.error('Failed to load comparison data', error);
       } finally {

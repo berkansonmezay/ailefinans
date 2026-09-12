@@ -3,8 +3,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { 
-  CreditCard, 
   Wallet, 
+  CreditCard, 
   Plus, 
   ChevronDown, 
   ChevronUp, 
@@ -13,11 +13,10 @@ import {
   CheckCircle2, 
   Clock, 
   Trash2, 
-  Building2, 
+  User, 
   Tag, 
   Search,
-  AlertCircle,
-  TrendingDown,
+  TrendingUp,
   Layers
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -28,24 +27,22 @@ import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
-export default function DebtsPage() {
+export default function ReceivablesPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [merchants, setMerchants] = useState<any[]>([]);
   
   // Filtering & search
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'PAID'>('ALL');
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
 
-  // Form data for new installment debt
+  // Form data for new installment receivable
   const [formData, setFormData] = useState({
     description: '',
-    creditor: '',
-    merchantId: '',
+    debtorName: '',
     categoryId: '',
     accountId: '',
     totalAmount: '',
@@ -56,25 +53,21 @@ export default function DebtsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [debtsRes, accRes, catRes, merRes] = await Promise.all([
-        fetchApi<any>('/debts'),
+      const [recRes, accRes, catRes] = await Promise.all([
+        fetchApi<any>('/receivables'),
         fetchApi<any>('/accounts').catch(() => []),
         fetchApi<any>('/categories').catch(() => []),
-        fetchApi<any>('/merchants').catch(() => []),
       ]);
 
-      const debtList = debtsRes.items || debtsRes.data || [];
-      setItems(debtList);
+      const recList = recRes.items || recRes.data || [];
+      setItems(recList);
       setAccounts(Array.isArray(accRes) ? accRes : (accRes.items || accRes.data || []));
       
       const rawCats = Array.isArray(catRes) ? catRes : (catRes.items || catRes.data || []);
-      setCategories(rawCats.filter((c: any) => c.type === 'EXPENSE'));
-      
-      setMerchants(Array.isArray(merRes) ? merRes : (merRes.items || merRes.data || []));
+      setCategories(rawCats.filter((c: any) => c.type === 'INCOME'));
 
-      // Expand all plans by default so user immediately sees their installments
       const initialExpanded: Record<string, boolean> = {};
-      debtList.forEach((item: any) => {
+      recList.forEach((item: any) => {
         initialExpanded[item.id] = true;
       });
       setExpandedPlans(initialExpanded);
@@ -95,12 +88,12 @@ export default function DebtsPage() {
   };
 
   const handleDeletePlan = async (item: any) => {
-    if (!confirm(`"${item.description || item.creditor}" taksitli borç kaydını ve tüm taksitlerini silmek istediğinize emin misiniz?`)) {
+    if (!confirm(`"${item.description || item.debtorName}" taksitli alacak kaydını ve tüm taksitlerini silmek istediğinize emin misiniz?`)) {
       return;
     }
     try {
-      await fetchApi(`/debts/${item.id}`, { method: 'DELETE' });
-      toast.success('Taksitli borç kaydı başarıyla silindi');
+      await fetchApi(`/receivables/${item.id}`, { method: 'DELETE' });
+      toast.success('Taksitli alacak kaydı başarıyla silindi');
       loadData();
     } catch (error: any) {
       toast.error(error.message || 'Silinirken bir hata oluştu');
@@ -112,7 +105,7 @@ export default function DebtsPage() {
       return;
     }
     try {
-      await fetchApi(`/expenses/${installment.id}`, { method: 'DELETE' });
+      await fetchApi(`/incomes/${installment.id}`, { method: 'DELETE' });
       toast.success('Taksit başarıyla silindi');
       loadData();
     } catch (error: any) {
@@ -134,10 +127,8 @@ export default function DebtsPage() {
 
       const installmentAmount = parsedAmount / count;
       const planId = Math.random().toString(36).substring(2, 15);
-      const selectedMerchant = merchants.find(m => m.id === formData.merchantId);
-      const creditorName = selectedMerchant ? selectedMerchant.name : formData.creditor;
 
-      // Create installment expenses
+      // Create installment incomes
       for (let i = 0; i < count; i++) {
         const instDate = new Date(formData.firstPaymentDate);
         instDate.setMonth(instDate.getMonth() + i);
@@ -151,23 +142,22 @@ export default function DebtsPage() {
           transactionDate: instDate.toISOString(),
           description: desc,
           categoryId: formData.categoryId || null,
-          merchantId: formData.merchantId || null,
+          source: formData.debtorName || null,
           accountId: formData.accountId || null,
-          installmentPlanId: planId,
+          parentId: planId,
         };
 
-        await fetchApi('/expenses', {
+        await fetchApi('/incomes', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
       }
 
-      toast.success(`${count} taksitli borç kaydı başarıyla oluşturuldu`);
+      toast.success(`${count} taksitli alacak kaydı başarıyla oluşturuldu`);
       setIsModalOpen(false);
       setFormData({
         description: '',
-        creditor: '',
-        merchantId: '',
+        debtorName: '',
         categoryId: '',
         accountId: '',
         totalAmount: '',
@@ -185,13 +175,13 @@ export default function DebtsPage() {
     return items.filter(item => {
       const matchesSearch = 
         (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.creditor && item.creditor.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.merchantName && item.merchantName.toLowerCase().includes(searchQuery.toLowerCase()));
+        (item.debtorName && item.debtorName.toLowerCase().includes(searchQuery.toLowerCase()));
       
+      const isPaid = item.status === 'PAID' || item.remainingAmount <= 0;
       const matchesStatus = 
         statusFilter === 'ALL' ? true :
-        statusFilter === 'ACTIVE' ? item.status === 'ACTIVE' :
-        item.status === 'PAID';
+        statusFilter === 'ACTIVE' ? !isPaid :
+        isPaid;
 
       return matchesSearch && matchesStatus;
     });
@@ -199,7 +189,7 @@ export default function DebtsPage() {
 
   // Statistics calculation
   const stats = useMemo(() => {
-    const totalDebt = items.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
+    const totalReceivable = items.reduce((sum, item) => sum + (Number(item.totalAmount) || Number(item.amount) || 0), 0);
     const totalRemaining = items.reduce((sum, item) => sum + (Number(item.remainingAmount) || 0), 0);
     const totalPaid = items.reduce((sum, item) => sum + (Number(item.paidAmount) || 0), 0);
     
@@ -220,9 +210,9 @@ export default function DebtsPage() {
       }
     });
 
-    const activePlansCount = items.filter(i => i.status === 'ACTIVE').length;
+    const activePlansCount = items.filter(i => (Number(i.remainingAmount) || 0) > 0).length;
 
-    return { totalDebt, totalRemaining, totalPaid, thisMonthDue, activePlansCount };
+    return { totalReceivable, totalRemaining, totalPaid, thisMonthDue, activePlansCount };
   }, [items]);
 
   const formatCurrency = (val: number, currency: string = 'TRY') => {
@@ -243,36 +233,36 @@ export default function DebtsPage() {
       {/* Top Header & Navigation Tabs */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Taksitli Borçlar</h1>
-          <p className="text-text-muted mt-1">Taksitli borçlarınızı ve ödeme planlarını taksitler halinde takip edin.</p>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Taksitli Alacaklar</h1>
+          <p className="text-text-muted mt-1">Taksitli alacaklarınızı ve tahsilat planlarını taksitler halinde takip edin.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <div className="bg-bg-card p-1 rounded-xl border border-border flex">
             <Link
               href="/debts"
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-500 text-white shadow-sm flex items-center gap-2"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted hover:text-text-primary transition-all flex items-center gap-2"
             >
               <CreditCard className="w-4 h-4" />
               Taksitli Borçlar
+            </Link>
+            <Link
+              href="/receivables"
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-500 text-white shadow-sm flex items-center gap-2"
+            >
+              <Wallet className="w-4 h-4" />
+              Taksitli Alacaklar
               {items.length > 0 && (
                 <span className="bg-emerald-600/60 text-white text-xs px-2 py-0.5 rounded-full font-bold">
                   {items.length}
                 </span>
               )}
             </Link>
-            <Link
-              href="/receivables"
-              className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted hover:text-text-primary transition-all flex items-center gap-2"
-            >
-              <Wallet className="w-4 h-4" />
-              Taksitli Alacaklar
-            </Link>
           </div>
 
           <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500">
             <Plus className="w-5 h-5 mr-2" />
-            Yeni Taksitli Borç
+            Yeni Taksitli Alacak
           </Button>
         </div>
       </div>
@@ -281,20 +271,20 @@ export default function DebtsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Toplam Taksitli Borç</span>
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-              <TrendingDown className="w-5 h-5" />
+            <span className="text-sm font-medium text-text-muted">Toplam Taksitli Alacak</span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-text-primary mt-2">
-            {formatCurrency(stats.totalDebt)}
+            {formatCurrency(stats.totalReceivable)}
           </div>
-          <div className="text-xs text-text-muted mt-1">Tüm taksit planlarının toplamı</div>
+          <div className="text-xs text-text-muted mt-1">Tüm alacak planlarının toplamı</div>
         </div>
 
         <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Kalan Borç Tutarı</span>
+            <span className="text-sm font-medium text-text-muted">Kalan Alacak Tutarı</span>
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
               <Clock className="w-5 h-5" />
             </div>
@@ -302,12 +292,12 @@ export default function DebtsPage() {
           <div className="text-2xl font-bold text-amber-400 mt-2">
             {formatCurrency(stats.totalRemaining)}
           </div>
-          <div className="text-xs text-text-muted mt-1">Ödenecek kalan taksitler</div>
+          <div className="text-xs text-text-muted mt-1">Tahsil edilecek kalan tutar</div>
         </div>
 
         <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Bu Ay Ödenecek</span>
+            <span className="text-sm font-medium text-text-muted">Bu Ay Tahsil Edilecek</span>
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
               <Calendar className="w-5 h-5" />
             </div>
@@ -315,20 +305,20 @@ export default function DebtsPage() {
           <div className="text-2xl font-bold text-text-primary mt-2">
             {formatCurrency(stats.thisMonthDue)}
           </div>
-          <div className="text-xs text-text-muted mt-1">Bu ay vadesi gelen taksitler</div>
+          <div className="text-xs text-text-muted mt-1">Bu ay vadesi gelen tahsilatlar</div>
         </div>
 
         <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Aktif Taksit Planı</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+            <span className="text-sm font-medium text-text-muted">Aktif Alacak Planı</span>
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
               <Layers className="w-5 h-5" />
             </div>
           </div>
           <div className="text-2xl font-bold text-text-primary mt-2">
             {stats.activePlansCount} <span className="text-sm font-normal text-text-muted">/ {items.length} plan</span>
           </div>
-          <div className="text-xs text-text-muted mt-1">Devam eden taksitli borç</div>
+          <div className="text-xs text-text-muted mt-1">Devam eden taksitli alacak</div>
         </div>
       </div>
 
@@ -338,7 +328,7 @@ export default function DebtsPage() {
           <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Açıklama veya mağaza/kurum ara..."
+            placeholder="Açıklama veya borçlu kişi/kurum ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-bg-secondary border border-border rounded-xl pl-9 pr-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
@@ -360,7 +350,7 @@ export default function DebtsPage() {
               statusFilter === 'ACTIVE' ? 'bg-emerald-500 text-white font-bold' : 'bg-bg-secondary text-text-muted hover:text-text-primary'
             }`}
           >
-            Aktif Planlar
+            Aktif Alacaklar
           </button>
           <button
             onClick={() => setStatusFilter('PAID')}
@@ -378,18 +368,18 @@ export default function DebtsPage() {
         {loading ? (
           <div className="text-center py-16 bg-bg-card rounded-3xl border border-border text-text-muted">
             <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto mb-3" />
-            Taksitli borçlar yükleniyor...
+            Taksitli alacaklar yükleniyor...
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="text-center py-16 bg-bg-card rounded-3xl border border-border">
-            <CreditCard className="w-12 h-12 text-text-muted mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-text-primary mb-2">Henüz taksitli borç kaydı yok</h3>
+            <Wallet className="w-12 h-12 text-text-muted mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-text-primary mb-2">Henüz taksitli alacak kaydı yok</h3>
             <p className="text-sm text-text-muted max-w-md mx-auto mb-6">
-              Harcama yaparken "Taksitli İşlem" seçeneğini kullanarak veya yukarıdaki "Yeni Taksitli Borç" butonu ile taksit planları ekleyebilirsiniz.
+              Gelir eklerken "Taksitli İşlem" seçeneğini kullanarak veya yukarıdaki "Yeni Taksitli Alacak" butonu ile taksitli alacak planları oluşturabilirsiniz.
             </p>
             <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500">
               <Plus className="w-4 h-4 mr-2" />
-              İlk Taksitli Borcu Ekle
+              İlk Taksitli Alacağı Ekle
             </Button>
           </div>
         ) : (
@@ -398,6 +388,7 @@ export default function DebtsPage() {
             const installments = item.installments || [];
             const count = item.installmentCount || installments.length || 1;
             const paidCount = installments.filter((i: any) => i.status === 'PAID').length;
+            const isCompleted = item.status === 'PAID' || (item.remainingAmount || 0) <= 0;
             const progressPercent = Math.min(100, Math.round((paidCount / count) * 100));
 
             return (
@@ -408,20 +399,20 @@ export default function DebtsPage() {
                 {/* Plan Header */}
                 <div className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-start gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CreditCard className="w-6 h-6" />
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Wallet className="w-6 h-6" />
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-lg font-bold text-text-primary">
-                          {item.description || item.creditor}
+                          {item.description || item.debtorName}
                         </h3>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          item.status === 'PAID' 
+                          isCompleted 
                             ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' 
-                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                            : 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
                         }`}>
-                          {item.status === 'PAID' ? 'Tamamlandı' : 'Aktif Plan'}
+                          {isCompleted ? 'Tamamlandı' : 'Aktif Plan'}
                         </span>
                         {item.category && (
                           <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-bg-secondary text-text-muted border border-border flex items-center gap-1">
@@ -432,15 +423,15 @@ export default function DebtsPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted mt-1">
-                        {item.creditor && (
+                        {item.debtorName && (
                           <span className="flex items-center gap-1 text-text-secondary">
-                            <Building2 className="w-3.5 h-3.5" />
-                            {item.creditor}
+                            <User className="w-3.5 h-3.5" />
+                            {item.debtorName}
                           </span>
                         )}
                         <span>Toplam: <strong className="text-text-primary">{count} Taksit</strong></span>
-                        {item.startDate && (
-                          <span>Başlangıç: {formatDate(item.startDate)}</span>
+                        {item.givenDate && (
+                          <span>Başlangıç: {formatDate(item.givenDate)}</span>
                         )}
                       </div>
                     </div>
@@ -449,12 +440,12 @@ export default function DebtsPage() {
                   {/* Financial Metrics & Actions */}
                   <div className="flex flex-wrap items-center justify-between lg:justify-end gap-6 pt-3 lg:pt-0 border-t lg:border-t-0 border-border">
                     <div className="text-left lg:text-right">
-                      <div className="text-xs text-text-muted">Kalan Borç</div>
+                      <div className="text-xs text-text-muted">Kalan Alacak</div>
                       <div className="text-xl font-bold text-amber-400">
                         {formatCurrency(item.remainingAmount, item.currency)}
                       </div>
                       <div className="text-xs text-text-muted mt-0.5">
-                        Toplam: <span className="font-semibold text-text-primary">{formatCurrency(item.totalAmount, item.currency)}</span>
+                        Toplam: <span className="font-semibold text-text-primary">{formatCurrency(item.totalAmount || item.amount, item.currency)}</span>
                       </div>
                     </div>
 
@@ -464,7 +455,7 @@ export default function DebtsPage() {
                         {formatCurrency(item.installmentAmount, item.currency)}
                       </div>
                       <div className="text-xs text-text-muted mt-0.5">
-                        {paidCount} / {count} taksit ödendi
+                        {paidCount} / {count} taksit tahsil edildi
                       </div>
                     </div>
 
@@ -490,7 +481,7 @@ export default function DebtsPage() {
                       <button
                         onClick={() => handleDeletePlan(item)}
                         className="p-2 rounded-xl bg-bg-secondary hover:bg-rose-500/20 text-text-muted hover:text-rose-400 transition-colors"
-                        title="Taksitli Borç Planını Sil"
+                        title="Taksitli Alacak Planını Sil"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -503,14 +494,14 @@ export default function DebtsPage() {
                   <div className="w-full bg-bg-secondary h-2 rounded-full overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-500 rounded-full ${
-                        progressPercent === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-emerald-500'
+                        progressPercent === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-blue-500 to-emerald-500'
                       }`}
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
                   <div className="flex justify-between items-center text-[11px] text-text-muted mt-1.5">
                     <span>İlerleme: %{progressPercent}</span>
-                    <span>{paidCount} ödendi, {count - paidCount} kalan</span>
+                    <span>{paidCount} tahsil edildi, {count - paidCount} kalan</span>
                   </div>
                 </div>
 
@@ -520,7 +511,7 @@ export default function DebtsPage() {
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted flex items-center gap-2">
                         <CalendarDays className="w-4 h-4 text-emerald-400" />
-                        Taksit Planı ve Ödeme Takvimi ({installments.length} Taksit)
+                        Tahsilat Takvimi ve Taksit Planı ({installments.length} Taksit)
                       </h4>
                     </div>
 
@@ -568,7 +559,7 @@ export default function DebtsPage() {
                                     {isPaid ? (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                                         <CheckCircle2 className="w-3 h-3" />
-                                        Ödendi / Vadesi Geldi
+                                        Tahsil Edildi / Vadesi Geldi
                                       </span>
                                     ) : isDueSoon ? (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
@@ -583,7 +574,7 @@ export default function DebtsPage() {
                                     )}
                                   </td>
                                   <td className="py-2.5 text-right">
-                                    {item.sourceType === 'EXPENSE_TRANSACTION' && (
+                                    {item.sourceType === 'INCOME_TRANSACTION' && (
                                       <button
                                         onClick={() => handleDeleteInstallment(inst)}
                                         className="p-1 rounded-lg text-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
@@ -608,46 +599,29 @@ export default function DebtsPage() {
         )}
       </div>
 
-      {/* Modal: Yeni Taksitli Borç Ekle */}
+      {/* Modal: Yeni Taksitli Alacak Ekle */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Yeni Taksitli Borç Ekle"
+        title="Yeni Taksitli Alacak Ekle"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Açıklama / Ürün Adı"
-            placeholder="Örn: Buzdolabı, iPhone 15, Bilgisayar"
+            label="Açıklama"
+            placeholder="Örn: Danışmanlık Ücreti, Borç Tahsilatı, Satış Geliri"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                Alacaklı / Mağaza
-              </label>
-              {merchants.length > 0 ? (
-                <select
-                  value={formData.merchantId}
-                  onChange={(e) => setFormData({ ...formData, merchantId: e.target.value })}
-                  className="w-full bg-bg-card border border-slate-700 rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                >
-                  <option value="">Seçiniz veya aşağıya yazınız</option>
-                  {merchants.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <Input
-                  placeholder="Örn: Arçelik, Garanti Bankası"
-                  value={formData.creditor}
-                  onChange={(e) => setFormData({ ...formData, creditor: e.target.value })}
-                  required
-                />
-              )}
-            </div>
+            <Input
+              label="Borçlu Kişi / Kurum"
+              placeholder="Örn: Ahmet Yılmaz, ABC Ltd."
+              value={formData.debtorName}
+              onChange={(e) => setFormData({ ...formData, debtorName: e.target.value })}
+              required
+            />
 
             <Select
               label="Kategori"
@@ -662,10 +636,10 @@ export default function DebtsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Toplam Tutar (TL)"
+              label="Toplam Alacak Tutarı (TL)"
               type="number"
               step="0.01"
-              placeholder="Örn: 12000"
+              placeholder="Örn: 15000"
               value={formData.totalAmount}
               onChange={(e) => setFormData({ ...formData, totalAmount: e.target.value })}
               required
@@ -690,7 +664,7 @@ export default function DebtsPage() {
           {/* Monthly preview */}
           {formData.totalAmount && parseFloat(formData.totalAmount) > 0 && (
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-sm text-emerald-400 flex items-center justify-between">
-              <span>Aylık Taksit Tutarı:</span>
+              <span>Aylık Tahsilat Tutarı:</span>
               <span className="font-bold text-base">
                 {formatCurrency(parseFloat(formData.totalAmount) / parseInt(formData.installmentCount || '2'))} / ay
               </span>
@@ -699,7 +673,7 @@ export default function DebtsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="İlk Taksit Tarihi"
+              label="İlk Tahsilat Tarihi"
               type="date"
               value={formData.firstPaymentDate}
               onChange={(e) => setFormData({ ...formData, firstPaymentDate: e.target.value })}
@@ -722,7 +696,7 @@ export default function DebtsPage() {
               İptal
             </Button>
             <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500">
-              Taksitli Borcu Kaydet
+              Taksitli Alacağı Kaydet
             </Button>
           </div>
         </form>
