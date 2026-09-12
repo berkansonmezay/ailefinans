@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { fetchApi } from '@/lib/api';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { PieChart as PieChartIcon, BarChart3, Download, TrendingUp } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { PieChart as PieChartIcon, BarChart3, Download, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Select as CustomSelect } from '@/components/ui/Select';
 import { toast } from 'react-hot-toast';
 import clsx from 'clsx';
 
@@ -15,6 +16,36 @@ export default function ReportsPage() {
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [merchantData, setMerchantData] = useState<any[]>([]);
+  
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [yearlyData, setYearlyData] = useState<any[]>([]);
+  const [yearlyLoading, setYearlyLoading] = useState(false);
+
+  // MONTHLY Tab states
+  const [monthlyMonth, setMonthlyMonth] = useState(new Date().getMonth());
+  const [monthlyYear, setMonthlyYear] = useState(new Date().getFullYear());
+  const [monthlyKpi, setMonthlyKpi] = useState<any>({ income: 0, expense: 0, totalBalance: 0 });
+  const [monthlyCatData, setMonthlyCatData] = useState<any[]>([]);
+  const [monthlyMerchantData, setMonthlyMerchantData] = useState<any[]>([]);
+  const [monthlyTrends, setMonthlyTrends] = useState<any>({ categoryTrends: [], parentCategoryTrends: [] });
+  const [selectedTrendCat, setSelectedTrendCat] = useState<string | null>(null);
+  const [selectedTrendMerchant, setSelectedTrendMerchant] = useState<string | null>(null);
+
+  // COMPARISON Tab states
+  const today = new Date();
+  const lastMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+  const lastMonthYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+  const [compMonthA, setCompMonthA] = useState(lastMonth);
+  const [compYearA, setCompYearA] = useState(lastMonthYear);
+  const [compMonthB, setCompMonthB] = useState(today.getMonth());
+  const [compYearB, setCompYearB] = useState(today.getFullYear());
+  
+  const [compKpiA, setCompKpiA] = useState<any>({ income: 0, expense: 0, totalBalance: 0 });
+  const [compKpiB, setCompKpiB] = useState<any>({ income: 0, expense: 0, totalBalance: 0 });
+  const [compCatA, setCompCatA] = useState<any[]>([]);
+  const [compCatB, setCompCatB] = useState<any[]>([]);
+  const [compMerA, setCompMerA] = useState<any[]>([]);
+  const [compMerB, setCompMerB] = useState<any[]>([]);
   
   // Data for the 12 month trend includes calculated savings
   const trendData = monthlyData.map(d => ({
@@ -32,9 +63,9 @@ export default function ReportsPage() {
           fetchApi<any>('/dashboard/merchant-breakdown'),
         ]);
 
-        setMonthlyData(monthly.data || []);
-        setCategoryData(category.data || []);
-        setMerchantData(merchant.data || []);
+        setMonthlyData(Array.isArray(monthly) ? monthly : (monthly?.data || []));
+        setCategoryData(Array.isArray(category) ? category : (category?.data || []));
+        setMerchantData(Array.isArray(merchant) ? merchant : (merchant?.data || []));
       } catch (error: any) {
         toast.error(error.message || 'Raporlar yüklenemedi');
       } finally {
@@ -44,21 +75,114 @@ export default function ReportsPage() {
     loadReports();
   }, []);
 
+  useEffect(() => {
+    const loadYearlyData = async () => {
+      if (activeTab !== 'YEARLY') return;
+      try {
+        setYearlyLoading(true);
+        const data = await fetchApi<any>(`/dashboard/yearly-expenses?year=${selectedYear}`);
+        setYearlyData(Array.isArray(data) ? data : (data?.data || []));
+      } catch (error: any) {
+        toast.error(error.message || 'Yıllık veriler yüklenemedi');
+      } finally {
+        setYearlyLoading(false);
+      }
+    };
+    loadYearlyData();
+  }, [activeTab, selectedYear]);
+
+  useEffect(() => {
+    const loadMonthlyTab = async () => {
+      if (activeTab !== 'MONTHLY') return;
+      try {
+        setLoading(true);
+        const y = monthlyYear;
+        const m = monthlyMonth;
+        const start = new Date(y, m, 1).toISOString();
+        const end = new Date(y, m + 1, 0, 23, 59, 59).toISOString();
+
+        const [kpi, cat, mer, trends] = await Promise.all([
+          fetchApi<any>(`/dashboard/kpis?startDate=${start}&endDate=${end}`),
+          fetchApi<any>(`/dashboard/category-breakdown?startDate=${start}&endDate=${end}`),
+          fetchApi<any>(`/dashboard/merchant-breakdown?startDate=${start}&endDate=${end}`),
+          fetchApi<any>(`/dashboard/monthly-trends?year=${y}`)
+        ]);
+
+        setMonthlyKpi(kpi?.data || kpi || { income: 0, expense: 0, totalBalance: 0 });
+        setMonthlyCatData(Array.isArray(cat) ? cat : (cat?.data || []));
+        setMonthlyMerchantData(Array.isArray(mer) ? mer : (mer?.data || []));
+        
+        const trendData = trends?.data || trends || { categoryTrends: [], parentCategoryTrends: [] };
+        setMonthlyTrends(trendData);
+        
+        if (trendData.categoryTrends?.length > 0) {
+          setSelectedTrendCat(trendData.categoryTrends[0].id);
+        }
+        if (trendData.parentCategoryTrends?.length > 0) {
+          setSelectedTrendMerchant(trendData.parentCategoryTrends[0].id);
+        }
+      } catch (error: any) {
+        toast.error(error.message || 'Aylık veriler yüklenemedi');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMonthlyTab();
+  }, [activeTab, monthlyMonth, monthlyYear]);
+
+  useEffect(() => {
+    const loadComparisonTab = async () => {
+      if (activeTab !== 'COMPARISON') return;
+      try {
+        setLoading(true);
+        const yA = compYearA;
+        const mA = compMonthA;
+        const startA = new Date(yA, mA, 1).toISOString();
+        const endA = new Date(yA, mA + 1, 0, 23, 59, 59).toISOString();
+
+        const yB = compYearB;
+        const mB = compMonthB;
+        const startB = new Date(yB, mB, 1).toISOString();
+        const endB = new Date(yB, mB + 1, 0, 23, 59, 59).toISOString();
+
+        const [kpiA, kpiB, catA, catB, merA, merB] = await Promise.all([
+          fetchApi<any>(`/dashboard/kpis?startDate=${startA}&endDate=${endA}`),
+          fetchApi<any>(`/dashboard/kpis?startDate=${startB}&endDate=${endB}`),
+          fetchApi<any>(`/dashboard/category-breakdown?startDate=${startA}&endDate=${endA}`),
+          fetchApi<any>(`/dashboard/category-breakdown?startDate=${startB}&endDate=${endB}`),
+          fetchApi<any>(`/dashboard/merchant-breakdown?startDate=${startA}&endDate=${endA}`),
+          fetchApi<any>(`/dashboard/merchant-breakdown?startDate=${startB}&endDate=${endB}`)
+        ]);
+
+        setCompKpiA(kpiA?.data || kpiA || { income: 0, expense: 0, totalBalance: 0 });
+        setCompKpiB(kpiB?.data || kpiB || { income: 0, expense: 0, totalBalance: 0 });
+        
+        setCompCatA(Array.isArray(catA) ? catA : (catA?.data || []));
+        setCompCatB(Array.isArray(catB) ? catB : (catB?.data || []));
+        
+        setCompMerA(Array.isArray(merA) ? merA : (merA?.data || []));
+        setCompMerB(Array.isArray(merB) ? merB : (merB?.data || []));
+        
+      } catch (error: any) {
+        toast.error(error.message || 'Karşılaştırma verileri yüklenemedi');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadComparisonTab();
+  }, [activeTab, compMonthA, compYearA, compMonthB, compYearB]);
+
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-bg-card border border-border p-4 rounded-xl shadow-xl">
-          <p className="font-semibold text-text-primary mb-2 border-b border-border pb-2">{label}</p>
+        <div className="bg-white dark:bg-bg-card border border-slate-100 dark:border-border p-4 rounded-xl shadow-lg">
+          <p className="text-sm font-semibold text-slate-800 dark:text-text-primary mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center justify-between gap-4 py-1">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                <span className="text-sm text-text-secondary">{entry.name}:</span>
-              </div>
-              <span className="text-sm font-medium text-text-primary">
-                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(entry.value)}
+            <div key={index} className="flex items-center gap-2 py-1">
+              <span className="text-sm font-medium" style={{ color: entry.color }}>
+                {entry.name} : {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(entry.value)}
               </span>
             </div>
           ))}
@@ -117,22 +241,20 @@ export default function ReportsPage() {
       {activeTab === 'SUMMARY' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Trend Chart (Line) */}
-          <Card>
-            <CardContent>
-              <div className="flex items-center gap-2 mb-6">
-                <TrendingUp className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-lg font-medium text-text-primary">12 Aylık Trend Analizi</h3>
-              </div>
+          <Card className="border-slate-200 dark:border-border shadow-sm">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-6">Gelir-Gider Trendi (12 Ay)</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="month" stroke="#94a3b8" />
-                    <YAxis stroke="#94a3b8" />
+                  <LineChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={true} />
+                    <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} tickMargin={10} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
+                    <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
                     <RechartsTooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="income" name="Gelir" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="expense" name="Gider" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="savings" name="Tasarruf" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
+                    <Legend iconType="circle" wrapperStyle={{ bottom: 0, fontSize: '14px', color: '#64748b' }} />
+                    <Line type="monotone" dataKey="income" name="Gelir" stroke="#10b981" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="expense" name="Gider" stroke="#ef4444" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="savings" name="Tasarruf" stroke="#6366f1" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3, fill: '#fff' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -140,23 +262,75 @@ export default function ReportsPage() {
           </Card>
 
           {/* Sütun Grafik (Bar) */}
-          <Card>
-            <CardContent>
-              <div className="flex items-center gap-2 mb-6">
-                <BarChart3 className="w-5 h-5 text-emerald-400" />
-                <h3 className="text-lg font-medium text-text-primary">Aylık Karşılaştırma</h3>
-              </div>
+          <Card className="border-slate-200 dark:border-border shadow-sm">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-6">Aylık Karşılaştırma</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={trendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                    <XAxis dataKey="month" stroke="#94a3b8" />
-                    <YAxis stroke="#94a3b8" />
+                  <BarChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={true} />
+                    <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} tickMargin={10} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
+                    <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
                     <RechartsTooltip content={<CustomTooltip />} />
-                    <Bar dataKey="income" name="Gelir" fill="#10b981" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="expense" name="Gider" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    <Legend iconType="circle" wrapperStyle={{ bottom: 0, fontSize: '14px', color: '#64748b' }} />
+                    <Bar dataKey="income" name="Gelir" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    <Bar dataKey="expense" name="Gider" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Kategori Dağılımı */}
+          <Card className="border-slate-200 dark:border-border shadow-sm">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-8">Kategori Dağılımı</h3>
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="w-full md:w-5/12 h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={85}
+                        outerRadius={130}
+                        paddingAngle={3}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="w-full md:w-7/12 px-4">
+                  <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                    {categoryData.sort((a, b) => b.value - a.value).map((entry, index) => {
+                      const total = categoryData.reduce((sum, item) => sum + item.value, 0);
+                      const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                      return (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                            <span className="text-slate-600 dark:text-text-secondary font-medium">
+                              {entry.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-6">
+                            <span className="text-slate-400 dark:text-text-muted text-sm w-8 text-right">{percent}%</span>
+                            <span className="text-slate-800 dark:text-text-primary font-bold w-24 text-right">
+                              {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(entry.value)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -164,102 +338,540 @@ export default function ReportsPage() {
       )}
 
       {activeTab === 'MONTHLY' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Category Breakdown */}
-          <Card>
-            <CardContent>
-              <div className="flex items-center gap-2 mb-6">
-                <PieChartIcon className="w-5 h-5 text-blue-400" />
-                <h3 className="text-lg font-medium text-text-primary">Kategorilere Göre Harcamalar (Bu Ay)</h3>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Top Header & Selectors */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-bg-card p-4 rounded-xl border border-slate-200 dark:border-border shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">Ay</span>
+                <CustomSelect
+                  value={monthlyMonth.toString()}
+                  onChange={(e) => setMonthlyMonth(parseInt(e.target.value))}
+                  options={[
+                    { label: 'Ocak', value: '0' },
+                    { label: 'Şubat', value: '1' },
+                    { label: 'Mart', value: '2' },
+                    { label: 'Nisan', value: '3' },
+                    { label: 'Mayıs', value: '4' },
+                    { label: 'Haziran', value: '5' },
+                    { label: 'Temmuz', value: '6' },
+                    { label: 'Ağustos', value: '7' },
+                    { label: 'Eylül', value: '8' },
+                    { label: 'Ekim', value: '9' },
+                    { label: 'Kasım', value: '10' },
+                    { label: 'Aralık', value: '11' }
+                  ]}
+                />
               </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
-                      itemStyle={{ color: '#e2e8f0' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">Yıl</span>
+                <CustomSelect
+                  value={monthlyYear.toString()}
+                  onChange={(e) => setMonthlyYear(parseInt(e.target.value))}
+                  options={Array.from({ length: 5 }, (_, i) => {
+                    const y = new Date().getFullYear() - 2 + i;
+                    return { label: y.toString(), value: y.toString() };
+                  })}
+                />
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                {categoryData.map((entry, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                    <span className="text-text-secondary flex-1 truncate">{entry.label}</span>
-                    <span className="font-medium text-text-primary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(entry.value)}</span>
-                  </div>
-                ))}
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <span className="block text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">GELİR</span>
+                <span className="text-xl font-bold text-emerald-500">
+                  {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.income)}
+                </span>
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-right">
+                <span className="block text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">GİDER</span>
+                <span className="text-xl font-bold text-red-500">
+                  {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.expense)}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="block text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">KALAN</span>
+                <span className={`text-xl font-bold ${monthlyKpi.totalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.totalBalance)}
+                </span>
+              </div>
+            </div>
+          </div>
 
-          {/* Merchant Breakdown */}
-          <Card>
-            <CardContent>
-              <div className="flex items-center gap-2 mb-6">
-                <PieChartIcon className="w-5 h-5 text-amber-400" />
-                <h3 className="text-lg font-medium text-text-primary">İşletmelere Göre Harcamalar (Bu Ay)</h3>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={merchantData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {merchantData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
-                      itemStyle={{ color: '#e2e8f0' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                {merchantData.map((entry, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[(index + 3) % COLORS.length] }}></div>
-                    <span className="text-text-secondary flex-1 truncate">{entry.label}</span>
-                    <span className="font-medium text-text-primary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(entry.value)}</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Category Breakdown (Donut) */}
+            <Card className="border-slate-200 dark:border-border shadow-sm">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-6">Kategori Dağılımı</h3>
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="w-full md:w-1/2 h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={monthlyCatData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={3}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {monthlyCatData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip content={<CustomTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
-              </div>
-            </CardContent>
+                  <div className="w-full md:w-1/2">
+                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                      {monthlyCatData.sort((a, b) => b.value - a.value).map((entry, index) => {
+                        const total = monthlyCatData.reduce((sum, item) => sum + item.value, 0);
+                        const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                        return (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                              <span className="text-slate-600 dark:text-text-secondary font-medium truncate max-w-[100px]" title={entry.label}>
+                                {entry.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="text-slate-400 dark:text-text-muted">{percent}%</span>
+                              <span className="text-slate-800 dark:text-text-primary font-bold">
+                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(entry.value)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Merchant Breakdown (Donut) */}
+            <Card className="border-slate-200 dark:border-border shadow-sm">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-6">Harcama Yeri Dağılımı</h3>
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="w-full md:w-1/2 h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={monthlyMerchantData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={3}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {monthlyMerchantData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip content={<CustomTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-full md:w-1/2">
+                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                      {monthlyMerchantData.sort((a, b) => b.value - a.value).map((entry, index) => {
+                        const total = monthlyMerchantData.reduce((sum, item) => sum + item.value, 0);
+                        const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                        return (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[(index + 3) % COLORS.length] }}></div>
+                              <span className="text-slate-600 dark:text-text-secondary font-medium truncate max-w-[100px]" title={entry.label}>
+                                {entry.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="text-slate-400 dark:text-text-muted">{percent}%</span>
+                              <span className="text-slate-800 dark:text-text-primary font-bold">
+                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(entry.value)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Alt Kategori Trendi (Sütun) */}
+            <Card className="border-slate-200 dark:border-border shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary">Alt Kategori Trendi</h3>
+                  <div className="w-48">
+                    <CustomSelect
+                      value={selectedTrendCat || ''}
+                      onChange={(e) => setSelectedTrendCat(e.target.value)}
+                      options={monthlyTrends.categoryTrends?.map((c: any) => ({ label: c.name, value: c.id })) || []}
+                    />
+                  </div>
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthlyTrends.categoryTrends?.find((c: any) => c.id === selectedTrendCat)?.months || []}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                      <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
+                      <RechartsTooltip content={<CustomTooltip />} />
+                      <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Ana Kategori Trendi (Sütun) */}
+            <Card className="border-slate-200 dark:border-border shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary">Ana Kategori Trendi</h3>
+                  <div className="w-48">
+                    <CustomSelect
+                      value={selectedTrendMerchant || ''}
+                      onChange={(e) => setSelectedTrendMerchant(e.target.value)}
+                      options={monthlyTrends.parentCategoryTrends?.map((c: any) => ({ label: c.name, value: c.id })) || []}
+                    />
+                  </div>
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthlyTrends.parentCategoryTrends?.find((c: any) => c.id === selectedTrendMerchant)?.months || []}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                      <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
+                      <RechartsTooltip content={<CustomTooltip />} />
+                      <Bar dataKey="total" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'YEARLY' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center justify-between bg-white dark:bg-bg-card p-4 rounded-xl border border-slate-200 dark:border-border shadow-sm">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setSelectedYear(y => y - 1)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-bg-secondary rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-text-primary" />
+              </button>
+              <span className="text-2xl font-bold text-slate-800 dark:text-text-primary w-20 text-center">{selectedYear}</span>
+              <button 
+                onClick={() => setSelectedYear(y => y + 1)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-bg-secondary rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-slate-600 dark:text-text-primary" />
+              </button>
+            </div>
+            <div className="text-right">
+              <span className="block text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">YILLIK TOPLAM GİDER</span>
+              <span className="text-2xl font-bold text-red-500">
+                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(yearlyData.reduce((acc, curr) => acc + curr.total, 0))}
+              </span>
+            </div>
+          </div>
+
+          <Card className="border-slate-200 dark:border-border shadow-sm overflow-hidden">
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 dark:bg-bg-secondary border-b border-slate-200 dark:border-border text-slate-600 dark:text-text-secondary font-semibold">
+                  <tr>
+                    <th className="p-4 min-w-[200px] border-r border-slate-200 dark:border-border text-center">Harcama Yeri / Kategori</th>
+                    {['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'].map(m => (
+                      <th key={m} className="p-4 min-w-[100px] text-center">{m}</th>
+                    ))}
+                    <th className="p-4 min-w-[120px] text-right font-bold">Toplam</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-border/50">
+                  {yearlyLoading ? (
+                    <tr><td colSpan={14} className="p-8 text-center text-slate-400">Yükleniyor...</td></tr>
+                  ) : yearlyData.length === 0 ? (
+                    <tr><td colSpan={14} className="p-8 text-center text-slate-400">Bu yıla ait veri bulunamadı.</td></tr>
+                  ) : (
+                    <>
+                      {yearlyData.map((parent) => (
+                        <React.Fragment key={parent.id}>
+                          {/* Parent Row */}
+                          <tr className="bg-slate-50/50 dark:bg-bg-secondary/30">
+                            <td className="p-3 font-bold text-slate-800 dark:text-text-primary border-r border-slate-200 dark:border-border text-center">
+                              {parent.name}
+                            </td>
+                            {parent.months.map((val: number, i: number) => (
+                              <td key={i} className="p-3 text-center font-medium text-emerald-500">
+                                {val > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(val) : ''}
+                              </td>
+                            ))}
+                            <td className="p-3 text-right font-bold text-emerald-500">
+                              {parent.total > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(parent.total) : ''}
+                            </td>
+                          </tr>
+                          {/* Child Rows */}
+                          {parent.subCategories.map((child: any) => (
+                            <tr key={child.id} className="bg-white dark:bg-bg-card">
+                              <td className="p-3 pl-6 font-medium text-slate-600 dark:text-text-secondary border-r border-slate-200 dark:border-border">
+                                {child.name}
+                              </td>
+                              {child.months.map((val: number, i: number) => (
+                                <td key={i} className="p-3 text-center text-slate-500 dark:text-text-muted">
+                                  {val > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(val) : ''}
+                                </td>
+                              ))}
+                              <td className="p-3 text-right font-semibold text-red-500">
+                                {child.total > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(child.total) : ''}
+                              </td>
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                      {/* Genel Toplam */}
+                      <tr className="bg-slate-100 dark:bg-bg-secondary border-t-2 border-slate-200 dark:border-border font-bold">
+                        <td className="p-4 text-right text-slate-800 dark:text-text-primary border-r border-slate-200 dark:border-border">
+                          Genel Toplam
+                        </td>
+                        {Array(12).fill(0).map((_, i) => {
+                          const monthTotal = yearlyData.reduce((acc, curr) => acc + curr.months[i], 0);
+                          return (
+                            <td key={i} className="p-4 text-center text-red-500">
+                              {monthTotal > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(monthTotal) : ''}
+                            </td>
+                          );
+                        })}
+                        <td className="p-4 text-right text-red-500">
+                          {new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(yearlyData.reduce((acc, curr) => acc + curr.total, 0))}
+                        </td>
+                      </tr>
+                    </>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </Card>
         </div>
       )}
 
-      {(activeTab === 'YEARLY' || activeTab === 'COMPARISON') && (
-        <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-20 text-text-muted">
-              <PieChartIcon className="w-12 h-12 mb-4 opacity-50" />
-              <p className="text-lg">Bu sekmenin verileri yakında eklenecektir.</p>
+      {activeTab === 'COMPARISON' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Header & Period Selectors */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white dark:bg-bg-card p-6 rounded-xl border border-slate-200 dark:border-border shadow-sm">
+            
+            {/* Period A */}
+            <div className="flex-1 w-full bg-slate-50 dark:bg-bg-secondary/50 p-4 rounded-xl border border-slate-200 dark:border-border/50">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-text-primary mb-3">1. DÖNEM</h3>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <CustomSelect
+                    value={compMonthA.toString()}
+                    onChange={(e) => setCompMonthA(parseInt(e.target.value))}
+                    options={[
+                      { label: 'Ocak', value: '0' },
+                      { label: 'Şubat', value: '1' },
+                      { label: 'Mart', value: '2' },
+                      { label: 'Nisan', value: '3' },
+                      { label: 'Mayıs', value: '4' },
+                      { label: 'Haziran', value: '5' },
+                      { label: 'Temmuz', value: '6' },
+                      { label: 'Ağustos', value: '7' },
+                      { label: 'Eylül', value: '8' },
+                      { label: 'Ekim', value: '9' },
+                      { label: 'Kasım', value: '10' },
+                      { label: 'Aralık', value: '11' }
+                    ]}
+                  />
+                </div>
+                <div className="flex-1">
+                  <CustomSelect
+                    value={compYearA.toString()}
+                    onChange={(e) => setCompYearA(parseInt(e.target.value))}
+                    options={Array.from({ length: 5 }, (_, i) => {
+                      const y = new Date().getFullYear() - 2 + i;
+                      return { label: y.toString(), value: y.toString() };
+                    })}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Toplam Gelir</span>
+                  <span className="text-lg font-bold text-emerald-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiA.income)}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Toplam Gider</span>
+                  <span className="text-lg font-bold text-red-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiA.expense)}</span>
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
+                <ArrowRightLeft className="w-5 h-5" />
+              </div>
+            </div>
+
+            {/* Period B */}
+            <div className="flex-1 w-full bg-slate-50 dark:bg-bg-secondary/50 p-4 rounded-xl border border-slate-200 dark:border-border/50">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-text-primary mb-3">2. DÖNEM</h3>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <CustomSelect
+                    value={compMonthB.toString()}
+                    onChange={(e) => setCompMonthB(parseInt(e.target.value))}
+                    options={[
+                      { label: 'Ocak', value: '0' },
+                      { label: 'Şubat', value: '1' },
+                      { label: 'Mart', value: '2' },
+                      { label: 'Nisan', value: '3' },
+                      { label: 'Mayıs', value: '4' },
+                      { label: 'Haziran', value: '5' },
+                      { label: 'Temmuz', value: '6' },
+                      { label: 'Ağustos', value: '7' },
+                      { label: 'Eylül', value: '8' },
+                      { label: 'Ekim', value: '9' },
+                      { label: 'Kasım', value: '10' },
+                      { label: 'Aralık', value: '11' }
+                    ]}
+                  />
+                </div>
+                <div className="flex-1">
+                  <CustomSelect
+                    value={compYearB.toString()}
+                    onChange={(e) => setCompYearB(parseInt(e.target.value))}
+                    options={Array.from({ length: 5 }, (_, i) => {
+                      const y = new Date().getFullYear() - 2 + i;
+                      return { label: y.toString(), value: y.toString() };
+                    })}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Toplam Gelir</span>
+                  <span className="text-lg font-bold text-emerald-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiB.income)}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Toplam Gider</span>
+                  <span className="text-lg font-bold text-red-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiB.expense)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Category Comparison Table */}
+            <Card className="border-slate-200 dark:border-border shadow-sm overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-4 border-b border-slate-200 dark:border-border bg-slate-50/50 dark:bg-bg-secondary/30">
+                  <h3 className="font-bold text-slate-800 dark:text-text-primary">Kategori Karşılaştırması</h3>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-white dark:bg-bg-card sticky top-0 border-b border-slate-200 dark:border-border text-slate-500 dark:text-text-muted">
+                      <tr>
+                        <th className="p-4 font-medium">Kategori</th>
+                        <th className="p-4 font-medium text-right">1. Dönem</th>
+                        <th className="p-4 font-medium text-right">2. Dönem</th>
+                        <th className="p-4 font-medium text-right">Değişim</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-border/50 bg-white dark:bg-bg-card">
+                      {Array.from(new Set([...compCatA.map(c => c.label), ...compCatB.map(c => c.label)])).sort().map((catLabel, i) => {
+                        const valA = compCatA.find(c => c.label === catLabel)?.value || 0;
+                        const valB = compCatB.find(c => c.label === catLabel)?.value || 0;
+                        const diff = valB - valA;
+                        const percentDiff = valA > 0 ? (diff / valA) * 100 : (valB > 0 ? 100 : 0);
+                        
+                        return (
+                          <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-bg-secondary/30 transition-colors">
+                            <td className="p-4 font-medium text-slate-700 dark:text-text-secondary">{catLabel}</td>
+                            <td className="p-4 text-right text-slate-600 dark:text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valA)}</td>
+                            <td className="p-4 text-right text-slate-600 dark:text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valB)}</td>
+                            <td className="p-4 text-right font-medium">
+                              {diff !== 0 ? (
+                                <div className={`flex items-center justify-end gap-1 ${diff > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                  {diff > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                  {Math.abs(percentDiff).toFixed(1)}%
+                                </div>
+                              ) : (
+                                <span className="text-slate-400">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Merchant Comparison Table */}
+            <Card className="border-slate-200 dark:border-border shadow-sm overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-4 border-b border-slate-200 dark:border-border bg-slate-50/50 dark:bg-bg-secondary/30">
+                  <h3 className="font-bold text-slate-800 dark:text-text-primary">İşletme Karşılaştırması</h3>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-white dark:bg-bg-card sticky top-0 border-b border-slate-200 dark:border-border text-slate-500 dark:text-text-muted">
+                      <tr>
+                        <th className="p-4 font-medium">İşletme</th>
+                        <th className="p-4 font-medium text-right">1. Dönem</th>
+                        <th className="p-4 font-medium text-right">2. Dönem</th>
+                        <th className="p-4 font-medium text-right">Değişim</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-border/50 bg-white dark:bg-bg-card">
+                      {Array.from(new Set([...compMerA.map(m => m.label), ...compMerB.map(m => m.label)])).sort().map((merLabel, i) => {
+                        const valA = compMerA.find(m => m.label === merLabel)?.value || 0;
+                        const valB = compMerB.find(m => m.label === merLabel)?.value || 0;
+                        const diff = valB - valA;
+                        const percentDiff = valA > 0 ? (diff / valA) * 100 : (valB > 0 ? 100 : 0);
+                        
+                        return (
+                          <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-bg-secondary/30 transition-colors">
+                            <td className="p-4 font-medium text-slate-700 dark:text-text-secondary">{merLabel}</td>
+                            <td className="p-4 text-right text-slate-600 dark:text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valA)}</td>
+                            <td className="p-4 text-right text-slate-600 dark:text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valB)}</td>
+                            <td className="p-4 text-right font-medium">
+                              {diff !== 0 ? (
+                                <div className={`flex items-center justify-end gap-1 ${diff > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                  {diff > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                  {Math.abs(percentDiff).toFixed(1)}%
+                                </div>
+                              ) : (
+                                <span className="text-slate-400">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );

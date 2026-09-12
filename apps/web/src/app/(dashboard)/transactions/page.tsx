@@ -47,6 +47,11 @@ export default function TransactionsPage() {
 
   const filteredTransactions = React.useMemo(() => {
     return transactions.filter(tx => {
+      // Sadece ödenmiş olan taksitleri göster
+      if (tx.type === 'EXPENSE' && tx.installmentPlanId && tx.notes !== 'PAID') {
+        return false;
+      }
+
       // Search
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();

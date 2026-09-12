@@ -52,11 +52,7 @@ export class DebtsService {
       const lastItem = items[items.length - 1];
       const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
 
-      const paidItems = items.filter(
-        (item) => new Date(item.transactionDate) <= now,
-      );
-      const paidAmount = paidItems.reduce((sum, item) => sum + item.amount, 0);
-      const remainingAmount = Math.max(0, totalAmount - paidAmount);
+
 
       const category = firstItem.categoryId
         ? categoryMap.get(firstItem.categoryId)
@@ -74,16 +70,25 @@ export class DebtsService {
         (category ? category.name : "Taksitli Borç");
 
       const planInstallments = items.map((item, idx) => {
-        const isPaid = new Date(item.transactionDate) <= now;
+        const dueDate = new Date(item.transactionDate);
+        const isPaid = item.notes === "PAID";
+        const isOverdue = !isPaid && dueDate < now;
+        const status = isPaid
+          ? ("PAID" as const)
+          : isOverdue
+            ? ("OVERDUE" as const)
+            : ("PLANNED" as const);
+
         return {
           id: item.id,
           debtId: `plan_${planId}`,
           number: idx + 1,
           amount: item.amount,
           dueDate: item.transactionDate,
-          paidDate: isPaid ? item.transactionDate : null,
+          paidDate: isPaid ? item.updatedAt || item.transactionDate : null,
           paidAmount: isPaid ? item.amount : 0,
-          status: isPaid ? ("PAID" as const) : ("PLANNED" as const),
+          status,
+          isPaid,
           description: item.description,
           categoryId: item.categoryId,
           categoryName: category?.name || null,
@@ -91,6 +96,10 @@ export class DebtsService {
           merchantName: merchantName || null,
         };
       });
+
+      const paidItems = planInstallments.filter((i) => i.status === "PAID");
+      const paidAmount = paidItems.reduce((sum, item) => sum + item.amount, 0);
+      const remainingAmount = Math.max(0, totalAmount - paidAmount);
 
       expensePlans.push({
         id: `plan_${planId}`,

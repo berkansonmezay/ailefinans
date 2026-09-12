@@ -12,9 +12,10 @@ interface QuickAddModalProps {
   onSuccess?: () => void;
   defaultTab?: 'expense' | 'income';
   editData?: any;
+  defaultIsInstallment?: boolean;
 }
 
-export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expense', editData }: QuickAddModalProps) {
+export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expense', editData, defaultIsInstallment = false }: QuickAddModalProps) {
   const [activeTab, setActiveTab] = useState<'expense' | 'income'>(defaultTab);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
@@ -26,7 +27,7 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
   const [categoryId, setCategoryId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
-  const [isInstallment, setIsInstallment] = useState(false);
+  const [isInstallment, setIsInstallment] = useState(defaultIsInstallment);
   const [installmentCount, setInstallmentCount] = useState('2');
   const [firstInstallmentDate, setFirstInstallmentDate] = useState(new Date().toISOString().split('T')[0]);
   const [mounted, setMounted] = useState(false);
@@ -189,9 +190,9 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className={`${headerColor} px-5 pt-5 pb-4 text-text-primary transition-colors duration-300`}>
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-[1.35rem] font-semibold tracking-tight">{editData ? 'İşlemi Düzenle' : 'Hızlı İşlem Ekle'}</h2>
+        <div className={`${headerColor} px-4 pt-4 pb-3 text-text-primary transition-colors duration-300`}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[1.2rem] font-semibold tracking-tight">{editData ? 'İşlemi Düzenle' : 'Hızlı İşlem Ekle'}</h2>
             <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
               <X size={22} strokeWidth={2.5} />
             </button>
@@ -222,17 +223,17 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
         </div>
 
         {/* Body */}
-        <div className="p-5 space-y-5">
+        <div className="p-4 space-y-3">
           
           {/* Amount Input */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Tutar (₺)</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Tutar (₺)</label>
             <input 
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full text-center text-4xl font-bold text-text-muted bg-white border border-slate-200 rounded-xl py-4 px-4 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 transition-shadow"
+              className="w-full text-center text-3xl font-bold text-text-muted bg-white border border-slate-200 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 transition-shadow"
               autoFocus
             />
           </div>
@@ -240,10 +241,10 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
           {/* Row: Merchant & Category */}
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Harcama Yeri</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Harcama Yeri</label>
               <div className="relative">
                 <select 
-                  className="w-full appearance-none bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow"
+                  className="w-full appearance-none bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow"
                   value={merchantId}
                   onChange={(e) => setMerchantId(e.target.value)}
                 >
@@ -252,17 +253,17 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </select>
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-text-muted">
+                <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-text-muted">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
               </div>
             </div>
             
             <div className="flex-1">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Kategori</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Kategori</label>
               <div className="relative">
                 <select 
-                  className="w-full appearance-none bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow"
+                  className="w-full appearance-none bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                 >
@@ -278,53 +279,56 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
             </div>
           </div>
 
-          {/* Date */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Tarih</label>
-            <div className="relative">
-              <input 
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full appearance-none bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-12 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-              />
-              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-900">
-                <Calendar size={18} strokeWidth={2} />
+          {/* Row: Date & Description */}
+          <div className="flex gap-4">
+            {/* Date */}
+            <div className="w-1/3">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Tarih</label>
+              <div className="relative">
+                <input 
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full appearance-none bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                />
+                <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-slate-900">
+                  <Calendar size={16} strokeWidth={2} />
+                </div>
               </div>
+            </div>
+
+            {/* Description */}
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Açıklama</label>
+              <input 
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="İşlem açıklaması..."
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 placeholder:text-text-muted transition-shadow"
+              />
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Açıklama</label>
-            <input 
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="İşlem açıklaması..."
-              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 placeholder:text-text-muted transition-shadow"
-            />
-          </div>
-
           <div className="flex flex-col bg-slate-50/80 rounded-xl border border-border overflow-hidden">
-            <div className="flex items-center justify-between p-4">
+            <div className="flex items-center justify-between p-3">
               <div className="flex items-center gap-3">
-                <TrendingUp size={20} className="text-text-muted" strokeWidth={1.5} />
+                <TrendingUp size={18} className="text-text-muted" strokeWidth={1.5} />
                 <div>
-                  <p className="text-[15px] font-bold text-slate-800">Taksitli İşlem</p>
-                  <p className="text-xs text-text-muted font-medium">Bu işlemi taksitlere böl</p>
+                  <p className="text-[14px] font-bold text-slate-800">Taksitli İşlem</p>
+                  <p className="text-[11px] text-text-muted font-medium">Bu işlemi taksitlere böl</p>
                 </div>
               </div>
               <button 
                 type="button"
-                className={`w-12 h-6 rounded-full transition-colors duration-200 ease-in-out relative ${isInstallment ? headerColor : 'bg-slate-200'}`}
+                className={`w-10 h-5 rounded-full transition-colors duration-200 ease-in-out relative ${isInstallment ? headerColor : 'bg-slate-200'}`}
                 onClick={() => setIsInstallment(!isInstallment)}
               >
-                <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform duration-200 ease-in-out ${isInstallment ? 'translate-x-6' : 'translate-x-0.5'} shadow-sm`} />
+                <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform duration-200 ease-in-out ${isInstallment ? 'translate-x-5' : 'translate-x-0.5'} shadow-sm`} />
               </button>
             </div>
             {isInstallment && (
-              <div className="p-4 border-t border-slate-200 bg-white">
+              <div className="p-3 border-t border-slate-200 bg-white">
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Taksit Sayısı</label>
@@ -366,7 +370,7 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
           <button 
             onClick={handleSubmit}
             disabled={loading}
-            className={`w-full py-4 mt-2 rounded-xl text-text-primary font-semibold text-[17px] transition-all duration-200 ${headerColor} hover:brightness-95 active:scale-[0.98] disabled:opacity-70 shadow-sm`}
+            className={`w-full py-3 mt-1 rounded-xl text-text-primary font-semibold text-[16px] transition-all duration-200 ${headerColor} hover:brightness-95 active:scale-[0.98] disabled:opacity-70 shadow-sm`}
           >
             {loading ? 'Ekleniyor...' : (editData ? (isExpense ? 'Gideri Güncelle' : 'Geliri Güncelle') : (isExpense ? 'Gider Ekle' : 'Gelir Ekle'))}
           </button>

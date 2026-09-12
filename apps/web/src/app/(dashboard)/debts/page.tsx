@@ -17,8 +17,12 @@ import {
   Tag, 
   Search,
   AlertCircle,
-  TrendingDown,
-  Layers
+  AlertTriangle,
+  Layers,
+  Coins,
+  PieChart,
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -32,13 +36,14 @@ export default function DebtsPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showInfoGuide, setShowInfoGuide] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [merchants, setMerchants] = useState<any[]>([]);
   
   // Filtering & search
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'PAID'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'OVERDUE' | 'PAID'>('ALL');
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
 
   // Form data for new installment debt
@@ -63,7 +68,7 @@ export default function DebtsPage() {
         fetchApi<any>('/merchants').catch(() => []),
       ]);
 
-      const debtList = debtsRes.items || debtsRes.data || [];
+      const debtList = Array.isArray(debtsRes) ? debtsRes : (debtsRes.items || debtsRes.data || []);
       setItems(debtList);
       setAccounts(Array.isArray(accRes) ? accRes : (accRes.items || accRes.data || []));
       
@@ -117,6 +122,23 @@ export default function DebtsPage() {
       loadData();
     } catch (error: any) {
       toast.error(error.message || 'Silinirken bir hata oluştu');
+    }
+  };
+
+  const handleTogglePaid = async (inst: any) => {
+    try {
+      const isCurrentlyPaid = inst.status === 'PAID';
+      const newNotes = isCurrentlyPaid ? null : 'PAID';
+
+      await fetchApi(`/expenses/${inst.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ notes: newNotes }),
+      });
+
+      toast.success(isCurrentlyPaid ? 'Ödeme iptal edildi' : 'Taksit ödendi olarak işaretlendi');
+      loadData();
+    } catch (error: any) {
+      toast.error(error.message || 'Güncellenirken bir hata oluştu');
     }
   };
 
@@ -187,10 +209,15 @@ export default function DebtsPage() {
         (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (item.creditor && item.creditor.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (item.merchantName && item.merchantName.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const hasOverdue = Array.isArray(item.installments) && item.installments.some((i: any) =>
+        i.status !== 'PAID' && new Date(i.dueDate) < new Date()
+      );
       
       const matchesStatus = 
         statusFilter === 'ALL' ? true :
         statusFilter === 'ACTIVE' ? item.status === 'ACTIVE' :
+        statusFilter === 'OVERDUE' ? hasOverdue :
         item.status === 'PAID';
 
       return matchesSearch && matchesStatus;
@@ -299,32 +326,20 @@ export default function DebtsPage() {
       {/* Top Header & Navigation Tabs */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Taksitli Borçlar</h1>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2.5">
+            Taksitli Borçlar
+            <button
+              onClick={() => setShowInfoGuide(!showInfoGuide)}
+              className="text-text-muted hover:text-emerald-400 transition-colors p-1 rounded-lg"
+              title="Bilgilendirme ve Açıklamalar"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+          </h1>
           <p className="text-text-muted mt-1">Taksitli borçlarınızı ve ödeme planlarını taksitler halinde takip edin.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="bg-bg-card p-1 rounded-xl border border-border flex">
-            <Link
-              href="/debts"
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-500 text-white shadow-sm flex items-center gap-2"
-            >
-              <CreditCard className="w-4 h-4" />
-              Taksitli Borçlar
-              {items.length > 0 && (
-                <span className="bg-emerald-600/60 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                  {items.length}
-                </span>
-              )}
-            </Link>
-            <Link
-              href="/receivables"
-              className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted hover:text-text-primary transition-all flex items-center gap-2"
-            >
-              <Wallet className="w-4 h-4" />
-              Taksitli Alacaklar
-            </Link>
-          </div>
 
           <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500">
             <Plus className="w-5 h-5 mr-2" />
@@ -338,7 +353,7 @@ export default function DebtsPage() {
         {/* 1. TOPLAM TUTAR (Blue) */}
         <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600">
           <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-            <CreditCard className="w-6 h-6" />
+            <Coins className="w-6 h-6" />
           </div>
           <div className="min-w-0">
             <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
@@ -410,7 +425,7 @@ export default function DebtsPage() {
         {/* 5. PERFORMANS (Purple) */}
         <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500">
           <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
-            <Layers className="w-6 h-6" />
+            <PieChart className="w-6 h-6" />
           </div>
           <div className="min-w-0">
             <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
@@ -426,6 +441,65 @@ export default function DebtsPage() {
         </div>
       </div>
 
+      {/* Bilgilendirme Kutusu (Info Alert & Guidance) */}
+      <div className={`rounded-2xl p-4 border transition-all ${
+        stats.overdueCount > 0
+          ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+          : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+      }`}>
+        <div className="flex items-start gap-3">
+          <div className={`p-2 rounded-xl flex-shrink-0 ${
+            stats.overdueCount > 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            {stats.overdueCount > 0 ? <AlertTriangle className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+          </div>
+          <div className="flex-1">
+            <h4 className={`text-sm font-bold ${stats.overdueCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {stats.overdueCount > 0 ? 'Gecikmiş Borç Hatırlatması' : 'Taksitli Borç Durumu İyi'}
+            </h4>
+            <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+              {stats.overdueCount > 0 ? (
+                <>
+                  Şu anda vadesi geçmiş toplam <strong>{stats.overdueCount} taksit</strong> ({formatCurrency(stats.overdueAmount)}) bulunmaktadır (ortalama gecikme: <strong>{stats.overdueAvgDays} gün</strong>). Bu ödemeleri en kısa sürede tamamlamanız tavsiye edilir.
+                </>
+              ) : (
+                <>
+                  Tebrikler! Vadesi geçmiş herhangi bir taksitli borcunuz bulunmamaktadır. Önümüzdeki vadelerde toplam <strong>{formatCurrency(stats.pendingAmount)}</strong> tutarında <strong>{stats.pendingCount} taksit</strong> ödemesi beklenmektedir.
+                </>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowInfoGuide(!showInfoGuide)}
+            className="text-xs font-semibold underline text-text-muted hover:text-text-primary transition-colors flex-shrink-0 pt-0.5"
+          >
+            {showInfoGuide ? 'Rehberi Gizle' : 'Nasıl Hesaplanır?'}
+          </button>
+        </div>
+
+        {/* Detailed Explanation / Bilgilendirme Rehberi */}
+        {showInfoGuide && (
+          <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs text-text-secondary">
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-blue-400 block mb-1">1. Toplam Tutar</span>
+              Tanımlanmış tüm taksitli borç planlarının toplam anapara tutarıdır.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-amber-400 block mb-1">2. Bekleyen Taksitler</span>
+              Vade tarihi henüz gelmemiş ve gelecekte ödenmesi gereken planlanmış taksitlerdir.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-rose-400 block mb-1">3. Gecikmiş Taksitler</span>
+              Vade tarihi geçmiş olmasına rağmen henüz ödendi olarak işaretlenmemiş borçlardır.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-emerald-400 block mb-1">4. Ödenen & Performans</span>
+              Ödemesi tamamlanan taksitlerin toplam tutarını ve portföyün başarı oranını (% olarak) gösterir.
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Filter and Search Bar */}
       <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative w-full sm:w-80">
@@ -439,7 +513,7 @@ export default function DebtsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => setStatusFilter('ALL')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -455,6 +529,14 @@ export default function DebtsPage() {
             }`}
           >
             Aktif Planlar
+          </button>
+          <button
+            onClick={() => setStatusFilter('OVERDUE')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              statusFilter === 'OVERDUE' ? 'bg-rose-600 text-white font-bold' : 'bg-bg-secondary text-text-muted hover:text-rose-400'
+            }`}
+          >
+            Gecikenler {stats.overdueCount > 0 && `(${stats.overdueCount})`}
           </button>
           <button
             onClick={() => setStatusFilter('PAID')}
@@ -640,7 +722,8 @@ export default function DebtsPage() {
                               const instDate = new Date(inst.dueDate);
                               const now = new Date();
                               const diffDays = Math.ceil((instDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                              const isDueSoon = !isPaid && diffDays >= 0 && diffDays <= 7;
+                              const isOverdue = !isPaid && diffDays < 0;
+                              const isDueSoon = !isPaid && !isOverdue && diffDays >= 0 && diffDays <= 7;
 
                               return (
                                 <tr key={inst.id} className="hover:bg-bg-card/50 transition-colors">
@@ -662,7 +745,12 @@ export default function DebtsPage() {
                                     {isPaid ? (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                                         <CheckCircle2 className="w-3 h-3" />
-                                        Ödendi / Vadesi Geldi
+                                        Ödendi
+                                      </span>
+                                    ) : isOverdue ? (
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20">
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Gecikmiş ({Math.abs(diffDays)} gün)
                                       </span>
                                     ) : isDueSoon ? (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
@@ -672,20 +760,36 @@ export default function DebtsPage() {
                                     ) : (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-700/30 text-text-muted">
                                         <Calendar className="w-3 h-3" />
-                                        Gelecek Taksit
+                                        Bekliyor
                                       </span>
                                     )}
                                   </td>
                                   <td className="py-2.5 text-right">
-                                    {item.sourceType === 'EXPENSE_TRANSACTION' && (
-                                      <button
-                                        onClick={() => handleDeleteInstallment(inst)}
-                                        className="p-1 rounded-lg text-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                                        title="Bu taksiti sil"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
+                                    <div className="flex items-center justify-end gap-2">
+                                      {item.sourceType === 'EXPENSE_TRANSACTION' && (
+                                        <button
+                                          onClick={() => handleTogglePaid(inst)}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                                            isPaid
+                                              ? 'bg-bg-secondary text-text-muted hover:text-amber-400 hover:bg-amber-500/10'
+                                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                                          }`}
+                                          title={isPaid ? 'Ödemeyi iptal et' : 'Ödendi olarak işaretle'}
+                                        >
+                                          {isPaid ? 'Geri Al' : '✓ Öde'}
+                                        </button>
+                                      )}
+
+                                      {item.sourceType === 'EXPENSE_TRANSACTION' && (
+                                        <button
+                                          onClick={() => handleDeleteInstallment(inst)}
+                                          className="p-1 rounded-lg text-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                          title="Bu taksiti sil"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </td>
                                 </tr>
                               );

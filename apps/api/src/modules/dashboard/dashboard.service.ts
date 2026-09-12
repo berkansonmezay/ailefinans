@@ -269,4 +269,170 @@ export class DashboardService {
 
     return results;
   }
+
+  async getYearlyExpenses(tenantId: string, year: number) {
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59);
+
+    const expenses = await this.prisma.expenseTransaction.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        transactionDate: { gte: startDate, lte: endDate },
+      },
+      select: {
+        amount: true,
+        transactionDate: true,
+        categoryId: true,
+      },
+    });
+
+    const categories = await this.prisma.category.findMany({
+      where: { tenantId, type: "EXPENSE" },
+    });
+
+    const catMap = new Map(categories.map((c) => [c.id, c]));
+    const parentGroups = new Map<string, any>();
+
+    const getOrCreateParent = (id: string, name: string) => {
+      if (!parentGroups.has(id)) {
+        parentGroups.set(id, {
+          id,
+          name,
+          months: Array(12).fill(0),
+          total: 0,
+          subCategories: new Map<string, any>(),
+        });
+      }
+      return parentGroups.get(id);
+    };
+
+    expenses.forEach((tx) => {
+      const date = new Date(tx.transactionDate);
+      const month = date.getMonth();
+      const amount = parseFloat(tx.amount.toString());
+
+      let parentId = "uncategorized";
+      let parentName = "Diğer";
+      let childId = "uncategorized";
+      let childName = "Genel";
+
+      if (tx.categoryId && catMap.has(tx.categoryId)) {
+        const cat = catMap.get(tx.categoryId)!;
+        parentId = cat.parentId ? cat.parentId : cat.id;
+        const parentCat = cat.parentId ? catMap.get(cat.parentId) : cat;
+        parentName = parentCat ? parentCat.name : "Diğer";
+        childId = cat.id;
+        // Eğer alt kategori ise adını al, ana kategori ise yine adını al
+        childName = cat.name;
+      }
+
+      const parentGroup = getOrCreateParent(parentId, parentName);
+
+      // Add to parent totals
+      parentGroup.months[month] += amount;
+      parentGroup.total += amount;
+
+      if (!parentGroup.subCategories.has(childId)) {
+        parentGroup.subCategories.set(childId, {
+          id: childId,
+          name: childName,
+          months: Array(12).fill(0),
+          total: 0,
+        });
+      }
+
+      const childGroup = parentGroup.subCategories.get(childId);
+      childGroup.months[month] += amount;
+      childGroup.total += amount;
+    });
+
+    // Format the result
+    return Array.from(parentGroups.values())
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        months: p.months.map((m: number) => Number(m.toFixed(2))),
+        total: Number(p.total.toFixed(2)),
+        subCategories: Array.from(p.subCategories.values())
+          .map((c: any) => ({
+            ...c,
+            months: c.months.map((m: number) => Number(m.toFixed(2))),
+            total: Number(c.total.toFixed(2)),
+          }))
+          .sort((a: any, b: any) => b.total - a.total),
+      }))
+      .sort((a: any, b: any) => b.total - a.total);
+  }
+
+  async getMonthlyTrends(tenantId: string, year: number) {
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59);
+
+    const expenses = await this.prisma.expenseTransaction.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        transactionDate: { gte: startDate, lte: endDate },
+      },
+      select: {
+        amount: true,
+        transactionDate: true,
+        categoryId: true,
+      },
+    });
+
+    const categories = await this.prisma.category.findMany({
+      where: { tenantId, type: "EXPENSE" },
+    });
+
+    const catMap = new Map(categories.map((c) => [c.id, c]));
+
+    const childGroups = new Map<string, any>();
+    const parentGroups = new Map<string, any>();
+
+    const getOrCreateGroup = (map: Map<string, any>, id: string, name: string) => {
+      if (!map.has(id)) {
+        map.set(id, { id, name, months: Array(12).fill(0), total: 0 });
+      }
+      return map.get(id);
+    };
+
+    expenses.forEach((tx) => {
+      const date = new Date(tx.transactionDate);
+      const month = date.getMonth();
+      const amount = parseFloat(tx.amount.toString());
+
+      let parentId = "uncategorized";
+      let parentName = "Diğer";
+      let childId = "uncategorized";
+      let childName = "Genel";
+
+      if (tx.categoryId && catMap.has(tx.categoryId)) {
+        const cat = catMap.get(tx.categoryId)!;
+        parentId = cat.parentId ? cat.parentId : cat.id;
+        const parentCat = cat.parentId ? catMap.get(cat.parentId) : cat;
+        parentName = parentCat ? parentCat.name : "Diğer";
+        childId = cat.id;
+        childName = cat.name;
+      }
+
+      const pGroup = getOrCreateGroup(parentGroups, parentId, parentName);
+      pGroup.months[month] += amount;
+      pGroup.total += amount;
+
+      const cGroup = getOrCreateGroup(childGroups, childId, childName);
+      cGroup.months[month] += amount;
+      cGroup.total += amount;
+    });
+
+    return {
+      categoryTrends: Array.from(childGroups.values())
+        .map((g: any) => ({ ...g, months: g.months.map((m: number) => Number(m.toFixed(2))), total: Number(g.total.toFixed(2)) }))
+        .sort((a, b) => b.total - a.total),
+      parentCategoryTrends: Array.from(parentGroups.values())
+        .map((g: any) => ({ ...g, months: g.months.map((m: number) => Number(m.toFixed(2))), total: Number(g.total.toFixed(2)) }))
+        .sort((a, b) => b.total - a.total)
+    };
+  }
 }

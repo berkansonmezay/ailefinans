@@ -65,7 +65,7 @@ export default function ReceivablesPage() {
         fetchApi<any>('/categories').catch(() => []),
       ]);
 
-      const recList = recRes.items || recRes.data || [];
+      const recList = Array.isArray(recRes) ? recRes : (recRes.items || recRes.data || []);
       setItems(recList);
       setAccounts(Array.isArray(accRes) ? accRes : (accRes.items || accRes.data || []));
       
@@ -334,27 +334,6 @@ export default function ReceivablesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="bg-bg-card p-1 rounded-xl border border-border flex">
-            <Link
-              href="/debts"
-              className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted hover:text-text-primary transition-all flex items-center gap-2"
-            >
-              <CreditCard className="w-4 h-4" />
-              Taksitli Borçlar
-            </Link>
-            <Link
-              href="/receivables"
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-500 text-white shadow-sm flex items-center gap-2"
-            >
-              <Wallet className="w-4 h-4" />
-              Taksitli Alacaklar
-              {items.length > 0 && (
-                <span className="bg-emerald-600/60 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                  {items.length}
-                </span>
-              )}
-            </Link>
-          </div>
 
           <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500">
             <Plus className="w-5 h-5 mr-2" />

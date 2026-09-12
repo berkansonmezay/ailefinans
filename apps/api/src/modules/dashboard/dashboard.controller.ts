@@ -85,4 +85,26 @@ export class DashboardController {
       await this.service.getMerchantBreakdown(tenantId, start, end),
     );
   }
+
+  @Get("yearly-expenses")
+  async getYearlyExpenses(
+    @ActiveTenant() tenantId: string,
+    @Query("year") year?: string,
+  ) {
+    const targetYear = year ? parseInt(year) : new Date().getFullYear();
+    return success(
+      await this.service.getYearlyExpenses(tenantId, targetYear)
+    );
+  }
+
+  @Get("monthly-trends")
+  async getMonthlyTrends(
+    @ActiveTenant() tenantId: string,
+    @Query("year") year?: string,
+  ) {
+    const targetYear = year ? parseInt(year) : new Date().getFullYear();
+    return success(
+      await this.service.getMonthlyTrends(tenantId, targetYear)
+    );
+  }
 }

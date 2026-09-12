@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { fetchApi } from '@/lib/api';
-import { Plus, Store, Edit2, Trash2, MapPin, Phone, Globe, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { Plus, Store, Edit2, Trash2, Phone, Globe } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface Merchant {
@@ -24,7 +24,6 @@ export default function MerchantsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -120,28 +119,10 @@ export default function MerchantsPage() {
           <h1 className="text-3xl font-bold text-text-primary tracking-tight">Harcama Yerleri</h1>
           <p className="text-text-muted mt-1">Sık alışveriş yaptığınız yerleri ve hizmet aldığınız kurumları yönetin.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-bg-card border border-border rounded-lg p-1">
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-bg-sidebar text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
-              title="Izgara Görünümü"
-            >
-              <LayoutGrid size={18} />
-            </button>
-            <button 
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-bg-sidebar text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
-              title="Liste Görünümü"
-            >
-              <ListIcon size={18} />
-            </button>
-          </div>
-          <Button onClick={openNewModal}>
-            <Plus className="w-5 h-5 mr-2" />
-            Yeni Ekle
-          </Button>
-        </div>
+        <Button onClick={openNewModal}>
+          <Plus className="w-5 h-5 mr-2" />
+          Yeni Ekle
+        </Button>
       </div>
 
       {loading ? (
@@ -151,57 +132,6 @@ export default function MerchantsPage() {
           <Store className="w-12 h-12 text-text-muted mx-auto mb-4" />
           <h3 className="text-lg font-medium text-text-primary mb-2">Henüz kayıt eklenmemiş</h3>
           <p className="text-text-muted">Alışveriş yaptığınız yerleri kaydederek giderlerinizi daha detaylı analiz edebilirsiniz.</p>
-        </div>
-      ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {merchants.map(merchant => (
-            <Card key={merchant.id} className="group border-border bg-bg-card backdrop-blur-xl">
-              <CardContent className="p-3.5">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl shrink-0">
-                      <Store className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-base font-bold text-text-primary leading-tight truncate">{merchant.name}</h3>
-                      <p className="text-[13px] text-text-muted mt-0.5 truncate">{merchant.type || 'Belirtilmemiş Kategori'}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleEdit(merchant)} className="text-text-muted hover:text-emerald-400 p-1">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(merchant.id)} className="text-text-muted hover:text-red-400 p-1">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="space-y-1.5 mt-3 pt-3 border-t border-border/50">
-                  {merchant.address && (
-                    <div className="flex items-start gap-2 text-[13px] text-text-secondary">
-                      <MapPin className="w-3.5 h-3.5 mt-0.5 text-text-muted shrink-0" />
-                      <span className="line-clamp-1">{merchant.address}</span>
-                    </div>
-                  )}
-                  {merchant.phone && (
-                    <div className="flex items-center gap-2 text-[13px] text-text-secondary">
-                      <Phone className="w-3.5 h-3.5 text-text-muted shrink-0" />
-                      <span>{merchant.phone}</span>
-                    </div>
-                  )}
-                  {merchant.website && (
-                    <div className="flex items-center gap-2 text-[13px] text-text-secondary">
-                      <Globe className="w-3.5 h-3.5 text-text-muted shrink-0" />
-                      <a href={merchant.website.startsWith('http') ? merchant.website : `https://${merchant.website}`} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline truncate">
-                        {merchant.website}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       ) : (
         <Card className="overflow-hidden border border-border bg-bg-card backdrop-blur-xl">
