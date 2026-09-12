@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@theme {
+  /* === Color System === */
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+  --color-bg-input: var(--bg-input);
+  --color-bg-sidebar: var(--bg-sidebar);
+
+  --color-border: var(--border);
+  --color-border-focus: var(--border-focus);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-light: var(--accent-light);
+
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  /* === Typography === */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* === Sizing === */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+  --bottom-nav-height: 68px;
+}
+
+@layer base {
+  :root {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8fafc;
+    --bg-input: #ffffff;
+    --bg-sidebar: #ffffff;
+
+    --border: #e2e8f0;
+    --border-focus: #6366f1;
+
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --accent-light: #6366f115;
+
+    --success: #10b981;
+    --success-bg: #10b98115;
+    --danger: #f43f5e;
+    --danger-bg: #f43f5e15;
+    --warning: #f59e0b;
+    --warning-bg: #f59e0b15;
+    --info: #3b82f6;
+    --info-bg: #3b82f615;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+  }
+
+  .dark {
+    --bg-primary: #0a0f1e;
+    --bg-secondary: #111827;
+    --bg-card: #1a2237;
+    --bg-card-hover: #1e293b;
+    --bg-input: #1e293b;
+    --bg-sidebar: #0d1321;
+
+    --border: #2d3a4f;
+    --border-focus: #6366f1;
+
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --accent-light: #4f46e510;
+
+    --success: #10b981;
+    --success-bg: #10b98115;
+    --danger: #f43f5e;
+    --danger-bg: #f43f5e15;
+    --warning: #f59e0b;
+    --warning-bg: #f59e0b15;
+    --info: #3b82f6;
+    --info-bg: #3b82f615;
+
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+  }
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+
+  input,
+  select,
+  textarea {
+    background-color: var(--color-bg-input);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    border-radius: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    transition: border-color 0.2s;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 3px var(--color-accent-light);
+  }
+
+  input::placeholder {
+    color: var(--color-text-muted);
+  }
+}

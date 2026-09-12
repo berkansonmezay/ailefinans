@@ -1,0 +1,715 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ========================
+// AUTH & USERS
+// ========================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String?   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  avatarUrl     String?
+  emailVerified Boolean   @default(false)
+  isActive      Boolean   @default(false)
+  systemRole    String    @default("USER")
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  resetToken    String?
+  resetTokenExpires DateTime?
+
+  memberships   TenantMember[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ========================
+// TENANTS
+// ========================
+
+model Tenant {
+  id        String    @id @default(uuid())
+  name      String
+  currency  String    @default("TRY")
+  timezone  String    @default("Europe/Istanbul")
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  members       TenantMember[]
+  accounts      Account[]
+  categories    Category[]
+  merchants     Merchant[]
+  incomes       IncomeTransaction[]
+  expenses      ExpenseTransaction[]
+  debts         Debt[]
+  receivables   Receivable[]
+  savingsGoals  SavingsGoal[]
+  subscriptions Subscription[]
+  invoices      Invoice[]
+  warranties    Warranty[]
+  documents     Document[]
+  events        Event[]
+  notifications Notification[]
+  budgets       Budget[]
+  auditLogs     AuditLog[]
+}
+
+model TenantMember {
+  id       String   @id @default(uuid())
+  tenantId String
+  userId   String
+  role     Role     @default(MEMBER)
+  isActive Boolean  @default(true)
+  joinedAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// ========================
+// ACCOUNTS
+// ========================
+
+model Account {
+  id             String      @id @default(uuid())
+  tenantId       String
+  name           String
+  type           AccountType
+  institution    String?
+  currency       String      @default("TRY")
+  initialBalance Float     @default(0) 
+  isActive       Boolean     @default(true)
+  statementDay   Int?
+  dueDay         Int?
+  creditLimit    Float?    
+  createdBy      String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deletedAt      DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+enum AccountType {
+  CASH
+  BANK_ACCOUNT
+  CREDIT_CARD
+  DIGITAL_WALLET
+  INVESTMENT
+  FOREIGN_CURRENCY
+  GOLD
+  OTHER
+}
+
+// ========================
+// CATEGORIES
+// ========================
+
+model Category {
+  id        String       @id @default(uuid())
+  tenantId  String
+  name      String
+  type      CategoryType
+  icon      String?
+  color     String?
+  parentId  String?
+  isSystem  Boolean      @default(false)
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  deletedAt DateTime?
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id])
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+// ========================
+// MERCHANTS
+// ========================
+
+model Merchant {
+  id         String    @id @default(uuid())
+  tenantId   String
+  name       String
+  type       String?
+  address    String?
+  phone      String?
+  website    String?
+  notes      String?
+  isFavorite Boolean   @default(false)
+  createdBy  String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, name])
+}
+
+// ========================
+// INCOME
+// ========================
+
+model IncomeTransaction {
+  id              String    @id @default(uuid())
+  tenantId        String
+  transactionDate DateTime
+  amount          Float   
+  currency        String    @default("TRY")
+  categoryId      String?
+  source          String?
+  accountId       String?
+  description     String?
+  isRecurring     Boolean   @default(false)
+  recurrenceRule  String?
+  parentId        String?
+  attachmentId    String?
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, transactionDate])
+  @@index([tenantId, categoryId])
+}
+
+// ========================
+// EXPENSE
+// ========================
+
+model ExpenseTransaction {
+  id                String    @id @default(uuid())
+  tenantId          String
+  transactionDate   DateTime
+  amount            Float   
+  currency          String    @default("TRY")
+  categoryId        String?
+  subcategoryId     String?
+  merchantId        String?
+  accountId         String?
+  paymentMethod     String?
+  installmentPlanId String?
+  description       String?
+  notes             String?
+  attachmentId      String?
+  isRecurring       Boolean   @default(false)
+  recurrenceRule    String?
+  parentId          String?
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, transactionDate])
+  @@index([tenantId, categoryId])
+  @@index([tenantId, merchantId])
+}
+
+// ========================
+// DEBTS & INSTALLMENTS
+// ========================
+
+model Debt {
+  id                String     @id @default(uuid())
+  tenantId          String
+  creditor          String
+  description       String?
+  principalAmount   Float    
+  totalAmount       Float    
+  paidAmount        Float    @default(0) 
+  remainingAmount   Float    
+  currency          String     @default("TRY")
+  startDate         DateTime
+  dueDate           DateTime?
+  installmentCount  Int
+  installmentAmount Float    
+  firstPaymentDate  DateTime
+  lastPaymentDate   DateTime?
+  interestRate      Float?   
+  status            DebtStatus @default(ACTIVE)
+  accountId         String?
+  categoryId        String?
+  attachmentId      String?
+  createdBy         String
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  deletedAt         DateTime?
+
+  tenant       Tenant            @relation(fields: [tenantId], references: [id])
+  installments DebtInstallment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+enum DebtStatus {
+  ACTIVE
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model DebtInstallment {
+  id         String            @id @default(uuid())
+  debtId     String
+  number     Int
+  amount     Float           
+  dueDate    DateTime
+  paidDate   DateTime?
+  paidAmount Float?          
+  status     InstallmentStatus @default(PLANNED)
+  notes      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  debt Debt @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  @@index([debtId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+enum InstallmentStatus {
+  PLANNED
+  DUE_SOON
+  DUE
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// ========================
+// RECEIVABLES
+// ========================
+
+model Receivable {
+  id                  String           @id @default(uuid())
+  tenantId            String
+  debtorName          String
+  amount              Float          
+  currency            String           @default("TRY")
+  givenDate           DateTime
+  expectedPaymentDate DateTime?
+  paidAmount          Float          @default(0) 
+  remainingAmount     Float          
+  description         String?
+  status              ReceivableStatus @default(OPEN)
+  reminderEnabled     Boolean          @default(false)
+  attachmentId        String?
+  createdBy           String
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  deletedAt           DateTime?
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id])
+  payments ReceivablePayment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+enum ReceivableStatus {
+  OPEN
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model ReceivablePayment {
+  id           String     @id @default(uuid())
+  receivableId String
+  amount       Float    
+  paymentDate  DateTime
+  notes        String?
+  createdBy    String
+  createdAt    DateTime   @default(now())
+
+  receivable Receivable @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+
+  @@index([receivableId])
+}
+
+// ========================
+// SAVINGS
+// ========================
+
+model SavingsGoal {
+  id               String        @id @default(uuid())
+  tenantId         String
+  name             String
+  description      String?
+  targetAmount     Float       
+  currency         String        @default("TRY")
+  currentAmount    Float       @default(0) 
+  targetDate       DateTime?
+  priority         Int           @default(0)
+  autoContribution Float?      
+  frequency        Frequency?
+  status           SavingsStatus @default(ACTIVE)
+  icon             String?
+  color            String?
+  createdBy        String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  tenant       Tenant               @relation(fields: [tenantId], references: [id])
+  transactions SavingsTransaction[]
+
+  @@index([tenantId])
+}
+
+enum SavingsType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+enum SavingsStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+model SavingsTransaction {
+  id          String      @id @default(uuid())
+  goalId      String
+  amount      Float     
+  type        SavingsType
+  description String?
+  date        DateTime    @default(now())
+  createdBy   String
+  createdAt   DateTime    @default(now())
+
+  goal SavingsGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+}
+
+// ========================
+// SUBSCRIPTIONS
+// ========================
+
+model Subscription {
+  id              String             @id @default(uuid())
+  tenantId        String
+  name            String
+  provider        String?
+  categoryId      String?
+  amount          Float            
+  currency        String             @default("TRY")
+  frequency       Frequency
+  startDate       DateTime
+  renewalDate     DateTime?
+  nextPaymentDate DateTime?
+  autoRenewal     Boolean            @default(true)
+  accountId       String?
+  status          SubscriptionStatus @default(ACTIVE)
+  notes           String?
+  attachmentId    String?
+  createdBy       String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  deletedAt       DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, nextPaymentDate])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum Frequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+// ========================
+// INVOICES
+// ========================
+
+model Invoice {
+  id            String        @id @default(uuid())
+  tenantId      String
+  invoiceNumber String?
+  provider      String
+  categoryId    String?
+  invoiceDate   DateTime
+  dueDate       DateTime?
+  amount        Float       
+  currency      String        @default("TRY")
+  status        InvoiceStatus @default(UNPAID)
+  accountId     String?
+  attachmentId  String?
+  notes         String?
+  createdBy     String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, dueDate])
+  @@index([tenantId, status])
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// ========================
+// WARRANTIES
+// ========================
+
+model Warranty {
+  id                String    @id @default(uuid())
+  tenantId          String
+  productName       String
+  brand             String?
+  model             String?
+  serialNumber      String?
+  purchaseDate      DateTime
+  warrantyStartDate DateTime
+  warrantyEndDate   DateTime
+  purchasePlace     String?
+  invoiceId         String?
+  attachmentId      String?
+  amount            Float?  
+  currency          String    @default("TRY")
+  notes             String?
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, warrantyEndDate])
+}
+
+// ========================
+// DOCUMENTS
+// ========================
+
+model Document {
+  id         String    @id @default(uuid())
+  tenantId   String
+  fileName   String
+  fileType   String
+  fileSize   Int
+  storageKey String
+  entityType String?
+  entityId   String?
+  uploadedBy String
+  createdAt  DateTime  @default(now())
+  deletedAt  DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, entityType, entityId])
+}
+
+// ========================
+// EVENTS
+// ========================
+
+model Event {
+  id              String    @id @default(uuid())
+  tenantId        String
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime?
+  isAllDay        Boolean   @default(false)
+  location        String?
+  categoryId      String?
+  recurrenceRule  String?
+  parentId        String?
+  reminderMinutes Int?
+  color           String?
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, startDate])
+}
+
+// ========================
+// NOTIFICATIONS
+// ========================
+
+model Notification {
+  id          String              @id @default(uuid())
+  tenantId    String
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  entityType  String?
+  entityId    String?
+  isRead      Boolean             @default(false)
+  channel     NotificationChannel @default(IN_APP)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime            @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, userId])
+  @@index([userId, isRead])
+}
+
+enum NotificationType {
+  INSTALLMENT_DUE
+  INSTALLMENT_OVERDUE
+  RECEIVABLE_DUE
+  SUBSCRIPTION_RENEWAL
+  INVOICE_DUE
+  WARRANTY_EXPIRING
+  EVENT_REMINDER
+  SAVINGS_REMINDER
+  SYSTEM
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  WEB_PUSH
+}
+
+// ========================
+// BUDGETS
+// ========================
+
+model Budget {
+  id         String   @id @default(uuid())
+  tenantId   String
+  categoryId String
+  amount     Float  
+  currency   String   @default("TRY")
+  period     String // "2026-09" format
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, categoryId, period])
+  @@index([tenantId, period])
+}
+
+// ========================
+// AUDIT LOG
+// ========================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, entityType])
+  @@index([tenantId, createdAt])
+  @@index([userId])
+}
+
+// ========================
+// EXCHANGE RATES
+// ========================
+
+model ExchangeRate {
+  id             String   @id @default(uuid())
+  baseCurrency   String
+  targetCurrency String
+  rate           Float  
+  date           DateTime
+  createdAt      DateTime @default(now())
+
+  @@unique([baseCurrency, targetCurrency, date])
+  @@index([baseCurrency, targetCurrency])
+}
