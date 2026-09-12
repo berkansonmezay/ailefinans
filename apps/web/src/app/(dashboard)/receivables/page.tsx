@@ -16,10 +16,15 @@ import {
   User, 
   Tag, 
   Search,
-  TrendingUp,
-  Layers
+  AlertTriangle,
+  Coins,
+  PieChart,
+  Info,
+  ArrowUpRight,
+  Sparkles,
+  HelpCircle,
+  X
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -31,12 +36,13 @@ export default function ReceivablesPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showInfoGuide, setShowInfoGuide] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   
   // Filtering & search
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'PAID'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'OVERDUE' | 'PAID'>('ALL');
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
 
   // Form data for new installment receivable
@@ -85,6 +91,23 @@ export default function ReceivablesPage() {
 
   const toggleExpand = (id: string) => {
     setExpandedPlans(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleToggleCollected = async (inst: any) => {
+    try {
+      const isCurrentlyCollected = inst.status === 'PAID';
+      const newRecurrenceRule = isCurrentlyCollected ? null : 'COLLECTED';
+      
+      await fetchApi(`/incomes/${inst.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ recurrenceRule: newRecurrenceRule }),
+      });
+
+      toast.success(isCurrentlyCollected ? 'Tahsilat iptal edildi' : 'Taksit tahsil edildi olarak işaretlendi');
+      loadData();
+    } catch (error: any) {
+      toast.error(error.message || 'Güncellenirken bir hata oluştu');
+    }
   };
 
   const handleDeletePlan = async (item: any) => {
@@ -170,6 +193,91 @@ export default function ReceivablesPage() {
     }
   };
 
+  // Extract all individual installments across all plans for exact KPI calculation
+  const allInstallments = useMemo(() => {
+    const list: any[] = [];
+    items.forEach(item => {
+      if (Array.isArray(item.installments)) {
+        item.installments.forEach((inst: any) => {
+          list.push({ ...inst, parentPlan: item });
+        });
+      }
+    });
+    return list;
+  }, [items]);
+
+  // Statistics calculation strictly matching user's reference cards
+  const stats = useMemo(() => {
+    const now = new Date();
+    
+    let totalAmount = 0;
+    let pendingAmount = 0;
+    let overdueAmount = 0;
+    let collectedAmount = 0;
+
+    let totalInstallmentsCount = 0;
+    let pendingCount = 0;
+    let overdueCount = 0;
+    let collectedCount = 0;
+    let totalOverdueDays = 0;
+
+    // Calculate from installments if available, otherwise from plan summaries
+    if (allInstallments.length > 0) {
+      totalInstallmentsCount = allInstallments.length;
+
+      allInstallments.forEach(inst => {
+        const amt = Number(inst.amount) || 0;
+        totalAmount += amt;
+
+        if (inst.status === 'PAID') {
+          collectedAmount += amt;
+          collectedCount++;
+        } else {
+          const dueDate = new Date(inst.dueDate);
+          if (dueDate < now) {
+            // Overdue
+            overdueAmount += amt;
+            overdueCount++;
+            const diffDays = Math.max(1, Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+            totalOverdueDays += diffDays;
+          } else {
+            // Pending
+            pendingAmount += amt;
+            pendingCount++;
+          }
+        }
+      });
+    } else {
+      // Fallback from plans
+      items.forEach(item => {
+        const total = Number(item.totalAmount) || Number(item.amount) || 0;
+        const paid = Number(item.paidAmount) || 0;
+        const remaining = Number(item.remainingAmount) || Math.max(0, total - paid);
+
+        totalAmount += total;
+        collectedAmount += paid;
+        pendingAmount += remaining;
+        totalInstallmentsCount += (item.installmentCount || 1);
+      });
+    }
+
+    const performanceRate = totalAmount > 0 ? Math.round((collectedAmount / totalAmount) * 100) : 0;
+    const overdueAvgDays = overdueCount > 0 ? Math.round(totalOverdueDays / overdueCount) : 0;
+
+    return {
+      totalAmount,
+      totalInstallmentsCount,
+      pendingAmount,
+      pendingCount,
+      overdueAmount,
+      overdueCount,
+      overdueAvgDays,
+      collectedAmount,
+      collectedCount,
+      performanceRate,
+    };
+  }, [items, allInstallments]);
+
   // Filtered items
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -178,45 +286,24 @@ export default function ReceivablesPage() {
         (item.debtorName && item.debtorName.toLowerCase().includes(searchQuery.toLowerCase()));
       
       const isPaid = item.status === 'PAID' || item.remainingAmount <= 0;
+      const hasOverdue = Array.isArray(item.installments) && item.installments.some((i: any) => i.status === 'OVERDUE');
+
       const matchesStatus = 
         statusFilter === 'ALL' ? true :
         statusFilter === 'ACTIVE' ? !isPaid :
+        statusFilter === 'OVERDUE' ? hasOverdue :
         isPaid;
 
       return matchesSearch && matchesStatus;
     });
   }, [items, searchQuery, statusFilter]);
 
-  // Statistics calculation
-  const stats = useMemo(() => {
-    const totalReceivable = items.reduce((sum, item) => sum + (Number(item.totalAmount) || Number(item.amount) || 0), 0);
-    const totalRemaining = items.reduce((sum, item) => sum + (Number(item.remainingAmount) || 0), 0);
-    const totalPaid = items.reduce((sum, item) => sum + (Number(item.paidAmount) || 0), 0);
-    
-    // Installments due this current month
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    let thisMonthDue = 0;
-    items.forEach(item => {
-      if (Array.isArray(item.installments)) {
-        item.installments.forEach((inst: any) => {
-          const d = new Date(inst.dueDate);
-          if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-            thisMonthDue += Number(inst.amount) || 0;
-          }
-        });
-      }
-    });
-
-    const activePlansCount = items.filter(i => (Number(i.remainingAmount) || 0) > 0).length;
-
-    return { totalReceivable, totalRemaining, totalPaid, thisMonthDue, activePlansCount };
-  }, [items]);
-
   const formatCurrency = (val: number, currency: string = 'TRY') => {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(val || 0);
+    return new Intl.NumberFormat('tr-TR', { 
+      style: 'currency', 
+      currency,
+      maximumFractionDigits: 0
+    }).format(val || 0);
   };
 
   const formatDate = (dateStr: string) => {
@@ -233,8 +320,17 @@ export default function ReceivablesPage() {
       {/* Top Header & Navigation Tabs */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Taksitli Alacaklar</h1>
-          <p className="text-text-muted mt-1">Taksitli alacaklarınızı ve tahsilat planlarını taksitler halinde takip edin.</p>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2.5">
+            Taksitli Alacaklar
+            <button
+              onClick={() => setShowInfoGuide(!showInfoGuide)}
+              className="text-text-muted hover:text-emerald-400 transition-colors p-1 rounded-lg"
+              title="Bilgilendirme ve Açıklamalar"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+          </h1>
+          <p className="text-text-muted mt-1">Taksitli alacaklarınızı, tahsilat durumlarını ve performansınızı takip edin.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -267,59 +363,156 @@ export default function ReceivablesPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Toplam Taksitli Alacak</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5" />
+      {/* 5 Reference KPI Cards (TOPLAM TUTAR, BEKLEYEN, GECİKMİŞ, TAHSİL EDİLEN, PERFORMANS) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        {/* 1. TOPLAM TUTAR (Blue) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+            <Coins className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              TOPLAM TUTAR
+            </span>
+            <div className="text-xl font-black text-blue-600 dark:text-blue-400 tracking-tight leading-tight truncate">
+              {formatCurrency(stats.totalAmount)}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-text-muted mt-0.5">
+              {stats.totalInstallmentsCount} taksit
             </div>
           </div>
-          <div className="text-2xl font-bold text-text-primary mt-2">
-            {formatCurrency(stats.totalReceivable)}
-          </div>
-          <div className="text-xs text-text-muted mt-1">Tüm alacak planlarının toplamı</div>
         </div>
 
-        <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Kalan Alacak Tutarı</span>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-              <Clock className="w-5 h-5" />
+        {/* 2. BEKLEYEN (Orange / Amber) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500">
+          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              BEKLEYEN
+            </span>
+            <div className="text-xl font-black text-amber-600 dark:text-amber-500 tracking-tight leading-tight truncate">
+              {formatCurrency(stats.pendingAmount)}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-text-muted mt-0.5">
+              {stats.pendingCount} taksit
             </div>
           </div>
-          <div className="text-2xl font-bold text-amber-400 mt-2">
-            {formatCurrency(stats.totalRemaining)}
-          </div>
-          <div className="text-xs text-text-muted mt-1">Tahsil edilecek kalan tutar</div>
         </div>
 
-        <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Bu Ay Tahsil Edilecek</span>
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
-              <Calendar className="w-5 h-5" />
+        {/* 3. GECİKMİŞ (Red) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-rose-500">
+          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              GECİKMİŞ
+            </span>
+            <div className="text-xl font-black text-rose-600 dark:text-rose-500 tracking-tight leading-tight truncate">
+              {formatCurrency(stats.overdueAmount)}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-text-muted mt-0.5 truncate">
+              {stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}
             </div>
           </div>
-          <div className="text-2xl font-bold text-text-primary mt-2">
-            {formatCurrency(stats.thisMonthDue)}
-          </div>
-          <div className="text-xs text-text-muted mt-1">Bu ay vadesi gelen tahsilatlar</div>
         </div>
 
-        <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Aktif Alacak Planı</span>
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
-              <Layers className="w-5 h-5" />
+        {/* 4. TAHSİL EDİLEN (Green / Emerald) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              TAHSİL EDİLEN
+            </span>
+            <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight leading-tight truncate">
+              {formatCurrency(stats.collectedAmount)}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-text-muted mt-0.5">
+              {stats.collectedCount} taksit
             </div>
           </div>
-          <div className="text-2xl font-bold text-text-primary mt-2">
-            {stats.activePlansCount} <span className="text-sm font-normal text-text-muted">/ {items.length} plan</span>
-          </div>
-          <div className="text-xs text-text-muted mt-1">Devam eden taksitli alacak</div>
         </div>
+
+        {/* 5. PERFORMANS (Purple) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500">
+          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+            <PieChart className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              PERFORMANS
+            </span>
+            <div className="text-xl font-black text-purple-600 dark:text-purple-400 tracking-tight leading-tight">
+              %{stats.performanceRate}
+            </div>
+            <div className="text-xs text-emerald-500 dark:text-emerald-400 font-semibold mt-0.5 flex items-center gap-0.5">
+              <span>↑ Tahsilat Oranı</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bilgilendirme Kutusu (Info Alert & Guidance) */}
+      <div className={`rounded-2xl p-4 border transition-all ${
+        stats.overdueCount > 0 
+          ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' 
+          : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+      }`}>
+        <div className="flex items-start gap-3">
+          <div className={`p-2 rounded-xl flex-shrink-0 ${
+            stats.overdueCount > 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            {stats.overdueCount > 0 ? <AlertTriangle className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+          </div>
+          <div className="flex-1">
+            <h4 className={`text-sm font-bold ${stats.overdueCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              {stats.overdueCount > 0 ? 'Gecikmiş Alacak Hatırlatması' : 'Taksitli Alacak Durumu İyi'}
+            </h4>
+            <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+              {stats.overdueCount > 0 ? (
+                <>
+                  Şu anda vadesi geçmiş toplam <strong>{stats.overdueCount} taksit</strong> ({formatCurrency(stats.overdueAmount)}) bulunmaktadır (ortalama gecikme: <strong>{stats.overdueAvgDays} gün</strong>). İlgili kişi veya kurumlara tahsilat hatırlatması yapılması önerilir.
+                </>
+              ) : (
+                <>
+                  Tebrikler! Vadesi geçmiş herhangi bir taksitli alacağınız bulunmamaktadır. Önümüzdeki vadelerde toplam <strong>{formatCurrency(stats.pendingAmount)}</strong> tutarında <strong>{stats.pendingCount} taksit</strong> tahsilatı beklenmektedir.
+                </>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowInfoGuide(!showInfoGuide)}
+            className="text-xs font-semibold underline text-text-muted hover:text-text-primary transition-colors flex-shrink-0 pt-0.5"
+          >
+            {showInfoGuide ? 'Rehberi Gizle' : 'Nasıl Hesaplanır?'}
+          </button>
+        </div>
+
+        {/* Detailed Explanation / Bilgilendirme Rehberi */}
+        {showInfoGuide && (
+          <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs text-text-secondary">
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-blue-400 block mb-1">1. Toplam Tutar</span>
+              Tanımlanmış tüm taksitli alacak planlarının toplam anapara tutarıdır.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-amber-400 block mb-1">2. Bekleyen Taksitler</span>
+              Vade tarihi henüz gelmemiş ve gelecekte tahsil edilecek planlanmış taksitlerdir.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-rose-400 block mb-1">3. Gecikmiş Taksitler</span>
+              Vade tarihi geçmiş olmasına rağmen henüz tahsil edildi olarak işaretlenmemiş alacaklardır.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-emerald-400 block mb-1">4. Tahsil Edilen & Performans</span>
+              Tahsilatı tamamlanan taksitlerin toplam tutarını ve portföyün başarı oranını (% olarak) gösterir.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filter and Search Bar */}
@@ -335,7 +528,7 @@ export default function ReceivablesPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => setStatusFilter('ALL')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -350,7 +543,15 @@ export default function ReceivablesPage() {
               statusFilter === 'ACTIVE' ? 'bg-emerald-500 text-white font-bold' : 'bg-bg-secondary text-text-muted hover:text-text-primary'
             }`}
           >
-            Aktif Alacaklar
+            Aktif Planlar
+          </button>
+          <button
+            onClick={() => setStatusFilter('OVERDUE')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              statusFilter === 'OVERDUE' ? 'bg-rose-600 text-white font-bold' : 'bg-bg-secondary text-text-muted hover:text-rose-400'
+            }`}
+          >
+            Gecikenler {stats.overdueCount > 0 && `(${stats.overdueCount})`}
           </button>
           <button
             onClick={() => setStatusFilter('PAID')}
@@ -534,10 +735,11 @@ export default function ReceivablesPage() {
                           <tbody className="divide-y divide-border/40">
                             {installments.map((inst: any) => {
                               const isPaid = inst.status === 'PAID';
+                              const isOverdue = inst.status === 'OVERDUE';
                               const instDate = new Date(inst.dueDate);
                               const now = new Date();
                               const diffDays = Math.ceil((instDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                              const isDueSoon = !isPaid && diffDays >= 0 && diffDays <= 7;
+                              const isDueSoon = !isPaid && !isOverdue && diffDays >= 0 && diffDays <= 7;
 
                               return (
                                 <tr key={inst.id} className="hover:bg-bg-card/50 transition-colors">
@@ -559,7 +761,12 @@ export default function ReceivablesPage() {
                                     {isPaid ? (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                                         <CheckCircle2 className="w-3 h-3" />
-                                        Tahsil Edildi / Vadesi Geldi
+                                        Tahsil Edildi
+                                      </span>
+                                    ) : isOverdue ? (
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20">
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Gecikmiş ({Math.abs(diffDays)} gün)
                                       </span>
                                     ) : isDueSoon ? (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
@@ -574,15 +781,31 @@ export default function ReceivablesPage() {
                                     )}
                                   </td>
                                   <td className="py-2.5 text-right">
-                                    {item.sourceType === 'INCOME_TRANSACTION' && (
-                                      <button
-                                        onClick={() => handleDeleteInstallment(inst)}
-                                        className="p-1 rounded-lg text-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                                        title="Bu taksiti sil"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
+                                    <div className="flex items-center justify-end gap-2">
+                                      {item.sourceType === 'INCOME_TRANSACTION' && (
+                                        <button
+                                          onClick={() => handleToggleCollected(inst)}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                                            isPaid 
+                                              ? 'bg-bg-secondary text-text-muted hover:text-amber-400 hover:bg-amber-500/10' 
+                                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                                          }`}
+                                          title={isPaid ? 'Tahsilatı iptal et' : 'Tahsil edildi olarak işaretle'}
+                                        >
+                                          {isPaid ? 'Geri Al' : '✓ Tahsil Et'}
+                                        </button>
+                                      )}
+                                      
+                                      {item.sourceType === 'INCOME_TRANSACTION' && (
+                                        <button
+                                          onClick={() => handleDeleteInstallment(inst)}
+                                          className="p-1 rounded-lg text-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                          title="Bu taksiti sil"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </td>
                                 </tr>
                               );

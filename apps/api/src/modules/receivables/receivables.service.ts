@@ -50,11 +50,7 @@ export class ReceivablesService {
       const lastItem = items[items.length - 1];
       const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
 
-      const paidItems = items.filter(
-        (item) => new Date(item.transactionDate) <= now,
-      );
-      const paidAmount = paidItems.reduce((sum, item) => sum + item.amount, 0);
-      const remainingAmount = Math.max(0, totalAmount - paidAmount);
+
 
       const category = firstItem.categoryId
         ? categoryMap.get(firstItem.categoryId)
@@ -69,22 +65,38 @@ export class ReceivablesService {
         (category ? category.name : "Taksitli Alacak");
 
       const planInstallments = items.map((item, idx) => {
-        const isPaid = new Date(item.transactionDate) <= now;
+        const dueDate = new Date(item.transactionDate);
+        const isCollected = item.recurrenceRule === "COLLECTED";
+        const isOverdue = !isCollected && dueDate < now;
+        const status = isCollected
+          ? ("PAID" as const)
+          : isOverdue
+            ? ("OVERDUE" as const)
+            : ("PLANNED" as const);
+
         return {
           id: item.id,
           receivableId: `plan_${planId}`,
           number: idx + 1,
           amount: item.amount,
           dueDate: item.transactionDate,
-          paidDate: isPaid ? item.transactionDate : null,
-          paidAmount: isPaid ? item.amount : 0,
-          status: isPaid ? ("PAID" as const) : ("PLANNED" as const),
+          paidDate: isCollected ? item.updatedAt || item.transactionDate : null,
+          paidAmount: isCollected ? item.amount : 0,
+          status,
+          isCollected,
           description: item.description,
           source: item.source || null,
           categoryId: item.categoryId,
           categoryName: category?.name || null,
         };
       });
+
+      const collectedItems = planInstallments.filter((i) => i.status === "PAID");
+      const collectedAmount = collectedItems.reduce(
+        (sum, item) => sum + item.amount,
+        0,
+      );
+      const remainingAmount = Math.max(0, totalAmount - collectedAmount);
 
       incomePlans.push({
         id: `plan_${planId}`,
@@ -95,7 +107,7 @@ export class ReceivablesService {
         description: cleanDesc,
         amount: totalAmount,
         totalAmount,
-        paidAmount,
+        paidAmount: collectedAmount,
         remainingAmount,
         currency: firstItem.currency || "TRY",
         givenDate: firstItem.transactionDate,

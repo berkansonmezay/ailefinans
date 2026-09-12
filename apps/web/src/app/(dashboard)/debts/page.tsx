@@ -197,36 +197,92 @@ export default function DebtsPage() {
     });
   }, [items, searchQuery, statusFilter]);
 
-  // Statistics calculation
-  const stats = useMemo(() => {
-    const totalDebt = items.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
-    const totalRemaining = items.reduce((sum, item) => sum + (Number(item.remainingAmount) || 0), 0);
-    const totalPaid = items.reduce((sum, item) => sum + (Number(item.paidAmount) || 0), 0);
-    
-    // Installments due this current month
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    let thisMonthDue = 0;
+  // Extract all individual installments across all plans for exact KPI calculation
+  const allInstallments = useMemo(() => {
+    const list: any[] = [];
     items.forEach(item => {
       if (Array.isArray(item.installments)) {
         item.installments.forEach((inst: any) => {
-          const d = new Date(inst.dueDate);
-          if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-            thisMonthDue += Number(inst.amount) || 0;
-          }
+          list.push({ ...inst, parentPlan: item });
         });
       }
     });
-
-    const activePlansCount = items.filter(i => i.status === 'ACTIVE').length;
-
-    return { totalDebt, totalRemaining, totalPaid, thisMonthDue, activePlansCount };
+    return list;
   }, [items]);
 
+  // Statistics calculation matching 5-card reference
+  const stats = useMemo(() => {
+    const now = new Date();
+    let totalAmount = 0;
+    let pendingAmount = 0;
+    let overdueAmount = 0;
+    let paidAmount = 0;
+
+    let totalInstallmentsCount = 0;
+    let pendingCount = 0;
+    let overdueCount = 0;
+    let paidCount = 0;
+    let totalOverdueDays = 0;
+
+    if (allInstallments.length > 0) {
+      totalInstallmentsCount = allInstallments.length;
+
+      allInstallments.forEach(inst => {
+        const amt = Number(inst.amount) || 0;
+        totalAmount += amt;
+
+        if (inst.status === 'PAID') {
+          paidAmount += amt;
+          paidCount++;
+        } else {
+          const dueDate = new Date(inst.dueDate);
+          if (dueDate < now) {
+            overdueAmount += amt;
+            overdueCount++;
+            const diffDays = Math.max(1, Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+            totalOverdueDays += diffDays;
+          } else {
+            pendingAmount += amt;
+            pendingCount++;
+          }
+        }
+      });
+    } else {
+      items.forEach(item => {
+        const total = Number(item.totalAmount) || Number(item.principalAmount) || 0;
+        const paid = Number(item.paidAmount) || 0;
+        const remaining = Number(item.remainingAmount) || Math.max(0, total - paid);
+
+        totalAmount += total;
+        paidAmount += paid;
+        pendingAmount += remaining;
+        totalInstallmentsCount += (item.installmentCount || 1);
+      });
+    }
+
+    const performanceRate = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+    const overdueAvgDays = overdueCount > 0 ? Math.round(totalOverdueDays / overdueCount) : 0;
+
+    return {
+      totalAmount,
+      totalInstallmentsCount,
+      pendingAmount,
+      pendingCount,
+      overdueAmount,
+      overdueCount,
+      overdueAvgDays,
+      paidAmount,
+      paidCount,
+      performanceRate,
+    };
+  }, [items, allInstallments]);
+
   const formatCurrency = (val: number, currency: string = 'TRY') => {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency }).format(val || 0);
+    return new Intl.NumberFormat('tr-TR', { 
+      style: 'currency', 
+      currency,
+      maximumFractionDigits: 0
+    }).format(val || 0);
   };
 
   const formatDate = (dateStr: string) => {
@@ -277,58 +333,96 @@ export default function DebtsPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Toplam Taksitli Borç</span>
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-              <TrendingDown className="w-5 h-5" />
+      {/* 5 Reference KPI Cards (TOPLAM TUTAR, BEKLEYEN, GECİKMİŞ, ÖDENEN, PERFORMANS) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        {/* 1. TOPLAM TUTAR (Blue) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+            <CreditCard className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              TOPLAM TUTAR
+            </span>
+            <div className="text-xl font-black text-blue-600 dark:text-blue-400 tracking-tight leading-tight truncate">
+              {formatCurrency(stats.totalAmount)}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-text-muted mt-0.5">
+              {stats.totalInstallmentsCount} taksit
             </div>
           </div>
-          <div className="text-2xl font-bold text-text-primary mt-2">
-            {formatCurrency(stats.totalDebt)}
-          </div>
-          <div className="text-xs text-text-muted mt-1">Tüm taksit planlarının toplamı</div>
         </div>
 
-        <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Kalan Borç Tutarı</span>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-              <Clock className="w-5 h-5" />
+        {/* 2. BEKLEYEN (Amber) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500">
+          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              BEKLEYEN
+            </span>
+            <div className="text-xl font-black text-amber-600 dark:text-amber-500 tracking-tight leading-tight truncate">
+              {formatCurrency(stats.pendingAmount)}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-text-muted mt-0.5">
+              {stats.pendingCount} taksit
             </div>
           </div>
-          <div className="text-2xl font-bold text-amber-400 mt-2">
-            {formatCurrency(stats.totalRemaining)}
-          </div>
-          <div className="text-xs text-text-muted mt-1">Ödenecek kalan taksitler</div>
         </div>
 
-        <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Bu Ay Ödenecek</span>
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
-              <Calendar className="w-5 h-5" />
+        {/* 3. GECİKMİŞ (Red) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-rose-500">
+          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              GECİKMİŞ
+            </span>
+            <div className="text-xl font-black text-rose-600 dark:text-rose-500 tracking-tight leading-tight truncate">
+              {formatCurrency(stats.overdueAmount)}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-text-muted mt-0.5 truncate">
+              {stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}
             </div>
           </div>
-          <div className="text-2xl font-bold text-text-primary mt-2">
-            {formatCurrency(stats.thisMonthDue)}
-          </div>
-          <div className="text-xs text-text-muted mt-1">Bu ay vadesi gelen taksitler</div>
         </div>
 
-        <div className="bg-bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-text-muted">Aktif Taksit Planı</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <Layers className="w-5 h-5" />
+        {/* 4. ÖDENEN (Green) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              ÖDENEN
+            </span>
+            <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight leading-tight truncate">
+              {formatCurrency(stats.paidAmount)}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-text-muted mt-0.5">
+              {stats.paidCount} taksit
             </div>
           </div>
-          <div className="text-2xl font-bold text-text-primary mt-2">
-            {stats.activePlansCount} <span className="text-sm font-normal text-text-muted">/ {items.length} plan</span>
+        </div>
+
+        {/* 5. PERFORMANS (Purple) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500">
+          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+            <Layers className="w-6 h-6" />
           </div>
-          <div className="text-xs text-text-muted mt-1">Devam eden taksitli borç</div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              PERFORMANS
+            </span>
+            <div className="text-xl font-black text-purple-600 dark:text-purple-400 tracking-tight leading-tight">
+              %{stats.performanceRate}
+            </div>
+            <div className="text-xs text-emerald-500 dark:text-emerald-400 font-semibold mt-0.5 flex items-center gap-0.5">
+              <span>↑ Ödeme Oranı</span>
+            </div>
+          </div>
         </div>
       </div>
 
