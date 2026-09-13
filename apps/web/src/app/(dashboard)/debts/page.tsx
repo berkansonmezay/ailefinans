@@ -663,14 +663,14 @@ export default function DebtsPage() {
                             </td>
                             <td className="px-5 py-3 text-right">
                               <button
-                                onClick={() => openInstallmentModal(inst, inst.planName, inst.currency)}
+                                onClick={() => handleTogglePaid(inst)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                                   isPaid 
                                     ? 'border-border text-text-secondary hover:bg-bg-sidebar hover:text-text-primary' 
                                     : 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white'
                                 }`}
                               >
-                                {isPaid ? 'Detay' : 'Öde'}
+                                {isPaid ? 'Geri Al' : '✓ Öde'}
                               </button>
                             </td>
                           </tr>

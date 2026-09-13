@@ -193,8 +193,8 @@ export default function ReportsPage() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white dark:bg-bg-card border border-slate-100 dark:border-border p-4 rounded-xl shadow-lg">
-          <p className="text-sm font-semibold text-slate-800 dark:text-text-primary mb-2">{label}</p>
+        <div className="bg-bg-card border border-border p-4 rounded-xl shadow-lg">
+          <p className="text-sm font-semibold text-text-primary mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center gap-2 py-1">
               <span className="text-sm font-medium" style={{ color: entry.color }}>
@@ -257,9 +257,9 @@ export default function ReportsPage() {
       {activeTab === 'SUMMARY' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Trend Chart (Line) */}
-          <Card className="border-slate-200 dark:border-border shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardContent className="p-6">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-6">Gelir-Gider Trendi (12 Ay)</h3>
+              <h3 className="text-lg font-bold text-text-primary mb-6">Gelir-Gider Trendi (12 Ay)</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
@@ -278,9 +278,9 @@ export default function ReportsPage() {
           </Card>
 
           {/* Sütun Grafik (Bar) */}
-          <Card className="border-slate-200 dark:border-border shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardContent className="p-6">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-6">Aylık Karşılaştırma</h3>
+              <h3 className="text-lg font-bold text-text-primary mb-6">Aylık Karşılaştırma</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
@@ -298,11 +298,11 @@ export default function ReportsPage() {
           </Card>
 
           {/* Kategori Dağılımı */}
-          <Card className="border-slate-200 dark:border-border shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardContent className="p-6">
-              <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-8">Kategori Dağılımı</h3>
+              <h3 className="text-lg font-bold text-text-primary mb-8">Kategori Dağılımı</h3>
               {categoryData.length === 0 ? (
-                <div className="flex items-center justify-center h-80 text-slate-400 dark:text-text-muted">
+                <div className="flex items-center justify-center h-80 text-text-muted">
                   Bu tarih aralığında veri bulunamadı.
                 </div>
               ) : (
@@ -337,13 +337,13 @@ export default function ReportsPage() {
                           <div key={index} className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                              <span className="text-slate-600 dark:text-text-secondary font-medium">
+                              <span className="text-text-secondary font-medium">
                                 {entry.label}
                               </span>
                             </div>
                             <div className="flex items-center gap-6">
-                              <span className="text-slate-400 dark:text-text-muted text-sm w-8 text-right">{percent}%</span>
-                              <span className="text-slate-800 dark:text-text-primary font-bold w-24 text-right">
+                              <span className="text-text-muted text-sm w-8 text-right">{percent}%</span>
+                              <span className="text-text-primary font-bold w-24 text-right">
                                 {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(entry.value)}
                               </span>
                             </div>
@@ -362,7 +362,7 @@ export default function ReportsPage() {
       {activeTab === 'MONTHLY' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Top Header & Selectors */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-bg-card p-6 rounded-xl border border-slate-200 dark:border-border shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-bg-card p-6 rounded-xl border border-border shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-32">
                 <CustomSelect
@@ -397,19 +397,19 @@ export default function ReportsPage() {
             </div>
             <div className="flex flex-1 items-center justify-around gap-6">
               <div className="text-center">
-                <span className="block text-[11px] font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">GELİR</span>
+                <span className="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">GELİR</span>
                 <span className="text-lg font-bold text-emerald-500">
                   {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.income)}
                 </span>
               </div>
               <div className="text-center">
-                <span className="block text-[11px] font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">GİDER</span>
+                <span className="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">GİDER</span>
                 <span className="text-lg font-bold text-red-500">
                   {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.expense)}
                 </span>
               </div>
               <div className="text-center">
-                <span className="block text-[11px] font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">BAKİYE</span>
+                <span className="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1">BAKİYE</span>
                 <span className={`text-lg font-bold ${monthlyKpi.totalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                   {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.totalBalance)}
                 </span>
@@ -419,16 +419,16 @@ export default function ReportsPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Category Breakdown (Donut) */}
-            <Card className="border-slate-200 dark:border-border shadow-sm">
+            <Card className="border-border shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-6">
                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary">
+                  <h3 className="text-lg font-bold text-text-primary">
                     Kategori Dağılımı ({['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][monthlyMonth]})
                   </h3>
                 </div>
                 {monthlyCatData.length === 0 ? (
-                  <div className="flex items-center justify-center h-64 text-slate-400 dark:text-text-muted">
+                  <div className="flex items-center justify-center h-64 text-text-muted">
                     Bu aya ait veri bulunamadı.
                   </div>
                 ) : (
@@ -470,16 +470,16 @@ export default function ReportsPage() {
             </Card>
 
             {/* Merchant Breakdown (Horizontal Bar) */}
-            <Card className="border-slate-200 dark:border-border shadow-sm">
+            <Card className="border-border shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-6">
                   <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary">
+                  <h3 className="text-lg font-bold text-text-primary">
                     Harcama Yeri Dağılımı ({['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][monthlyMonth]})
                   </h3>
                 </div>
                 {monthlyMerchantData.length === 0 ? (
-                  <div className="flex items-center justify-center h-64 text-slate-400 dark:text-text-muted">
+                  <div className="flex items-center justify-center h-64 text-text-muted">
                     Bu aya ait veri bulunamadı.
                   </div>
                 ) : (
@@ -492,8 +492,8 @@ export default function ReportsPage() {
                         <RechartsTooltip cursor={{fill: 'transparent'}} content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-white p-3 border border-slate-200 shadow-lg rounded-xl">
-                                <p className="text-sm font-medium text-slate-800">{payload[0].payload.label}</p>
+                              <div className="bg-bg-card p-3 border border-border shadow-lg rounded-xl">
+                                <p className="text-sm font-medium text-text-primary">{payload[0].payload.label}</p>
                                 <p className="text-sm font-bold text-blue-500 mt-1">value : {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(payload[0].value as number)}</p>
                               </div>
                             );
@@ -511,19 +511,19 @@ export default function ReportsPage() {
 
           <div className="space-y-6">
             {/* Yıllık Kategori Trendi (Sütun) */}
-            <Card className="border-slate-200 dark:border-border shadow-sm">
+            <Card className="border-border shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-8">
                   <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
                     <TrendingUp className="w-4 h-4" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800 dark:text-text-primary">Yıllık Kategori Trendi</h3>
+                  <h3 className="text-xl font-bold text-text-primary">Yıllık Kategori Trendi</h3>
                 </div>
                 
                 <div className="flex flex-col md:flex-row gap-8">
                   <div className="w-full md:w-64 shrink-0 flex flex-col">
-                    <span className="text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-4">KATEGORİ SEÇİN</span>
-                    <div className="flex flex-col gap-1 border border-slate-100 dark:border-border rounded-xl p-2 max-h-64 overflow-y-auto custom-scrollbar">
+                    <span className="text-xs font-bold text-text-muted uppercase tracking-wider mb-4">KATEGORİ SEÇİN</span>
+                    <div className="flex flex-col gap-1 border border-border rounded-xl p-2 max-h-64 overflow-y-auto custom-scrollbar">
                       {monthlyTrends.categoryTrends?.map((c: any) => (
                         <button
                           key={c.id}
@@ -532,14 +532,14 @@ export default function ReportsPage() {
                             "text-left px-4 py-3 rounded-lg text-sm font-semibold transition-colors",
                             selectedTrendCat === c.id 
                               ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20" 
-                              : "text-slate-600 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-bg-secondary"
+                              : "text-text-secondary hover:bg-bg-secondary dark:hover:bg-bg-secondary"
                           )}
                         >
                           {c.name}
                         </button>
                       ))}
                       {!monthlyTrends.categoryTrends?.length && (
-                        <div className="p-4 text-sm text-slate-400 text-center">Kategori bulunamadı</div>
+                        <div className="p-4 text-sm text-text-muted text-center">Kategori bulunamadı</div>
                       )}
                     </div>
                   </div>
@@ -553,8 +553,8 @@ export default function ReportsPage() {
                         <RechartsTooltip cursor={{fill: 'transparent'}} content={({ active, payload, label }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-white p-3 border border-slate-200 shadow-lg rounded-xl">
-                                <p className="text-sm font-bold text-slate-800">{label}</p>
+                              <div className="bg-bg-card p-3 border border-border shadow-lg rounded-xl">
+                                <p className="text-sm font-bold text-text-primary">{label}</p>
                                 <p className="text-sm font-medium text-indigo-500 mt-1">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(payload[0].value as number)}</p>
                               </div>
                             );
@@ -570,19 +570,19 @@ export default function ReportsPage() {
             </Card>
 
             {/* Yıllık Harcama Yeri Trendi (Sütun) */}
-            <Card className="border-slate-200 dark:border-border shadow-sm">
+            <Card className="border-border shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-8">
                   <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
                     <TrendingUp className="w-4 h-4" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800 dark:text-text-primary">Yıllık Harcama Yeri Trendi</h3>
+                  <h3 className="text-xl font-bold text-text-primary">Yıllık Harcama Yeri Trendi</h3>
                 </div>
                 
                 <div className="flex flex-col md:flex-row gap-8">
                   <div className="w-full md:w-64 shrink-0 flex flex-col">
-                    <span className="text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-4">HARCAMA YERİ SEÇİN</span>
-                    <div className="flex flex-col gap-1 border border-slate-100 dark:border-border rounded-xl p-2 max-h-64 overflow-y-auto custom-scrollbar">
+                    <span className="text-xs font-bold text-text-muted uppercase tracking-wider mb-4">HARCAMA YERİ SEÇİN</span>
+                    <div className="flex flex-col gap-1 border border-border rounded-xl p-2 max-h-64 overflow-y-auto custom-scrollbar">
                       {monthlyTrends.parentCategoryTrends?.map((c: any) => (
                         <button
                           key={c.id}
@@ -591,14 +591,14 @@ export default function ReportsPage() {
                             "text-left px-4 py-3 rounded-lg text-sm font-semibold transition-colors",
                             selectedTrendMerchant === c.id 
                               ? "bg-rose-500 text-white shadow-md shadow-rose-500/20" 
-                              : "text-slate-600 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-bg-secondary"
+                              : "text-text-secondary hover:bg-bg-secondary dark:hover:bg-bg-secondary"
                           )}
                         >
                           {c.name}
                         </button>
                       ))}
                       {!monthlyTrends.parentCategoryTrends?.length && (
-                        <div className="p-4 text-sm text-slate-400 text-center">Harcama yeri bulunamadı</div>
+                        <div className="p-4 text-sm text-text-muted text-center">Harcama yeri bulunamadı</div>
                       )}
                     </div>
                   </div>
@@ -612,8 +612,8 @@ export default function ReportsPage() {
                         <RechartsTooltip cursor={{fill: 'transparent'}} content={({ active, payload, label }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-white p-3 border border-slate-200 shadow-lg rounded-xl">
-                                <p className="text-sm font-bold text-slate-800">{label}</p>
+                              <div className="bg-bg-card p-3 border border-border shadow-lg rounded-xl">
+                                <p className="text-sm font-bold text-text-primary">{label}</p>
                                 <p className="text-sm font-medium text-rose-500 mt-1">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(payload[0].value as number)}</p>
                               </div>
                             );
@@ -633,54 +633,54 @@ export default function ReportsPage() {
 
       {activeTab === 'YEARLY' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center justify-between bg-white dark:bg-bg-card p-4 rounded-xl border border-slate-200 dark:border-border shadow-sm">
+          <div className="flex items-center justify-between bg-bg-card p-4 rounded-xl border border-border shadow-sm">
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setSelectedYear(y => y - 1)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-bg-secondary rounded-lg transition-colors"
+                className="p-2 hover:bg-bg-secondary dark:hover:bg-bg-secondary rounded-lg transition-colors"
               >
-                <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-text-primary" />
+                <ChevronLeft className="w-5 h-5 text-text-secondary dark:text-text-primary" />
               </button>
-              <span className="text-2xl font-bold text-slate-800 dark:text-text-primary w-20 text-center">{selectedYear}</span>
+              <span className="text-2xl font-bold text-text-primary w-20 text-center">{selectedYear}</span>
               <button 
                 onClick={() => setSelectedYear(y => y + 1)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-bg-secondary rounded-lg transition-colors"
+                className="p-2 hover:bg-bg-secondary dark:hover:bg-bg-secondary rounded-lg transition-colors"
               >
-                <ChevronRight className="w-5 h-5 text-slate-600 dark:text-text-primary" />
+                <ChevronRight className="w-5 h-5 text-text-secondary dark:text-text-primary" />
               </button>
             </div>
             <div className="text-right">
-              <span className="block text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">YILLIK TOPLAM GİDER</span>
+              <span className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-1">YILLIK TOPLAM GİDER</span>
               <span className="text-2xl font-bold text-red-500">
                 {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(yearlyData.reduce((acc, curr) => acc + curr.total, 0))}
               </span>
             </div>
           </div>
 
-          <Card className="border-slate-200 dark:border-border shadow-sm overflow-hidden">
+          <Card className="border-border shadow-sm overflow-hidden">
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 dark:bg-bg-secondary border-b border-slate-200 dark:border-border text-slate-600 dark:text-text-secondary font-semibold">
+                <thead className="bg-bg-secondary border-b border-border text-text-secondary font-semibold">
                   <tr>
-                    <th className="p-2 min-w-[150px] border-r border-slate-200 dark:border-border text-center text-xs">Harcama Yeri / Kategori</th>
+                    <th className="p-2 min-w-[150px] border-r border-border text-center text-xs">Harcama Yeri / Kategori</th>
                     {['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'].map(m => (
                       <th key={m} className="p-2 min-w-[80px] text-center text-xs">{m}</th>
                     ))}
                     <th className="p-2 min-w-[100px] text-right font-bold text-xs">Toplam</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-border/50">
+                <tbody className="divide-y divide-border/50">
                   {yearlyLoading ? (
-                    <tr><td colSpan={14} className="p-8 text-center text-slate-400">Yükleniyor...</td></tr>
+                    <tr><td colSpan={14} className="p-8 text-center text-text-muted">Yükleniyor...</td></tr>
                   ) : yearlyData.length === 0 ? (
-                    <tr><td colSpan={14} className="p-8 text-center text-slate-400">Bu yıla ait veri bulunamadı.</td></tr>
+                    <tr><td colSpan={14} className="p-8 text-center text-text-muted">Bu yıla ait veri bulunamadı.</td></tr>
                   ) : (
                     <>
                       {yearlyData.map((parent) => (
                         <React.Fragment key={parent.id}>
                           {/* Parent Row */}
-                          <tr className="bg-slate-50/50 dark:bg-bg-secondary/30">
-                            <td className="p-2 font-bold text-slate-800 dark:text-text-primary border-r border-slate-200 dark:border-border text-center text-xs">
+                          <tr className="bg-bg-secondary/30">
+                            <td className="p-2 font-bold text-text-primary border-r border-border text-center text-xs">
                               {parent.name}
                             </td>
                             {parent.months.map((val: number, i: number) => (
@@ -694,12 +694,12 @@ export default function ReportsPage() {
                           </tr>
                           {/* Child Rows */}
                           {parent.subCategories.map((child: any) => (
-                            <tr key={child.id} className="bg-white dark:bg-bg-card">
-                              <td className="p-2 pl-4 font-medium text-slate-600 dark:text-text-secondary border-r border-slate-200 dark:border-border text-xs">
+                            <tr key={child.id} className="bg-bg-card">
+                              <td className="p-2 pl-4 font-medium text-text-secondary border-r border-border text-xs">
                                 {child.name}
                               </td>
                               {child.months.map((val: number, i: number) => (
-                                <td key={i} className="p-2 text-center text-slate-500 dark:text-text-muted text-xs">
+                                <td key={i} className="p-2 text-center text-text-muted text-xs">
                                   {val > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(val) : ''}
                                 </td>
                               ))}
@@ -711,8 +711,8 @@ export default function ReportsPage() {
                         </React.Fragment>
                       ))}
                       {/* Genel Toplam */}
-                      <tr className="bg-slate-100 dark:bg-bg-secondary border-t-2 border-slate-200 dark:border-border font-bold">
-                        <td className="p-3 text-right text-slate-800 dark:text-text-primary border-r border-slate-200 dark:border-border text-xs">
+                      <tr className="bg-bg-secondary border-t-2 border-border font-bold">
+                        <td className="p-3 text-right text-text-primary border-r border-border text-xs">
                           Genel Toplam
                         </td>
                         {Array(12).fill(0).map((_, i) => {
@@ -739,11 +739,11 @@ export default function ReportsPage() {
       {activeTab === 'COMPARISON' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Header & Period Selectors */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white dark:bg-bg-card p-6 rounded-xl border border-slate-200 dark:border-border shadow-sm">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-bg-card p-6 rounded-xl border border-border shadow-sm">
             
             {/* Period A */}
-            <div className="flex-1 w-full bg-slate-50 dark:bg-bg-secondary/50 p-4 rounded-xl border border-slate-200 dark:border-border/50">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-text-primary mb-3">1. DÖNEM</h3>
+            <div className="flex-1 w-full bg-bg-secondary/50 p-4 rounded-xl border border-border/50">
+              <h3 className="text-sm font-bold text-text-primary mb-3">1. DÖNEM</h3>
               <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <CustomSelect
@@ -778,11 +778,11 @@ export default function ReportsPage() {
               </div>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div>
-                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Toplam Gelir</span>
+                  <span className="block text-xs font-bold text-text-muted uppercase mb-1">Toplam Gelir</span>
                   <span className="text-lg font-bold text-emerald-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiA.income)}</span>
                 </div>
                 <div>
-                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Toplam Gider</span>
+                  <span className="block text-xs font-bold text-text-muted uppercase mb-1">Toplam Gider</span>
                   <span className="text-lg font-bold text-red-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiA.expense)}</span>
                 </div>
               </div>
@@ -795,8 +795,8 @@ export default function ReportsPage() {
             </div>
 
             {/* Period B */}
-            <div className="flex-1 w-full bg-slate-50 dark:bg-bg-secondary/50 p-4 rounded-xl border border-slate-200 dark:border-border/50">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-text-primary mb-3">2. DÖNEM</h3>
+            <div className="flex-1 w-full bg-bg-secondary/50 p-4 rounded-xl border border-border/50">
+              <h3 className="text-sm font-bold text-text-primary mb-3">2. DÖNEM</h3>
               <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <CustomSelect
@@ -831,11 +831,11 @@ export default function ReportsPage() {
               </div>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div>
-                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Toplam Gelir</span>
+                  <span className="block text-xs font-bold text-text-muted uppercase mb-1">Toplam Gelir</span>
                   <span className="text-lg font-bold text-emerald-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiB.income)}</span>
                 </div>
                 <div>
-                  <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Toplam Gider</span>
+                  <span className="block text-xs font-bold text-text-muted uppercase mb-1">Toplam Gider</span>
                   <span className="text-lg font-bold text-red-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiB.expense)}</span>
                 </div>
               </div>
@@ -844,14 +844,14 @@ export default function ReportsPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Category Comparison Table */}
-            <Card className="border-slate-200 dark:border-border shadow-sm overflow-hidden">
+            <Card className="border-border shadow-sm overflow-hidden">
               <CardContent className="p-0">
-                <div className="p-4 border-b border-slate-200 dark:border-border bg-slate-50/50 dark:bg-bg-secondary/30">
-                  <h3 className="font-bold text-slate-800 dark:text-text-primary">Kategori Karşılaştırması</h3>
+                <div className="p-4 border-b border-border bg-bg-secondary/30">
+                  <h3 className="font-bold text-text-primary">Kategori Karşılaştırması</h3>
                 </div>
                 <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-white dark:bg-bg-card sticky top-0 border-b border-slate-200 dark:border-border text-slate-500 dark:text-text-muted">
+                    <thead className="bg-bg-card sticky top-0 border-b border-border text-text-muted">
                       <tr>
                         <th className="p-4 font-medium">Kategori</th>
                         <th className="p-4 font-medium text-right">1. Dönem</th>
@@ -859,7 +859,7 @@ export default function ReportsPage() {
                         <th className="p-4 font-medium text-right">Değişim</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-border/50 bg-white dark:bg-bg-card">
+                    <tbody className="divide-y divide-border/50 bg-bg-card">
                       {Array.from(new Set([...compCatA.map(c => c.label), ...compCatB.map(c => c.label)])).sort().map((catLabel, i) => {
                         const valA = compCatA.find(c => c.label === catLabel)?.value || 0;
                         const valB = compCatB.find(c => c.label === catLabel)?.value || 0;
@@ -867,10 +867,10 @@ export default function ReportsPage() {
                         const percentDiff = valA > 0 ? (diff / valA) * 100 : (valB > 0 ? 100 : 0);
                         
                         return (
-                          <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-bg-secondary/30 transition-colors">
+                          <tr key={i} className="hover:bg-bg-secondary/50 dark:hover:bg-bg-secondary/30 transition-colors">
                             <td className="p-4 font-medium text-slate-700 dark:text-text-secondary">{catLabel}</td>
-                            <td className="p-4 text-right text-slate-600 dark:text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valA)}</td>
-                            <td className="p-4 text-right text-slate-600 dark:text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valB)}</td>
+                            <td className="p-4 text-right text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valA)}</td>
+                            <td className="p-4 text-right text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valB)}</td>
                             <td className="p-4 text-right font-medium">
                               {diff !== 0 ? (
                                 <div className={`flex items-center justify-end gap-1 ${diff > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -878,7 +878,7 @@ export default function ReportsPage() {
                                   {Math.abs(percentDiff).toFixed(1)}%
                                 </div>
                               ) : (
-                                <span className="text-slate-400">-</span>
+                                <span className="text-text-muted">-</span>
                               )}
                             </td>
                           </tr>
@@ -891,14 +891,14 @@ export default function ReportsPage() {
             </Card>
 
             {/* Merchant Comparison Table */}
-            <Card className="border-slate-200 dark:border-border shadow-sm overflow-hidden">
+            <Card className="border-border shadow-sm overflow-hidden">
               <CardContent className="p-0">
-                <div className="p-4 border-b border-slate-200 dark:border-border bg-slate-50/50 dark:bg-bg-secondary/30">
-                  <h3 className="font-bold text-slate-800 dark:text-text-primary">İşletme Karşılaştırması</h3>
+                <div className="p-4 border-b border-border bg-bg-secondary/30">
+                  <h3 className="font-bold text-text-primary">İşletme Karşılaştırması</h3>
                 </div>
                 <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-white dark:bg-bg-card sticky top-0 border-b border-slate-200 dark:border-border text-slate-500 dark:text-text-muted">
+                    <thead className="bg-bg-card sticky top-0 border-b border-border text-text-muted">
                       <tr>
                         <th className="p-4 font-medium">İşletme</th>
                         <th className="p-4 font-medium text-right">1. Dönem</th>
@@ -906,7 +906,7 @@ export default function ReportsPage() {
                         <th className="p-4 font-medium text-right">Değişim</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-border/50 bg-white dark:bg-bg-card">
+                    <tbody className="divide-y divide-border/50 bg-bg-card">
                       {Array.from(new Set([...compMerA.map(m => m.label), ...compMerB.map(m => m.label)])).sort().map((merLabel, i) => {
                         const valA = compMerA.find(m => m.label === merLabel)?.value || 0;
                         const valB = compMerB.find(m => m.label === merLabel)?.value || 0;
@@ -914,10 +914,10 @@ export default function ReportsPage() {
                         const percentDiff = valA > 0 ? (diff / valA) * 100 : (valB > 0 ? 100 : 0);
                         
                         return (
-                          <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-bg-secondary/30 transition-colors">
+                          <tr key={i} className="hover:bg-bg-secondary/50 dark:hover:bg-bg-secondary/30 transition-colors">
                             <td className="p-4 font-medium text-slate-700 dark:text-text-secondary">{merLabel}</td>
-                            <td className="p-4 text-right text-slate-600 dark:text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valA)}</td>
-                            <td className="p-4 text-right text-slate-600 dark:text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valB)}</td>
+                            <td className="p-4 text-right text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valA)}</td>
+                            <td className="p-4 text-right text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valB)}</td>
                             <td className="p-4 text-right font-medium">
                               {diff !== 0 ? (
                                 <div className={`flex items-center justify-end gap-1 ${diff > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -925,7 +925,7 @@ export default function ReportsPage() {
                                   {Math.abs(percentDiff).toFixed(1)}%
                                 </div>
                               ) : (
-                                <span className="text-slate-400">-</span>
+                                <span className="text-text-muted">-</span>
                               )}
                             </td>
                           </tr>

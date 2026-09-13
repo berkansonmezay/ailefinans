@@ -186,7 +186,7 @@ export function Header() {
         <div className="relative hidden sm:block">
           <button
             onClick={() => setIsQuickAddOpen(true)}
-            className="flex items-center gap-2 px-4 py-1.5 bg-accent hover:bg-accent-hover text-text-primary text-sm font-medium rounded-full shadow-lg shadow-accent/20 transition-all border border-accent-light/20"
+            className="flex items-center gap-2 px-4 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-full shadow-lg shadow-indigo-500/20 transition-all border border-indigo-500/10"
           >
             <Plus size={16} />
             Hızlı Ekle

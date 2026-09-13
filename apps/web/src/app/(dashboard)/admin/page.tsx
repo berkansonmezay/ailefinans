@@ -169,6 +169,7 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-2.5 font-semibold text-text-secondary">Kullanıcı</th>
                 <th className="px-4 py-2.5 font-semibold text-text-secondary">Kurum (Aile)</th>
                 <th className="px-4 py-2.5 font-semibold text-text-secondary">Kayıt Tarihi</th>
+                <th className="px-4 py-2.5 font-semibold text-text-secondary">Yetki</th>
                 <th className="px-4 py-2.5 font-semibold text-text-secondary">Durum</th>
                 <th className="px-4 py-2.5 font-semibold text-text-secondary text-right">İşlemler</th>
               </tr>
@@ -187,6 +188,21 @@ export default function AdminUsersPage() {
                     {new Date(u.createdAt).toLocaleDateString('tr-TR')}
                   </td>
                   <td className="px-4 py-2.5">
+                    {u.systemRole === 'SUPER_ADMIN' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        Kurucu
+                      </span>
+                    ) : u.systemRole === 'ADMIN' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        Yönetici
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-bg-secondary text-text-muted border border-border">
+                        Kullanıcı
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5">
                     {u.isActive ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-500">
                         <CheckCircle size={14} /> Onaylı
@@ -194,11 +210,6 @@ export default function AdminUsersPage() {
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-500">
                         <ShieldAlert size={14} /> Bekliyor
-                      </span>
-                    )}
-                    {u.systemRole === 'ADMIN' && (
-                      <span className="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-red-500/10 text-red-500">
-                        Admin
                       </span>
                     )}
                   </td>

@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
   
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth.toString());
+  const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
 
   useEffect(() => {
