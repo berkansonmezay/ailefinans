@@ -51,6 +51,9 @@ export default function TransactionsPage() {
       if (tx.type === 'EXPENSE' && tx.installmentPlanId && tx.notes !== 'PAID') {
         return false;
       }
+      if (tx.type === 'INCOME' && tx.parentId && tx.recurrenceRule !== 'COLLECTED') {
+        return false;
+      }
 
       // Search
       if (filters.search) {
@@ -404,7 +407,7 @@ export default function TransactionsPage() {
               amount: installmentAmount,
               categoryId: categoryId || null,
               transactionDate: installmentDate.toISOString(),
-              description: rawDesc ? `${rawDesc} (${j+1}/${count})` : `Taksit ${j+1}/${count}`,
+              description: rawDesc ? `${rawDesc} (${j+1}. Taksit / ${count})` : `Taksit ${j+1}/${count}`,
               _planId: planId,
             });
           }

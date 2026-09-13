@@ -7,3 +7,11 @@ dist
 coverage
 build
 *.log
+
+.turbo
+apps/api/prisma/dev.db
+apps/web/src/app/(dashboard)/reports/page.tsx.bak
+ornek_kategoriler.csv
+update_reports.py
+*.tsbuildinfo
+

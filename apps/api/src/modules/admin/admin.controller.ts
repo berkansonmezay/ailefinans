@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Param, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Post, Param, UseGuards, Body } from '@nestjs/common';
 import { AuthGuard } from "@nestjs/passport";
 import { AdminService } from './admin.service';
 import { CurrentUser } from '../../common/decorators';
@@ -43,5 +43,14 @@ export class AdminController {
     }
     await this.adminService.changeUserPassword(adminId, userId, password);
     return { success: true, data: { message: 'Şifre güncellendi' } };
+  }
+
+  @Post('users/:id/impersonate')
+  async impersonateUser(
+    @CurrentUser('userId') adminId: string,
+    @Param('id') userId: string
+  ) {
+    const result = await this.adminService.impersonateUser(adminId, userId);
+    return { success: true, data: result };
   }
 }

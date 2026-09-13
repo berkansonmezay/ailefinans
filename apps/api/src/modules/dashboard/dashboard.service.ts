@@ -22,6 +22,12 @@ export class DashboardService {
         where: {
           tenantId,
           deletedAt: null,
+          NOT: {
+            AND: [
+              { parentId: { not: null } },
+              { recurrenceRule: { not: 'COLLECTED' } }
+            ]
+          },
           transactionDate: { gte: startDate, lte: endDate },
         },
         _sum: { amount: true },
@@ -30,6 +36,12 @@ export class DashboardService {
         where: {
           tenantId,
           deletedAt: null,
+          NOT: {
+            AND: [
+              { installmentPlanId: { not: null } },
+              { notes: { not: 'PAID' } }
+            ]
+          },
           transactionDate: { gte: startDate, lte: endDate },
         },
         _sum: { amount: true },
@@ -136,6 +148,12 @@ export class DashboardService {
           where: {
             tenantId,
             deletedAt: null,
+            NOT: {
+              AND: [
+                { parentId: { not: null } },
+                { recurrenceRule: { not: 'COLLECTED' } }
+              ]
+            },
             transactionDate: { gte: start, lte: end },
           },
           _sum: { amount: true },
@@ -144,6 +162,12 @@ export class DashboardService {
           where: {
             tenantId,
             deletedAt: null,
+            NOT: {
+              AND: [
+                { installmentPlanId: { not: null } },
+                { notes: { not: 'PAID' } }
+              ]
+            },
             transactionDate: { gte: start, lte: end },
           },
           _sum: { amount: true },
@@ -164,6 +188,12 @@ export class DashboardService {
       where: {
         tenantId,
         deletedAt: null,
+        NOT: {
+          AND: [
+            { installmentPlanId: { not: null } },
+            { notes: { not: 'PAID' } }
+          ]
+        },
         transactionDate: { gte: startDate, lte: endDate },
       },
       _sum: { amount: true },
@@ -188,6 +218,12 @@ export class DashboardService {
       where: {
         tenantId,
         deletedAt: null,
+        NOT: {
+          AND: [
+            { installmentPlanId: { not: null } },
+            { notes: { not: 'PAID' } }
+          ]
+        },
         merchantId: { not: null },
         transactionDate: { gte: startDate, lte: endDate },
       },
@@ -221,6 +257,12 @@ export class DashboardService {
         where: {
           tenantId,
           deletedAt: null,
+          NOT: {
+            AND: [
+              { parentId: { not: null } },
+              { recurrenceRule: { not: 'COLLECTED' } }
+            ]
+          },
           transactionDate: { gte: startDate, lte: endDate },
         },
         select: { transactionDate: true, amount: true }
@@ -229,6 +271,12 @@ export class DashboardService {
         where: {
           tenantId,
           deletedAt: null,
+          NOT: {
+            AND: [
+              { installmentPlanId: { not: null } },
+              { notes: { not: 'PAID' } }
+            ]
+          },
           transactionDate: { gte: startDate, lte: endDate },
         },
         select: { transactionDate: true, amount: true }
@@ -278,6 +326,12 @@ export class DashboardService {
       where: {
         tenantId,
         deletedAt: null,
+        NOT: {
+          AND: [
+            { installmentPlanId: { not: null } },
+            { notes: { not: 'PAID' } }
+          ]
+        },
         transactionDate: { gte: startDate, lte: endDate },
       },
       select: {
@@ -381,6 +435,12 @@ export class DashboardService {
       where: {
         tenantId,
         deletedAt: null,
+        NOT: {
+          AND: [
+            { installmentPlanId: { not: null } },
+            { notes: { not: 'PAID' } }
+          ]
+        },
         transactionDate: { gte: startDate, lte: endDate },
       },
       select: {

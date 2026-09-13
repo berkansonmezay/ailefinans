@@ -81,7 +81,7 @@ export function Sidebar() {
           );
         })}
         {/* Admin only menu */}
-        {user?.systemRole === 'ADMIN' && (
+        {['ADMIN', 'SUPER_ADMIN'].includes(user?.systemRole) && (
           <Link
             href="/admin"
             className={clsx(

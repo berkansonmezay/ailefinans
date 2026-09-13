@@ -301,53 +301,59 @@ export default function ReportsPage() {
           <Card className="border-slate-200 dark:border-border shadow-sm">
             <CardContent className="p-6">
               <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-8">Kategori Dağılımı</h3>
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="w-full md:w-5/12 h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={85}
-                        outerRadius={130}
-                        paddingAngle={3}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip content={<CustomTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
+              {categoryData.length === 0 ? (
+                <div className="flex items-center justify-center h-80 text-slate-400 dark:text-text-muted">
+                  Bu tarih aralığında veri bulunamadı.
                 </div>
-                <div className="w-full md:w-7/12 px-4">
-                  <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
-                    {categoryData.sort((a, b) => b.value - a.value).map((entry, index) => {
-                      const total = categoryData.reduce((sum, item) => sum + item.value, 0);
-                      const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
-                      return (
-                        <div key={index} className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                            <span className="text-slate-600 dark:text-text-secondary font-medium">
-                              {entry.label}
-                            </span>
+              ) : (
+                <div className="flex flex-col md:flex-row items-center gap-8">
+                  <div className="w-full md:w-5/12 h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={85}
+                          outerRadius={130}
+                          paddingAngle={3}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip content={<CustomTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-full md:w-7/12 px-4">
+                    <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                      {categoryData.sort((a, b) => b.value - a.value).map((entry, index) => {
+                        const total = categoryData.reduce((sum, item) => sum + item.value, 0);
+                        const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                        return (
+                          <div key={index} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                              <span className="text-slate-600 dark:text-text-secondary font-medium">
+                                {entry.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              <span className="text-slate-400 dark:text-text-muted text-sm w-8 text-right">{percent}%</span>
+                              <span className="text-slate-800 dark:text-text-primary font-bold w-24 text-right">
+                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(entry.value)}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-6">
-                            <span className="text-slate-400 dark:text-text-muted text-sm w-8 text-right">{percent}%</span>
-                            <span className="text-slate-800 dark:text-text-primary font-bold w-24 text-right">
-                              {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(entry.value)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -356,10 +362,9 @@ export default function ReportsPage() {
       {activeTab === 'MONTHLY' && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Top Header & Selectors */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-bg-card p-4 rounded-xl border border-slate-200 dark:border-border shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">Ay</span>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-bg-card p-6 rounded-xl border border-slate-200 dark:border-border shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-32">
                 <CustomSelect
                   value={monthlyMonth.toString()}
                   onChange={(e) => setMonthlyMonth(parseInt(e.target.value))}
@@ -379,8 +384,7 @@ export default function ReportsPage() {
                   ]}
                 />
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">Yıl</span>
+              <div className="w-28">
                 <CustomSelect
                   value={monthlyYear.toString()}
                   onChange={(e) => setMonthlyYear(parseInt(e.target.value))}
@@ -391,22 +395,22 @@ export default function ReportsPage() {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <span className="block text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">GELİR</span>
-                <span className="text-xl font-bold text-emerald-500">
+            <div className="flex flex-1 items-center justify-around gap-6">
+              <div className="text-center">
+                <span className="block text-[11px] font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">GELİR</span>
+                <span className="text-lg font-bold text-emerald-500">
                   {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.income)}
                 </span>
               </div>
-              <div className="text-right">
-                <span className="block text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">GİDER</span>
-                <span className="text-xl font-bold text-red-500">
+              <div className="text-center">
+                <span className="block text-[11px] font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">GİDER</span>
+                <span className="text-lg font-bold text-red-500">
                   {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.expense)}
                 </span>
               </div>
-              <div className="text-right">
-                <span className="block text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">KALAN</span>
-                <span className={`text-xl font-bold ${monthlyKpi.totalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+              <div className="text-center">
+                <span className="block text-[11px] font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-1">BAKİYE</span>
+                <span className={`text-lg font-bold ${monthlyKpi.totalBalance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                   {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(monthlyKpi.totalBalance)}
                 </span>
               </div>
@@ -417,163 +421,209 @@ export default function ReportsPage() {
             {/* Category Breakdown (Donut) */}
             <Card className="border-slate-200 dark:border-border shadow-sm">
               <CardContent className="p-6">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-6">Kategori Dağılımı</h3>
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="w-full md:w-1/2 h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={monthlyCatData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={90}
-                          paddingAngle={3}
-                          dataKey="value"
-                          stroke="none"
-                        >
-                          {monthlyCatData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip content={<CustomTooltip />} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary">
+                    Kategori Dağılımı ({['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][monthlyMonth]})
+                  </h3>
+                </div>
+                {monthlyCatData.length === 0 ? (
+                  <div className="flex items-center justify-center h-64 text-slate-400 dark:text-text-muted">
+                    Bu aya ait veri bulunamadı.
                   </div>
-                  <div className="w-full md:w-1/2">
-                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                      {monthlyCatData.sort((a, b) => b.value - a.value).map((entry, index) => {
-                        const total = monthlyCatData.reduce((sum, item) => sum + item.value, 0);
-                        const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
-                        return (
-                          <div key={index} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                              <span className="text-slate-600 dark:text-text-secondary font-medium truncate max-w-[100px]" title={entry.label}>
-                                {entry.label}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-slate-400 dark:text-text-muted">{percent}%</span>
-                              <span className="text-slate-800 dark:text-text-primary font-bold">
-                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(entry.value)}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                ) : (
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="w-full h-72">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={monthlyCatData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={80}
+                            outerRadius={120}
+                            paddingAngle={2}
+                            dataKey="value"
+                            stroke="none"
+                          >
+                            {monthlyCatData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip content={<CustomTooltip />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4">
+                      {monthlyCatData.sort((a, b) => b.value - a.value).map((entry, index) => (
+                        <div key={index} className="flex items-center gap-1.5 text-sm">
+                          <div className="w-3 h-3 shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                          <span className="font-medium" style={{ color: COLORS[index % COLORS.length] }}>
+                            {entry.label}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Merchant Breakdown (Donut) */}
+            {/* Merchant Breakdown (Horizontal Bar) */}
             <Card className="border-slate-200 dark:border-border shadow-sm">
               <CardContent className="p-6">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-6">Harcama Yeri Dağılımı</h3>
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="w-full md:w-1/2 h-64">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary">
+                    Harcama Yeri Dağılımı ({['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][monthlyMonth]})
+                  </h3>
+                </div>
+                {monthlyMerchantData.length === 0 ? (
+                  <div className="flex items-center justify-center h-64 text-slate-400 dark:text-text-muted">
+                    Bu aya ait veri bulunamadı.
+                  </div>
+                ) : (
+                  <div className="w-full h-72 pr-4">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={monthlyMerchantData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={90}
-                          paddingAngle={3}
-                          dataKey="value"
-                          stroke="none"
-                        >
-                          {monthlyMerchantData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip content={<CustomTooltip />} />
-                      </PieChart>
+                      <BarChart data={monthlyMerchantData.sort((a,b) => b.value - a.value)} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} width={90} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                        <RechartsTooltip cursor={{fill: 'transparent'}} content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-3 border border-slate-200 shadow-lg rounded-xl">
+                                <p className="text-sm font-medium text-slate-800">{payload[0].payload.label}</p>
+                                <p className="text-sm font-bold text-blue-500 mt-1">value : {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(payload[0].value as number)}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }} />
+                        <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={24} />
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="w-full md:w-1/2">
-                    <div className="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                      {monthlyMerchantData.sort((a, b) => b.value - a.value).map((entry, index) => {
-                        const total = monthlyMerchantData.reduce((sum, item) => sum + item.value, 0);
-                        const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
-                        return (
-                          <div key={index} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[(index + 3) % COLORS.length] }}></div>
-                              <span className="text-slate-600 dark:text-text-secondary font-medium truncate max-w-[100px]" title={entry.label}>
-                                {entry.label}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-slate-400 dark:text-text-muted">{percent}%</span>
-                              <span className="text-slate-800 dark:text-text-primary font-bold">
-                                {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(entry.value)}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Alt Kategori Trendi (Sütun) */}
+          <div className="space-y-6">
+            {/* Yıllık Kategori Trendi (Sütun) */}
             <Card className="border-slate-200 dark:border-border shadow-sm">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary">Alt Kategori Trendi</h3>
-                  <div className="w-48">
-                    <CustomSelect
-                      value={selectedTrendCat || ''}
-                      onChange={(e) => setSelectedTrendCat(e.target.value)}
-                      options={monthlyTrends.categoryTrends?.map((c: any) => ({ label: c.name, value: c.id })) || []}
-                    />
+                <div className="flex items-center gap-2 mb-8">
+                  <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4" />
                   </div>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-text-primary">Yıllık Kategori Trendi</h3>
                 </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={monthlyTrends.categoryTrends?.find((c: any) => c.id === selectedTrendCat)?.months || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                      <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
-                      <RechartsTooltip content={<CustomTooltip />} />
-                      <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                
+                <div className="flex flex-col md:flex-row gap-8">
+                  <div className="w-full md:w-64 shrink-0 flex flex-col">
+                    <span className="text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-4">KATEGORİ SEÇİN</span>
+                    <div className="flex flex-col gap-1 border border-slate-100 dark:border-border rounded-xl p-2 max-h-64 overflow-y-auto custom-scrollbar">
+                      {monthlyTrends.categoryTrends?.map((c: any) => (
+                        <button
+                          key={c.id}
+                          onClick={() => setSelectedTrendCat(c.id)}
+                          className={clsx(
+                            "text-left px-4 py-3 rounded-lg text-sm font-semibold transition-colors",
+                            selectedTrendCat === c.id 
+                              ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20" 
+                              : "text-slate-600 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-bg-secondary"
+                          )}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                      {!monthlyTrends.categoryTrends?.length && (
+                        <div className="p-4 text-sm text-slate-400 text-center">Kategori bulunamadı</div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={monthlyTrends.categoryTrends?.find((c: any) => c.id === selectedTrendCat)?.months || []}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
+                        <RechartsTooltip cursor={{fill: 'transparent'}} content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-3 border border-slate-200 shadow-lg rounded-xl">
+                                <p className="text-sm font-bold text-slate-800">{label}</p>
+                                <p className="text-sm font-medium text-indigo-500 mt-1">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(payload[0].value as number)}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }} />
+                        <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Ana Kategori Trendi (Sütun) */}
+            {/* Yıllık Harcama Yeri Trendi (Sütun) */}
             <Card className="border-slate-200 dark:border-border shadow-sm">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-text-primary">Ana Kategori Trendi</h3>
-                  <div className="w-48">
-                    <CustomSelect
-                      value={selectedTrendMerchant || ''}
-                      onChange={(e) => setSelectedTrendMerchant(e.target.value)}
-                      options={monthlyTrends.parentCategoryTrends?.map((c: any) => ({ label: c.name, value: c.id })) || []}
-                    />
+                <div className="flex items-center gap-2 mb-8">
+                  <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4" />
                   </div>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-text-primary">Yıllık Harcama Yeri Trendi</h3>
                 </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={monthlyTrends.parentCategoryTrends?.find((c: any) => c.id === selectedTrendMerchant)?.months || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                      <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
-                      <RechartsTooltip content={<CustomTooltip />} />
-                      <Bar dataKey="total" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                
+                <div className="flex flex-col md:flex-row gap-8">
+                  <div className="w-full md:w-64 shrink-0 flex flex-col">
+                    <span className="text-xs font-bold text-slate-400 dark:text-text-muted uppercase tracking-wider mb-4">HARCAMA YERİ SEÇİN</span>
+                    <div className="flex flex-col gap-1 border border-slate-100 dark:border-border rounded-xl p-2 max-h-64 overflow-y-auto custom-scrollbar">
+                      {monthlyTrends.parentCategoryTrends?.map((c: any) => (
+                        <button
+                          key={c.id}
+                          onClick={() => setSelectedTrendMerchant(c.id)}
+                          className={clsx(
+                            "text-left px-4 py-3 rounded-lg text-sm font-semibold transition-colors",
+                            selectedTrendMerchant === c.id 
+                              ? "bg-rose-500 text-white shadow-md shadow-rose-500/20" 
+                              : "text-slate-600 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-bg-secondary"
+                          )}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                      {!monthlyTrends.parentCategoryTrends?.length && (
+                        <div className="p-4 text-sm text-slate-400 text-center">Harcama yeri bulunamadı</div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={monthlyTrends.parentCategoryTrends?.find((c: any) => c.id === selectedTrendMerchant)?.months || []}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
+                        <RechartsTooltip cursor={{fill: 'transparent'}} content={({ active, payload, label }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-white p-3 border border-slate-200 shadow-lg rounded-xl">
+                                <p className="text-sm font-bold text-slate-800">{label}</p>
+                                <p className="text-sm font-medium text-rose-500 mt-1">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(payload[0].value as number)}</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }} />
+                        <Bar dataKey="total" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </CardContent>
             </Card>

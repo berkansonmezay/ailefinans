@@ -129,7 +129,7 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
             amount: installmentAmount,
             categoryId: categoryId || null,
             transactionDate: installmentDate.toISOString(),
-            description: description ? `${description} (${i+1}/${count})` : `Taksit ${i+1}/${count}`,
+            description: description ? `${description} (${i+1}. Taksit / ${count})` : `Taksit ${i+1}/${count}`,
             _planId: planId, // temporarily store it
           });
         }

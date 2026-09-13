@@ -164,8 +164,8 @@ export default function DebtsPage() {
         const instDate = new Date(formData.firstPaymentDate);
         instDate.setMonth(instDate.getMonth() + i);
 
-        const desc = formData.description.trim() 
-          ? `${formData.description.trim()} (${i + 1}/${count})` 
+        const desc = formData.description?.trim() 
+          ? `${formData.description.trim()} (${i + 1}. Taksit / ${count})` 
           : `Taksit ${i + 1}/${count}`;
 
         const payload = {
@@ -340,11 +340,6 @@ export default function DebtsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-
-          <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500">
-            <Plus className="w-5 h-5 mr-2" />
-            Yeni Taksitli Borç
-          </Button>
         </div>
       </div>
 
@@ -561,12 +556,8 @@ export default function DebtsPage() {
             <CreditCard className="w-12 h-12 text-text-muted mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-text-primary mb-2">Henüz taksitli borç kaydı yok</h3>
             <p className="text-sm text-text-muted max-w-md mx-auto mb-6">
-              Harcama yaparken "Taksitli İşlem" seçeneğini kullanarak veya yukarıdaki "Yeni Taksitli Borç" butonu ile taksit planları ekleyebilirsiniz.
+              Harcama yaparken "Taksitli İşlem" seçeneğini kullanarak taksit planları ekleyebilirsiniz.
             </p>
-            <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500">
-              <Plus className="w-4 h-4 mr-2" />
-              İlk Taksitli Borcu Ekle
-            </Button>
           </div>
         ) : (
           filteredItems.map((item) => {

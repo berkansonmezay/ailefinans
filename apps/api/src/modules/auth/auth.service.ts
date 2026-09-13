@@ -49,6 +49,9 @@ export class AuthService {
     // Hash password (bcrypt, 12 rounds)
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
+    const userCount = await this.prisma.user.count();
+    const isFirstUser = userCount === 0;
+
     // Create user + tenant + membership in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -58,6 +61,8 @@ export class AuthService {
           passwordHash,
           firstName: dto.firstName,
           lastName: dto.lastName,
+          systemRole: isFirstUser ? 'SUPER_ADMIN' : 'USER',
+          isActive: isFirstUser, // First user is automatically active
         },
       });
 
@@ -119,8 +124,10 @@ export class AuthService {
     });
 
     return {
-      message: "Hesabınız başarıyla oluşturuldu. Sistem yöneticisinin onayından sonra giriş yapabilirsiniz.",
-      status: "PENDING_APPROVAL"
+      message: isFirstUser 
+        ? "Kurucu hesabınız başarıyla oluşturuldu ve otomatik olarak onaylandı. Giriş yapabilirsiniz." 
+        : "Hesabınız başarıyla oluşturuldu. Sistem yöneticisinin onayından sonra giriş yapabilirsiniz.",
+      status: isFirstUser ? "APPROVED" : "PENDING_APPROVAL"
     };
   }
 
@@ -311,7 +318,7 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(userId: string, tenantId: string) {
+  async generateTokens(userId: string, tenantId: string) {
     // Get membership to include role in JWT
     const membership = await this.prisma.tenantMember.findUnique({
       where: { tenantId_userId: { tenantId, userId } },

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth';
@@ -31,12 +31,12 @@ export default function AdminUsersPage() {
   const [newPassword, setNewPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser, startImpersonation } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
     if (!currentUser) return;
-    if (currentUser.systemRole !== 'ADMIN') {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(currentUser.systemRole)) {
       router.push('/');
       return;
     }
@@ -73,6 +73,22 @@ export default function AdminUsersPage() {
       loadUsers();
     } catch (error: any) {
       toast.error('Silinirken hata oluştu: ' + error.message);
+    }
+  };
+
+  const handleImpersonate = async (userId: string, userName: string) => {
+    if (!confirm(`${userName} adlı kullanıcının hesabına geçiş yapmak istediğinize emin misiniz?`)) return;
+    try {
+      const res = await fetchApi<any>(`/admin/users/${userId}/impersonate`, { method: 'POST' });
+      startImpersonation({
+        user: res.user,
+        accessToken: res.accessToken,
+        refreshToken: res.refreshToken
+      });
+      toast.success(`${userName} hesabına geçiş yapıldı.`);
+      router.push('/');
+    } catch (error: any) {
+      toast.error('Geçiş işlemi başarısız: ' + error.message);
     }
   };
 
@@ -197,6 +213,16 @@ export default function AdminUsersPage() {
                         </button>
                       )}
                       
+                      {u.isActive && currentUser?.systemRole === 'SUPER_ADMIN' && currentUser.id !== u.id && (
+                        <button
+                          onClick={() => handleImpersonate(u.id, `${u.firstName} ${u.lastName}`)}
+                          className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                          title="Bu hesapla giriş yap (Impersonate)"
+                        >
+                          <LogIn size={16} />
+                        </button>
+                      )}
+
                       <button
                         onClick={() => openPasswordModal(u)}
                         className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"

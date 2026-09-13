@@ -156,8 +156,8 @@ export default function ReceivablesPage() {
         const instDate = new Date(formData.firstPaymentDate);
         instDate.setMonth(instDate.getMonth() + i);
 
-        const desc = formData.description.trim() 
-          ? `${formData.description.trim()} (${i + 1}/${count})` 
+        const desc = formData.description?.trim() 
+          ? `${formData.description.trim()} (${i + 1}. Taksit / ${count})` 
           : `Taksit ${i + 1}/${count}`;
 
         const payload = {
@@ -334,11 +334,6 @@ export default function ReceivablesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-
-          <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500">
-            <Plus className="w-5 h-5 mr-2" />
-            Yeni Taksitli Alacak
-          </Button>
         </div>
       </div>
 
@@ -555,12 +550,8 @@ export default function ReceivablesPage() {
             <Wallet className="w-12 h-12 text-text-muted mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-text-primary mb-2">Henüz taksitli alacak kaydı yok</h3>
             <p className="text-sm text-text-muted max-w-md mx-auto mb-6">
-              Gelir eklerken "Taksitli İşlem" seçeneğini kullanarak veya yukarıdaki "Yeni Taksitli Alacak" butonu ile taksitli alacak planları oluşturabilirsiniz.
+              Gelir eklerken "Taksitli İşlem" seçeneğini kullanarak taksitli alacak planları oluşturabilirsiniz.
             </p>
-            <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-500">
-              <Plus className="w-4 h-4 mr-2" />
-              İlk Taksitli Alacağı Ekle
-            </Button>
           </div>
         ) : (
           filteredItems.map((item) => {

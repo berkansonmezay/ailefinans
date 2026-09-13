@@ -19,6 +19,7 @@ async function main() {
       username: 'admin',
       isActive: true,
       passwordHash,
+      systemRole: 'SUPER_ADMIN',
     },
     create: {
       email: 'admin@ailefinans.com',
@@ -27,6 +28,7 @@ async function main() {
       passwordHash,
       firstName: 'Demo',
       lastName: 'Kullanıcı',
+      systemRole: 'SUPER_ADMIN',
     },
   });
 
