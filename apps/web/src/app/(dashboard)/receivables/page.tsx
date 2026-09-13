@@ -26,7 +26,9 @@ import {
   X,
   AlertCircle,
   List,
-  LayoutList
+  LayoutList,
+  Filter,
+  LayoutGrid
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -44,10 +46,25 @@ export default function ReceivablesPage() {
   const [categories, setCategories] = useState<any[]>([]);
   
   // Filtering & search
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'OVERDUE' | 'PAID'>('ALL');
+  const [filters, setFilters] = useState({
+    search: '',
+    vade: '',
+    status: 'ALL' as 'ALL' | 'ACTIVE' | 'OVERDUE' | 'PAID',
+    categoryId: 'Tümü',
+    debtorName: 'Tümü',
+    startDate: '',
+    endDate: ''
+  });
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<'plan' | 'list'>('plan');
+
+  // Unique debtors for the dropdown
+  const uniqueDebtors = useMemo(() => {
+    const debtors = items.map(item => item.debtorName).filter(Boolean);
+    return Array.from(new Set(debtors));
+  }, [items]);
 
   // Form data for new installment receivable
   const [formData, setFormData] = useState({
@@ -197,21 +214,79 @@ export default function ReceivablesPage() {
   const filteredItems = useMemo(() => {
     return items.filter(item => {
       const matchesSearch = 
-        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.debtorName && item.debtorName.toLowerCase().includes(searchQuery.toLowerCase()));
+        (item.description && item.description.toLowerCase().includes(filters.search.toLowerCase())) ||
+        (item.debtorName && item.debtorName.toLowerCase().includes(filters.search.toLowerCase()));
       
       const isPaid = item.status === 'PAID' || item.remainingAmount <= 0;
       const hasOverdue = Array.isArray(item.installments) && item.installments.some((i: any) => i.status === 'OVERDUE');
 
       const matchesStatus = 
-        statusFilter === 'ALL' ? true :
-        statusFilter === 'ACTIVE' ? !isPaid :
-        statusFilter === 'OVERDUE' ? hasOverdue :
+        filters.status === 'ALL' ? true :
+        filters.status === 'ACTIVE' ? !isPaid :
+        filters.status === 'OVERDUE' ? hasOverdue :
         isPaid;
 
-      return matchesSearch && matchesStatus;
+      if (filters.categoryId !== 'Tümü' && item.categoryId !== filters.categoryId) {
+        return false;
+      }
+      if (filters.debtorName !== 'Tümü' && item.debtorName !== filters.debtorName) {
+        return false;
+      }
+
+      const hasInstallmentInDateRange = Array.isArray(item.installments) && item.installments.some((i: any) => {
+        if (!filters.vade && !filters.startDate && !filters.endDate) return true;
+        
+        const txTime = new Date(i.dueDate).getTime();
+        const txDate = new Date(i.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startOfToday = today.getTime();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+
+        if (filters.vade) {
+          if (filters.vade === 'Bugün') {
+             if (txTime < startOfToday || txTime >= startOfToday + oneDayMs) return false;
+          } else if (filters.vade === 'Bu Hafta') {
+             const startOfWeek = startOfToday - (today.getDay() * oneDayMs);
+             if (txTime < startOfWeek) return false;
+          } else if (filters.vade === 'Bu Ay') {
+             if (txDate.getMonth() !== today.getMonth() || txDate.getFullYear() !== today.getFullYear()) return false;
+          } else if (filters.vade === 'Geçen Ay') {
+             const lastMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+             const lastMonthYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+             if (txDate.getMonth() !== lastMonth || txDate.getFullYear() !== lastMonthYear) return false;
+          } else if (filters.vade === '15 Gün') {
+             if (txTime < startOfToday - (15 * oneDayMs)) return false;
+          } else if (filters.vade === 'Geçmiş') {
+             if (txTime >= startOfToday) return false;
+          } else if (filters.vade === 'Geçen 3 Ay') {
+             const threeMonthsAgo = new Date(today);
+             threeMonthsAgo.setMonth(today.getMonth() - 3);
+             if (txTime < threeMonthsAgo.getTime()) return false;
+          } else if (filters.vade === 'Gelecek 3 Ay') {
+             const nextThreeMonths = new Date(today);
+             nextThreeMonths.setMonth(today.getMonth() + 3);
+             if (txTime > nextThreeMonths.getTime()) return false;
+          }
+        }
+
+        if (filters.startDate) {
+          const start = new Date(filters.startDate).getTime();
+          if (txTime < start) return false;
+        }
+        if (filters.endDate) {
+          const endObj = new Date(filters.endDate);
+          endObj.setHours(23, 59, 59, 999);
+          const end = endObj.getTime();
+          if (txTime > end) return false;
+        }
+        
+        return true;
+      });
+
+      return matchesSearch && matchesStatus && hasInstallmentInDateRange;
     });
-  }, [items, searchQuery, statusFilter]);
+  }, [items, filters]);
 
   // Extract all individual installments across filtered plans
   const allInstallments = useMemo(() => {
@@ -219,17 +294,85 @@ export default function ReceivablesPage() {
     filteredItems.forEach(item => {
       if (Array.isArray(item.installments)) {
         item.installments.forEach((inst: any) => {
-          list.push({ 
-            ...inst, 
-            planName: item.description || item.debtorName, 
-            planId: item.id, 
-            currency: item.currency 
-          });
+          if (!filters.vade && !filters.startDate && !filters.endDate) {
+            list.push({ 
+              ...inst, 
+              planName: item.description || item.debtorName, 
+              planId: item.id, 
+              currency: item.currency 
+            });
+            return;
+          }
+          
+          const txTime = new Date(inst.dueDate).getTime();
+          const txDate = new Date(inst.dueDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const startOfToday = today.getTime();
+          const oneDayMs = 24 * 60 * 60 * 1000;
+          let isValid = true;
+
+          if (filters.vade) {
+            if (filters.vade === 'Bugün') {
+               if (txTime < startOfToday || txTime >= startOfToday + oneDayMs) isValid = false;
+            } else if (filters.vade === 'Bu Hafta') {
+               const startOfWeek = startOfToday - (today.getDay() * oneDayMs);
+               if (txTime < startOfWeek) isValid = false;
+            } else if (filters.vade === 'Bu Ay') {
+               if (txDate.getMonth() !== today.getMonth() || txDate.getFullYear() !== today.getFullYear()) isValid = false;
+            } else if (filters.vade === 'Geçen Ay') {
+               const lastMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+               const lastMonthYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+               if (txDate.getMonth() !== lastMonth || txDate.getFullYear() !== lastMonthYear) isValid = false;
+            } else if (filters.vade === '15 Gün') {
+               if (txTime < startOfToday - (15 * oneDayMs)) isValid = false;
+            } else if (filters.vade === 'Geçmiş') {
+               if (txTime >= startOfToday) isValid = false;
+            } else if (filters.vade === 'Geçen 3 Ay') {
+               const threeMonthsAgo = new Date(today);
+               threeMonthsAgo.setMonth(today.getMonth() - 3);
+               if (txTime < threeMonthsAgo.getTime()) isValid = false;
+            } else if (filters.vade === 'Gelecek 3 Ay') {
+               const nextThreeMonths = new Date(today);
+               nextThreeMonths.setMonth(today.getMonth() + 3);
+               if (txTime > nextThreeMonths.getTime()) isValid = false;
+            }
+          }
+
+          if (filters.startDate) {
+            const start = new Date(filters.startDate).getTime();
+            if (txTime < start) isValid = false;
+          }
+          if (filters.endDate) {
+            const endObj = new Date(filters.endDate);
+            endObj.setHours(23, 59, 59, 999);
+            const end = endObj.getTime();
+            if (txTime > end) isValid = false;
+          }
+          
+          if (isValid) {
+            list.push({ 
+              ...inst, 
+              planName: item.description || item.debtorName, 
+              planId: item.id, 
+              currency: item.currency 
+            });
+          }
         });
       }
     });
     return list.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-  }, [filteredItems]);
+  }, [filteredItems, filters]);
+
+  // Switch to list view when filters are applied
+  useEffect(() => {
+    const isFiltered = filters.search || filters.vade || filters.status !== 'ALL' || filters.categoryId !== 'Tümü' || filters.debtorName !== 'Tümü' || filters.startDate || filters.endDate;
+    if (isFiltered) {
+      setViewMode('list');
+    } else {
+      setViewMode('plan');
+    }
+  }, [filters]);
 
   // Statistics calculation strictly matching user's reference cards
   const stats = useMemo(() => {
@@ -496,66 +639,160 @@ export default function ReceivablesPage() {
 
       {/* Filter and Search Bar */}
       <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Açıklama veya borçlu kişi/kurum ara..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-bg-secondary border border-border rounded-xl pl-9 pr-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-          />
+        <div className="flex items-center gap-4 w-full sm:w-auto flex-1">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+            <input 
+              type="text" 
+              placeholder="Açıklama veya borçlu kişi/kurum ara..." 
+              value={filters.search}
+              onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+              className="w-full bg-bg-secondary border border-border rounded-xl pl-10 pr-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-emerald-500/50 transition-colors"
+            />
+          </div>
+          
+          <div className="relative">
+            <Button 
+              variant="secondary" 
+              className={`px-3 h-10 transition-colors ${isFiltersOpen ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-bg-secondary border-border'}`}
+              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Filtreler
+              {(filters.vade || filters.status !== 'ALL' || filters.categoryId !== 'Tümü' || filters.debtorName !== 'Tümü' || filters.startDate || filters.endDate) && (
+                <span className="ml-2 w-2 h-2 rounded-full bg-emerald-500" />
+              )}
+            </Button>
+            
+            {isFiltersOpen && (
+              <div className="absolute left-0 lg:left-0 top-full mt-2 w-[320px] sm:w-[360px] bg-bg-card border border-border rounded-xl shadow-2xl z-50 p-5">
+                <div className="mb-5">
+                  <div className="text-[11px] font-bold text-text-muted mb-3 uppercase tracking-wider">VADE</div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-3">
+                    {['Geçmiş', 'Geçen Ay', 'Geçen 3 Ay', 'Geçen Çeyrek', 'Bugün', 'Bu Hafta', 'Bu Ay', 'Bu Çeyrek', '15 Gün', 'Gelecek 3 Ay'].map(vade => (
+                      <button 
+                        key={vade} 
+                        onClick={() => setFilters(f => ({ ...f, vade: f.vade === vade ? '' : vade }))}
+                        className={`text-[15px] transition-colors text-left ${filters.vade === vade ? 'text-emerald-500 font-medium' : 'text-text-secondary hover:text-text-primary'}`}
+                      >
+                        {vade}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-5">
+                  <div className="text-[11px] font-bold text-text-muted mb-3 uppercase tracking-wider">DURUM</div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-3">
+                    {[
+                      { id: 'ALL', label: 'Tümü' },
+                      { id: 'ACTIVE', label: 'Aktif Planlar' },
+                      { id: 'OVERDUE', label: 'Gecikenler' },
+                      { id: 'PAID', label: 'Tamamlananlar' }
+                    ].map(status => (
+                      <button 
+                        key={status.id} 
+                        onClick={() => setFilters(f => ({ ...f, status: status.id as any }))}
+                        className={`text-[15px] transition-colors text-left ${filters.status === status.id ? 'text-emerald-500 font-medium' : 'text-text-secondary hover:text-text-primary'}`}
+                      >
+                        {status.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-5">
+                  <div className="text-[11px] font-bold text-text-muted mb-2 uppercase tracking-wider">KATEGORİ</div>
+                  <select 
+                    value={filters.categoryId}
+                    onChange={(e) => setFilters(f => ({ ...f, categoryId: e.target.value }))}
+                    className="w-full bg-bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-emerald-500/50"
+                  >
+                    <option value="Tümü">Tümü</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-5">
+                  <div className="text-[11px] font-bold text-text-muted mb-2 uppercase tracking-wider">KİŞİ/KURUM</div>
+                  <select 
+                    value={filters.debtorName}
+                    onChange={(e) => setFilters(f => ({ ...f, debtorName: e.target.value }))}
+                    className="w-full bg-bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-emerald-500/50"
+                  >
+                    <option value="Tümü">Tümü</option>
+                    {uniqueDebtors.map(debtor => (
+                      <option key={debtor as string} value={debtor as string}>{debtor as string}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="h-px bg-border my-4 -mx-5"></div>
+
+                <button 
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="flex items-center text-sm font-medium text-text-primary hover:text-emerald-500 transition-colors w-full"
+                >
+                  <Filter className="w-4 h-4 mr-2" />
+                  Gelişmiş Filtreler
+                </button>
+
+                {showAdvancedFilters && (
+                  <div className="mt-4 space-y-3 pt-3 border-t border-border">
+                    <div>
+                      <label className="block text-[11px] font-bold text-text-muted mb-1 uppercase tracking-wider">Başlangıç Tarihi</label>
+                      <input 
+                        type="date" 
+                        value={filters.startDate}
+                        onChange={(e) => setFilters(f => ({ ...f, startDate: e.target.value }))}
+                        className="w-full bg-bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-emerald-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-text-muted mb-1 uppercase tracking-wider">Bitiş Tarihi</label>
+                      <input 
+                        type="date" 
+                        value={filters.endDate}
+                        onChange={(e) => setFilters(f => ({ ...f, endDate: e.target.value }))}
+                        className="w-full bg-bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:border-emerald-500/50"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-5 flex justify-end">
+                  <button
+                    onClick={() => {
+                      setFilters({ search: '', vade: '', status: 'ALL', categoryId: 'Tümü', debtorName: 'Tümü', startDate: '', endDate: '' });
+                      setShowAdvancedFilters(false);
+                      setIsFiltersOpen(false);
+                    }}
+                    className="text-xs text-text-muted hover:text-rose-500 font-medium transition-colors"
+                  >
+                    Filtreleri Temizle
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          <button
-            onClick={() => setStatusFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              statusFilter === 'ALL' ? 'bg-emerald-500 text-white font-bold' : 'bg-bg-secondary text-text-muted hover:text-text-primary'
-            }`}
-          >
-            Tümü ({items.length})
-          </button>
-          <button
-            onClick={() => setStatusFilter('ACTIVE')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              statusFilter === 'ACTIVE' ? 'bg-emerald-500 text-white font-bold' : 'bg-bg-secondary text-text-muted hover:text-text-primary'
-            }`}
-          >
-            Aktif Planlar
-          </button>
-          <button
-            onClick={() => setStatusFilter('OVERDUE')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              statusFilter === 'OVERDUE' ? 'bg-rose-600 text-white font-bold' : 'bg-bg-secondary text-text-muted hover:text-rose-400'
-            }`}
-          >
-            Gecikenler {stats.overdueCount > 0 && `(${stats.overdueCount})`}
-          </button>
-          <button
-            onClick={() => setStatusFilter('PAID')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              statusFilter === 'PAID' ? 'bg-emerald-500 text-white font-bold' : 'bg-bg-secondary text-text-muted hover:text-text-primary'
-            }`}
-          >
-            Tamamlananlar
-          </button>
-        </div>
-
-        <div className="flex items-center bg-bg-secondary p-1 rounded-lg ml-auto sm:ml-4">
+        <div className="flex items-center bg-bg-secondary p-1 rounded-lg">
           <button
             onClick={() => setViewMode('plan')}
             className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'plan' ? 'bg-bg-card shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
-            title="Plan Görünümü"
+            title="Plan Görünümü (Gruplanmış)"
           >
-            <LayoutList size={16} />
+            <LayoutGrid className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode('list')}
             className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-bg-card shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
-            title="Taksit Listesi Görünümü"
+            title="Liste Görünümü (Tarihe Göre Sıralı)"
           >
-            <List size={16} />
+            <List className="w-4 h-4" />
           </button>
         </div>
       </div>
