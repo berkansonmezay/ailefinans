@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Delete,
+  Put,
   Body,
   Param,
   Query,
@@ -39,6 +40,18 @@ export class ReceivablesController {
     return success(
       await this.service.create(tenantId, user.userId, dto),
       "Alacak oluşturuldu.",
+    );
+  }
+
+  @Put(":id")
+  async update(
+    @Param("id") id: string,
+    @ActiveTenant() tenantId: string,
+    @Body() dto: any,
+  ) {
+    return success(
+      await this.service.updatePlan(id, tenantId, dto),
+      "Taksitli alacak güncellendi.",
     );
   }
 

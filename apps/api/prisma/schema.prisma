@@ -284,6 +284,7 @@ model Debt {
   status            DebtStatus @default(ACTIVE)
   accountId         String?
   categoryId        String?
+  merchantId        String?
   attachmentId      String?
   createdBy         String
   createdAt         DateTime   @default(now())

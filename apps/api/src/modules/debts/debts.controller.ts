@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Delete,
+  Put,
   Body,
   Param,
   Query,
@@ -42,6 +43,18 @@ export class DebtsController {
     );
   }
 
+  @Put(":id")
+  async update(
+    @Param("id") id: string,
+    @ActiveTenant() tenantId: string,
+    @Body() dto: any,
+  ) {
+    return success(
+      await this.service.update(id, tenantId, dto),
+      "Taksitli işlem güncellendi.",
+    );
+  }
+
   @Post(":debtId/installments/:installmentId/pay")
   async payInstallment(
     @Param("debtId") debtId: string,
@@ -58,7 +71,25 @@ export class DebtsController {
         user.userId,
         dto,
       ),
-      "Taksit ödendi.",
+      "Taksit ödemesi alındı.",
+    );
+  }
+
+  @Post(":debtId/installments/:installmentId/unpay")
+  async unpayInstallment(
+    @Param("debtId") debtId: string,
+    @Param("installmentId") installmentId: string,
+    @ActiveTenant() tenantId: string,
+    @CurrentUser() user: any,
+  ) {
+    return success(
+      await this.service.unpayInstallment(
+        debtId,
+        installmentId,
+        tenantId,
+        user.userId,
+      ),
+      "Taksit ödemesi geri alındı.",
     );
   }
 

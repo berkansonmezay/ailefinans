@@ -211,6 +211,21 @@ export class ReceivablesService {
           createdBy: userId,
         },
       });
+
+      // Record the cash inflow in IncomeTransaction
+      await tx.incomeTransaction.create({
+        data: {
+          tenantId,
+          transactionDate: new Date(dto.paymentDate),
+          amount: Number(dto.amount),
+          currency: rec.currency || "TRY",
+          categoryId: null, // Depending on if Receivable has a category
+          source: rec.debtorName,
+          description: `Alacak Tahsilatı: ${rec.description || rec.debtorName} (Sistem Kaydı)`,
+          parentId: id, // Link to the receivable
+          createdBy: userId,
+        }
+      });
       const newPaid = Number(rec.paidAmount) + paymentAmount;
       const newRemaining = remaining - paymentAmount;
       const status = newRemaining <= 0
@@ -229,6 +244,24 @@ export class ReceivablesService {
     });
   }
 
+  async updatePlan(id: string, tenantId: string, dto: any) {
+    if (id.startsWith("plan_")) {
+      const planId = id.replace("plan_", "");
+      // Update legacy IncomeTransaction
+      await this.prisma.incomeTransaction.updateMany({
+        where: { tenantId, parentId: planId, deletedAt: null },
+        data: {
+          description: dto.description,
+          categoryId: dto.categoryId,
+          accountId: dto.accountId,
+          source: dto.debtorName, // Debtor name maps to source
+        },
+      });
+      return { success: true };
+    }
+    throw new BadRequestException("Sadece plan_ tabanlı taksitli alacaklar düzenlenebilir.");
+  }
+
   async remove(id: string, tenantId: string) {
     if (id.startsWith("plan_")) {
       const planId = id.replace("plan_", "");
@@ -238,9 +271,20 @@ export class ReceivablesService {
       });
     }
     await this.findOne(id, tenantId);
-    return this.prisma.receivable.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    return this.prisma.$transaction(async (tx) => {
+      const deletedReceivable = await tx.receivable.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+      await tx.incomeTransaction.updateMany({
+        where: {
+          tenantId,
+          parentId: id, // Receivable ID
+          deletedAt: null,
+        },
+        data: { deletedAt: new Date() },
+      });
+      return deletedReceivable;
     });
   }
 }

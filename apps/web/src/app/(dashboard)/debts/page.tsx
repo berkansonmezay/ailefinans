@@ -36,17 +36,24 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { formatCurrency } from '@/lib/utils';
+import { QuickAddModal } from '@/components/shared/QuickAddModal';
 import { fetchApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 export default function DebtsPage() {
   const [items, setItems] = useState<any[]>([]);
+  const [debts, setDebts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<any | null>(null);
   const [showInfoGuide, setShowInfoGuide] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [merchants, setMerchants] = useState<any[]>([]);
+  
+  // Partial Payment State
+  const [partialPayment, setPartialPayment] = useState<{ debtId: string, instId: string, amount: number, remaining: number, description: string } | null>(null);
   
   // Filtering & search
   const [filters, setFilters] = useState({
@@ -137,20 +144,49 @@ export default function DebtsPage() {
     }
   };
 
-  const handleTogglePaid = async (inst: any) => {
+  const handleTogglePaid = async (debtId: string, inst: any) => {
     try {
       const isCurrentlyPaid = inst.status === 'PAID';
-      const newNotes = isCurrentlyPaid ? null : 'PAID';
+      
+      if (isCurrentlyPaid) {
+        // Unpay
+        await fetchApi(`/debts/${debtId}/installments/${inst.id}/unpay`, { method: 'POST' });
+        toast.success('Ödeme iptal edildi');
+      } else {
+        // Pay remaining fully
+        const remaining = inst.amount - (inst.paidAmount || 0);
+        await fetchApi(`/debts/${debtId}/installments/${inst.id}/pay`, {
+          method: 'POST',
+          body: JSON.stringify({ amount: remaining }),
+        });
+        toast.success('Taksit ödendi olarak işaretlendi');
+      }
 
-      await fetchApi(`/expenses/${inst.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ notes: newNotes }),
-      });
-
-      toast.success(isCurrentlyPaid ? 'Ödeme iptal edildi' : 'Taksit ödendi olarak işaretlendi');
       loadData();
     } catch (error: any) {
       toast.error(error.message || 'Güncellenirken bir hata oluştu');
+    }
+  };
+
+  const handlePartialPaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!partialPayment) return;
+    
+    if (partialPayment.amount <= 0 || partialPayment.amount > partialPayment.remaining) {
+      toast.error('Geçersiz tutar girdiniz.');
+      return;
+    }
+
+    try {
+      await fetchApi(`/debts/${partialPayment.debtId}/installments/${partialPayment.instId}/pay`, {
+        method: 'POST',
+        body: JSON.stringify({ amount: partialPayment.amount }),
+      });
+      toast.success('Kısmi ödeme başarıyla alındı.');
+      setPartialPayment(null);
+      loadData();
+    } catch (error: any) {
+      toast.error(error.message || 'Ödeme alınırken bir hata oluştu.');
     }
   };
 
@@ -166,38 +202,52 @@ export default function DebtsPage() {
         return toast.error('Taksit sayısı en az 2 olmalıdır');
       }
 
-      const installmentAmount = parsedAmount / count;
-      const planId = Math.random().toString(36).substring(2, 15);
-      const selectedMerchant = merchants.find(m => m.id === formData.merchantId);
-      const creditorName = selectedMerchant ? selectedMerchant.name : formData.creditor;
-
-      // Create installment expenses
-      for (let i = 0; i < count; i++) {
-        const instDate = new Date(formData.firstPaymentDate);
-        instDate.setMonth(instDate.getMonth() + i);
-
-        const desc = formData.description?.trim() 
-          ? `${formData.description.trim()} (${i + 1}. Taksit / ${count})` 
-          : `Taksit ${i + 1}/${count}`;
-
-        const payload = {
-          amount: installmentAmount,
-          transactionDate: instDate.toISOString(),
-          description: desc,
-          categoryId: formData.categoryId || null,
-          merchantId: formData.merchantId || null,
-          accountId: formData.accountId || null,
-          installmentPlanId: planId,
-        };
-
-        await fetchApi('/expenses', {
-          method: 'POST',
-          body: JSON.stringify(payload),
+      if (editingPlan) {
+        await fetchApi(`/debts/${editingPlan.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            description: formData.description,
+            categoryId: formData.categoryId || null,
+            accountId: formData.accountId || null,
+            creditor: formData.creditor,
+          }),
         });
+        toast.success('Taksitli işlem başarıyla güncellendi');
+      } else {
+        const installmentAmount = parsedAmount / count;
+        const planId = Math.random().toString(36).substring(2, 15);
+        const selectedMerchant = merchants.find(m => m.id === formData.merchantId);
+        const creditorName = selectedMerchant ? selectedMerchant.name : formData.creditor;
+
+        // Create installment expenses
+        for (let i = 0; i < count; i++) {
+          const instDate = new Date(formData.firstPaymentDate);
+          instDate.setMonth(instDate.getMonth() + i);
+
+          const desc = formData.description?.trim() 
+            ? `${formData.description.trim()} (${i + 1}. Taksit / ${count})` 
+            : `Taksit ${i + 1}/${count}`;
+
+          const payload = {
+            amount: installmentAmount,
+            transactionDate: instDate.toISOString(),
+            description: desc,
+            categoryId: formData.categoryId || null,
+            merchantId: formData.merchantId || null,
+            accountId: formData.accountId || null,
+            installmentPlanId: planId,
+          };
+
+          await fetchApi('/expenses', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+        }
+        toast.success(`${count} taksitli borç kaydı başarıyla oluşturuldu`);
       }
 
-      toast.success(`${count} taksitli borç kaydı başarıyla oluşturuldu`);
       setIsModalOpen(false);
+      setEditingPlan(null);
       setFormData({
         description: '',
         creditor: '',
@@ -212,6 +262,36 @@ export default function DebtsPage() {
     } catch (error: any) {
       toast.error(error.message || 'Kayıt oluşturulurken hata oluştu');
     }
+  };
+
+  const openAddModal = () => {
+    setEditingPlan(null);
+    setFormData({
+      description: '',
+      creditor: '',
+      merchantId: '',
+      categoryId: '',
+      accountId: '',
+      totalAmount: '',
+      installmentCount: '3',
+      firstPaymentDate: new Date().toISOString().split('T')[0],
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (item: any) => {
+    setEditingPlan(item);
+    setFormData({
+      description: item.description || '',
+      creditor: item.creditor || item.merchantName || '',
+      merchantId: item.installments[0]?.merchantId || '',
+      categoryId: item.category?.id || '',
+      accountId: item.installments[0]?.accountId || '',
+      totalAmount: item.totalAmount.toString(),
+      installmentCount: item.installmentCount.toString(),
+      firstPaymentDate: item.firstPaymentDate.split('T')[0],
+    });
+    setIsModalOpen(true);
   };
 
   // Filtered items
@@ -482,8 +562,7 @@ export default function DebtsPage() {
           <p className="text-text-muted mt-1">Taksitli borçlarınızı ve ödeme planlarını taksitler halinde takip edin.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-        </div>
+
       </div>
 
       {/* 5 Reference KPI Cards (TOPLAM TUTAR, BEKLEYEN, GECİKMİŞ, ÖDENEN, PERFORMANS) */}
@@ -865,8 +944,15 @@ export default function DebtsPage() {
                                 </div>
                               )}
                             </td>
-                            <td className="px-5 py-3 font-bold text-text-primary">
-                              {formatCurrency(inst.amount, inst.currency)}
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-text-primary">
+                              <div className="flex flex-col items-end">
+                                <span>{formatCurrency(inst.amount, inst.currency)}</span>
+                                {(inst.paidAmount || 0) > 0 && (inst.paidAmount || 0) < inst.amount && (
+                                  <span className="text-[10px] text-emerald-500 font-medium mt-0.5">
+                                    {formatCurrency(inst.paidAmount, inst.currency)} Ödendi
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-5 py-3">
                               {isPaid ? (
@@ -893,16 +979,35 @@ export default function DebtsPage() {
                               )}
                             </td>
                             <td className="px-5 py-3 text-right">
-                              <button
-                                onClick={() => handleTogglePaid(inst)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                                  isPaid 
-                                    ? 'border-border text-text-secondary hover:bg-bg-sidebar hover:text-text-primary' 
-                                    : 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white'
-                                }`}
-                              >
-                                {isPaid ? 'Geri Al' : '✓ Öde'}
-                              </button>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleTogglePaid(inst.planId, inst)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                                    isPaid 
+                                      ? 'border-border text-text-secondary hover:bg-bg-sidebar hover:text-text-primary' 
+                                      : 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white'
+                                  }`}
+                                  title={isPaid ? 'Ödemeyi iptal et' : 'Kalan tutarın tamamını öde'}
+                                >
+                                  {isPaid ? 'Geri Al' : '✓ Öde'}
+                                </button>
+
+                                {!isPaid && inst.sourceType === 'DEBT' && (
+                                  <button
+                                    onClick={() => setPartialPayment({
+                                      debtId: inst.planId,
+                                      instId: inst.id,
+                                      remaining: inst.amount - (inst.paidAmount || 0),
+                                      amount: inst.amount - (inst.paidAmount || 0),
+                                      description: `${inst.planName} - ${inst.number}. Taksit Kısmi Ödemesi`
+                                    })}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-bg-secondary border border-border text-text-primary hover:bg-bg-hover hover:border-emerald-500/30 transition-all"
+                                    title="Taksitin bir kısmını öde"
+                                  >
+                                    Kısmi Öde
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1010,13 +1115,32 @@ export default function DebtsPage() {
                         )}
                       </button>
 
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeletePlan(item); }}
-                        className="p-2 rounded-xl bg-bg-secondary hover:bg-rose-500/20 text-text-muted hover:text-rose-400 transition-colors"
-                        title="Taksitli Borç Planını Sil"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(item);
+                          }}
+                          className="p-1.5 text-text-secondary hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                          title="Düzenle"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePlan(item);
+                          }}
+                          className="p-1.5 text-text-secondary hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Planı Sil"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1089,13 +1213,25 @@ export default function DebtsPage() {
                                     {formatDate(inst.dueDate)}
                                   </td>
                                   <td className="py-2.5 font-bold text-text-primary">
-                                    {formatCurrency(inst.amount, item.currency)}
+                                    <div className="flex flex-col">
+                                      <span>{formatCurrency(inst.amount, item.currency)}</span>
+                                      {(inst.paidAmount || 0) > 0 && (inst.paidAmount || 0) < inst.amount && (
+                                        <span className="text-[10px] text-emerald-500 font-medium mt-0.5">
+                                          {formatCurrency(inst.paidAmount, item.currency)} Ödendi
+                                        </span>
+                                      )}
+                                    </div>
                                   </td>
                                   <td className="py-2.5">
                                     {isPaid ? (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
                                         <CheckCircle2 className="w-3 h-3" />
                                         Ödendi
+                                      </span>
+                                    ) : (inst.paidAmount || 0) > 0 ? (
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                                        <Clock className="w-3 h-3" />
+                                        Kısmi Ödendi
                                       </span>
                                     ) : isOverdue ? (
                                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20">
@@ -1116,29 +1252,37 @@ export default function DebtsPage() {
                                   </td>
                                   <td className="py-2.5 text-right">
                                     <div className="flex items-center justify-end gap-2">
-                                      {item.sourceType === 'EXPENSE_TRANSACTION' && (
+                                      {/* Geri Al / Öde (Tam) Butonu */}
+                                      <button
+                                        onClick={() => handleTogglePaid(item.id, inst)}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                                          isPaid
+                                            ? 'bg-bg-secondary text-text-muted hover:text-amber-400 hover:bg-amber-500/10'
+                                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                                        }`}
+                                        title={isPaid ? 'Ödemeyi iptal et' : 'Kalan tutarın tamamını öde'}
+                                      >
+                                        {isPaid ? 'Geri Al' : '✓ Öde'}
+                                      </button>
+                                      
+                                      {/* Kısmi Ödeme Butonu */}
+                                      {!isPaid && item.sourceType === 'DEBT' && (
                                         <button
-                                          onClick={() => handleTogglePaid(inst)}
-                                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                                            isPaid
-                                              ? 'bg-bg-secondary text-text-muted hover:text-amber-400 hover:bg-amber-500/10'
-                                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
-                                          }`}
-                                          title={isPaid ? 'Ödemeyi iptal et' : 'Ödendi olarak işaretle'}
+                                          onClick={() => setPartialPayment({
+                                            debtId: item.id,
+                                            instId: inst.id,
+                                            remaining: inst.amount - (inst.paidAmount || 0),
+                                            amount: inst.amount - (inst.paidAmount || 0),
+                                            description: `${inst.number}. Taksit Kısmi Ödemesi`
+                                          })}
+                                          className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-bg-secondary border border-border text-text-primary hover:bg-bg-hover hover:border-emerald-500/30 transition-all"
+                                          title="Taksitin bir kısmını öde"
                                         >
-                                          {isPaid ? 'Geri Al' : '✓ Öde'}
+                                          Kısmi Öde
                                         </button>
                                       )}
 
-                                      {item.sourceType === 'EXPENSE_TRANSACTION' && (
-                                        <button
-                                          onClick={() => handleDeleteInstallment(inst)}
-                                          className="p-1 rounded-lg text-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                                          title="Bu taksiti sil"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
+                                      {/* Silme işlemi sadece eski Expenses mantığı için vardı, artık desteklenmiyor diyebiliriz veya sil butonunu DebtInstallment için güncelleyebiliriz. Şimdilik gizliyorum çünkü silme api si eski yapı. */}
                                     </div>
                                   </td>
                                 </tr>
@@ -1156,124 +1300,69 @@ export default function DebtsPage() {
         )}
       </div>
 
-      {/* Modal: Yeni Taksitli Borç Ekle */}
+      {isModalOpen && editingPlan && (
+        <QuickAddModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingPlan(null);
+          }}
+          onSuccess={loadData}
+          defaultTab="expense"
+          defaultIsInstallment={true}
+          editData={{
+            id: editingPlan.id,
+            isPlan: true,
+            type: 'EXPENSE',
+            amount: editingPlan.totalAmount,
+            merchantId: editingPlan.merchantId,
+            categoryId: editingPlan.category?.id || editingPlan.categoryId,
+            accountId: editingPlan.installments?.[0]?.accountId,
+            date: editingPlan.firstPaymentDate,
+            transactionDate: editingPlan.firstPaymentDate,
+            description: editingPlan.description,
+          }}
+        />
+      )}
+
+      {/* Partial Payment Modal */}
       <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Yeni Taksitli Borç Ekle"
+        isOpen={!!partialPayment}
+        onClose={() => setPartialPayment(null)}
+        title="Kısmi Ödeme Yap"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Açıklama / Ürün Adı"
-            placeholder="Örn: Buzdolabı, iPhone 15, Bilgisayar"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            required
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {partialPayment && (
+          <form onSubmit={handlePartialPaymentSubmit} className="space-y-4">
+            <div className="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 mb-4">
+              <div className="text-sm text-text-primary mb-1">{partialPayment.description}</div>
+              <div className="text-xs text-text-secondary">
+                Toplam Kalan: <span className="font-semibold text-emerald-500">{formatCurrency(partialPayment.remaining)}</span>
+              </div>
+            </div>
+            
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                Alacaklı / Mağaza
-              </label>
-              {merchants.length > 0 ? (
-                <select
-                  value={formData.merchantId}
-                  onChange={(e) => setFormData({ ...formData, merchantId: e.target.value })}
-                  className="w-full bg-bg-card border border-slate-700 rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                >
-                  <option value="">Seçiniz veya aşağıya yazınız</option>
-                  {merchants.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <Input
-                  placeholder="Örn: Arçelik, Garanti Bankası"
-                  value={formData.creditor}
-                  onChange={(e) => setFormData({ ...formData, creditor: e.target.value })}
-                  required
-                />
-              )}
+              <label className="block text-sm font-medium text-text-primary mb-1.5">Ödenecek Tutar (TL)</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0.01"
+                max={partialPayment.remaining}
+                required
+                value={partialPayment.amount || ''}
+                onChange={(e) => setPartialPayment({ ...partialPayment, amount: parseFloat(e.target.value) })}
+                placeholder="Örn: 500"
+              />
+              <p className="text-[11px] text-text-muted mt-1.5">
+                Kalan tutardan daha fazla ödeme yapılamaz. Tamamını ödemek için "Öde" butonunu kullanabilirsiniz.
+              </p>
             </div>
-
-            <Select
-              label="Kategori"
-              value={formData.categoryId}
-              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-              options={[
-                { value: '', label: 'Kategori Seçiniz' },
-                ...categories.map(c => ({ value: c.id, label: c.name }))
-              ]}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Toplam Tutar (TL)"
-              type="number"
-              step="0.01"
-              placeholder="Örn: 12000"
-              value={formData.totalAmount}
-              onChange={(e) => setFormData({ ...formData, totalAmount: e.target.value })}
-              required
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                Taksit Sayısı
-              </label>
-              <select
-                value={formData.installmentCount}
-                onChange={(e) => setFormData({ ...formData, installmentCount: e.target.value })}
-                className="w-full bg-bg-card border border-slate-700 rounded-xl px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-              >
-                {[2, 3, 4, 5, 6, 8, 9, 10, 12, 18, 24, 36].map((num) => (
-                  <option key={num} value={num}>{num} Taksit</option>
-                ))}
-              </select>
+            
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setPartialPayment(null)}>İptal</Button>
+              <Button type="submit" variant="primary">Ödemeyi Kaydet</Button>
             </div>
-          </div>
-
-          {/* Monthly preview */}
-          {formData.totalAmount && parseFloat(formData.totalAmount) > 0 && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-sm text-emerald-400 flex items-center justify-between">
-              <span>Aylık Taksit Tutarı:</span>
-              <span className="font-bold text-base">
-                {formatCurrency(parseFloat(formData.totalAmount) / parseInt(formData.installmentCount || '2'))} / ay
-              </span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="İlk Taksit Tarihi"
-              type="date"
-              value={formData.firstPaymentDate}
-              onChange={(e) => setFormData({ ...formData, firstPaymentDate: e.target.value })}
-              required
-            />
-
-            <Select
-              label="İlişkili Hesap (Opsiyonel)"
-              value={formData.accountId}
-              onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-              options={[
-                { value: '', label: 'Hesap Seçiniz' },
-                ...accounts.map(a => ({ value: a.id, label: a.name }))
-              ]}
-            />
-          </div>
-
-          <div className="pt-4 flex justify-end gap-3 border-t border-border mt-4">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
-              İptal
-            </Button>
-            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500">
-              Taksitli Borcu Kaydet
-            </Button>
-          </div>
-        </form>
+          </form>
+        )}
       </Modal>
     </div>
   );

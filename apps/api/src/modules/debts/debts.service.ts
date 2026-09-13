@@ -186,6 +186,7 @@ export class DebtsService {
           interestRate: dto.interestRate,
           accountId: dto.accountId,
           categoryId: dto.categoryId,
+          merchantId: dto.merchantId,
           createdBy: userId,
         },
       });
@@ -232,27 +233,68 @@ export class DebtsService {
     const debt = await this.findOne(debtId, tenantId);
     const installment = debt.installments.find((i) => i.id === installmentId);
     if (!installment) throw new NotFoundException("Taksit bulunamadı.");
-    if (installment.status === "PAID")
+    if (installment.status === "PAID" || installment.isPaid)
       throw new BadRequestException("Bu taksit zaten ödenmiş.");
 
     return this.prisma.$transaction(async (tx) => {
+      // Legacy ExpenseTransaction (plan_) Handling
+      if (debtId.startsWith("plan_")) {
+        if (Number(dto.amount) < installment.amount) {
+          throw new BadRequestException("Bu kayıt eski (giderler) altyapısında olduğu için kısmi ödeme desteklenmemektedir. Lütfen tamamını ödeyin.");
+        }
+        await tx.expenseTransaction.update({
+          where: { id: installmentId },
+          data: { notes: "PAID" },
+        });
+        return this.findOne(debtId, tenantId);
+      }
+
+      const currentPaid = Number(installment.paidAmount || 0);
+      const newPaidAmount = currentPaid + Number(dto.amount);
+      const newStatus = newPaidAmount >= installment.amount ? "PAID" : installment.status;
+
       await tx.debtInstallment.update({
         where: { id: installmentId },
-        data: { status: "PAID", paidDate: new Date(), paidAmount: dto.amount },
+        data: { 
+          status: newStatus, 
+          paidDate: new Date(), 
+          paidAmount: newPaidAmount 
+        },
       });
 
-      const newPaidAmount = Number(debt.paidAmount) + Number(dto.amount);
-      const newRemainingAmount = Number(debt.totalAmount) - newPaidAmount;
-      const allPaid = debt.installments
-        .filter((i) => i.id !== installmentId)
-        .every((i) => i.status === "PAID");
+      // Record the cash outflow in ExpenseTransaction
+      await tx.expenseTransaction.create({
+        data: {
+          tenantId,
+          transactionDate: new Date(),
+          amount: Number(dto.amount),
+          currency: debt.currency || "TRY",
+          categoryId: debt.categoryId,
+          accountId: debt.accountId,
+          merchantId: debt.merchantId,
+          description: `Borç Ödemesi: ${debt.description || debt.creditor} (${installment.number}. Taksit)`,
+          notes: "DEBT_PAYMENT",
+          parentId: installmentId, // Link to the installment
+          createdBy: userId,
+        }
+      });
+
+      const newDebtPaidAmount = Number(debt.paidAmount) + Number(dto.amount);
+      const newRemainingAmount = Number(debt.totalAmount) - newDebtPaidAmount;
+      
+      const updatedInstallments = debt.installments.map(i => {
+        if (i.id === installmentId) return { ...i, status: newStatus };
+        return i;
+      });
+      const allPaid = updatedInstallments.every((i) => i.status === "PAID");
 
       await tx.debt.update({
         where: { id: debtId },
         data: {
-          paidAmount: newPaidAmount,
+          paidAmount: newDebtPaidAmount,
           remainingAmount: newRemainingAmount <= 0 ? 0 : newRemainingAmount,
           status: allPaid ? "PAID" : "ACTIVE",
+          lastPaymentDate: new Date(),
         },
       });
 
@@ -260,6 +302,102 @@ export class DebtsService {
         where: { id: debtId },
         include: { installments: { orderBy: { number: "asc" } } },
       });
+    });
+  }
+
+  async unpayInstallment(
+    debtId: string,
+    installmentId: string,
+    tenantId: string,
+    userId: string,
+  ) {
+    const debt = await this.findOne(debtId, tenantId);
+    const installment = debt.installments.find((i) => i.id === installmentId);
+    if (!installment) throw new NotFoundException("Taksit bulunamadı.");
+    if (Number(installment.paidAmount || 0) === 0 && !installment.isPaid)
+      throw new BadRequestException("Bu taksitte henüz bir ödeme yok.");
+
+    return this.prisma.$transaction(async (tx) => {
+      // Legacy ExpenseTransaction (plan_) Handling
+      if (debtId.startsWith("plan_")) {
+        await tx.expenseTransaction.update({
+          where: { id: installmentId },
+          data: { notes: null },
+        });
+        return this.findOne(debtId, tenantId);
+      }
+
+      const revertedAmount = Number(installment.paidAmount || 0);
+
+      // Restore status to OVERDUE if dueDate is passed, else PLANNED
+      const isOverdue = new Date(installment.dueDate) < new Date();
+      const newStatus = isOverdue ? "OVERDUE" : "PLANNED";
+
+      await tx.debtInstallment.update({
+        where: { id: installmentId },
+        data: { 
+          status: newStatus, 
+          paidDate: null, 
+          paidAmount: 0 
+        },
+      });
+
+      // Revert the cash outflow by deleting the associated ExpenseTransactions
+      await tx.expenseTransaction.deleteMany({
+        where: {
+          parentId: installmentId,
+          notes: "DEBT_PAYMENT",
+        }
+      });
+
+      const newDebtPaidAmount = Math.max(0, Number(debt.paidAmount) - revertedAmount);
+      const newRemainingAmount = Number(debt.totalAmount) - newDebtPaidAmount;
+
+      await tx.debt.update({
+        where: { id: debtId },
+        data: {
+          paidAmount: newDebtPaidAmount,
+          remainingAmount: newRemainingAmount <= 0 ? 0 : newRemainingAmount,
+          status: "ACTIVE", // Reverting means it can't be PAID anymore
+        },
+      });
+
+      return tx.debt.findUnique({
+        where: { id: debtId },
+        include: { installments: { orderBy: { number: "asc" } } },
+      });
+    });
+  }
+
+  async update(id: string, tenantId: string, dto: any) {
+    if (id.startsWith("plan_")) {
+      const planId = id.replace("plan_", "");
+      // Update legacy ExpenseTransaction
+      await this.prisma.expenseTransaction.updateMany({
+        where: { tenantId, installmentPlanId: planId, deletedAt: null },
+        data: {
+          description: dto.description,
+          categoryId: dto.categoryId,
+          accountId: dto.accountId,
+          merchantId: dto.creditor, // Creditor is mapped to merchantId in legacy
+        },
+      });
+      return this.findOne(id, tenantId);
+    }
+
+    await this.findOne(id, tenantId);
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.debt.update({
+        where: { id },
+        data: {
+          description: dto.description,
+          categoryId: dto.categoryId,
+          accountId: dto.accountId,
+          creditor: dto.creditor,
+        },
+        include: { installments: { orderBy: { number: "asc" } } },
+      });
+      return updated;
     });
   }
 
@@ -271,10 +409,26 @@ export class DebtsService {
         data: { deletedAt: new Date() },
       });
     }
-    await this.findOne(id, tenantId);
-    return this.prisma.debt.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    const debt = await this.findOne(id, tenantId);
+    return this.prisma.$transaction(async (tx) => {
+      const deletedDebt = await tx.debt.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      const installmentIds = debt.installments.map((i) => i.id);
+      if (installmentIds.length > 0) {
+        await tx.expenseTransaction.updateMany({
+          where: {
+            tenantId,
+            parentId: { in: installmentIds },
+            notes: "DEBT_PAYMENT",
+            deletedAt: null,
+          },
+          data: { deletedAt: new Date() },
+        });
+      }
+      return deletedDebt;
     });
   }
 }

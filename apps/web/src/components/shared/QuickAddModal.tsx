@@ -143,34 +143,83 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
       }
 
       if (isExpense) {
-        for (const payload of payloads) {
-          const { _planId, ...rest } = payload;
-          const finalPayload = { ...rest, merchantId: isMerchant ? merchantId : null, accountId: isAccount ? merchantId : null };
-          if (_planId) finalPayload.installmentPlanId = _planId;
-          
-          if (editData && payloads.length === 1) {
-            await fetchApi(`/expenses/${editData.id}`, { method: 'PUT', body: JSON.stringify(finalPayload) });
-          } else {
-            await fetchApi('/expenses', { method: 'POST', body: JSON.stringify(finalPayload) });
+        if (editData && editData.isPlan) {
+          // Edit Debt Plan
+          await fetchApi(`/debts/${editData.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              description,
+              merchantId: isMerchant ? merchantId : null,
+              accountId: isAccount ? merchantId : null,
+              categoryId: categoryId || null,
+              creditor: description,
+            })
+          });
+          toast.success('Taksitli borç planı güncellendi');
+        } else if (isInstallment && !editData) {
+          const count = parseInt(installmentCount);
+          await fetchApi('/debts', {
+            method: 'POST',
+            body: JSON.stringify({
+              creditor: description || 'Taksitli Gider',
+              description: description || 'Taksitli Gider',
+              principalAmount: parsedAmount,
+              totalAmount: parsedAmount,
+              installmentCount: count,
+              installmentAmount: parsedAmount / count,
+              firstPaymentDate: new Date(firstInstallmentDate).toISOString(),
+              startDate: new Date().toISOString(),
+              categoryId: categoryId || null,
+              accountId: isAccount ? merchantId : null,
+              merchantId: isMerchant ? merchantId : null,
+              currency: 'TRY'
+            })
+          });
+          toast.success('Taksitli gider başarıyla eklendi');
+        } else {
+          for (const payload of payloads) {
+            const { _planId, ...rest } = payload;
+            const finalPayload = { ...rest, merchantId: isMerchant ? merchantId : null, accountId: isAccount ? merchantId : null };
+            
+            if (editData && payloads.length === 1) {
+              await fetchApi(`/expenses/${editData.id}`, { method: 'PUT', body: JSON.stringify(finalPayload) });
+            } else {
+              await fetchApi('/expenses', { method: 'POST', body: JSON.stringify(finalPayload) });
+            }
           }
+          toast.success(editData ? 'Gider başarıyla güncellendi' : 'Gider başarıyla eklendi');
         }
-        toast.success(isInstallment && !editData ? 'Taksitli gider başarıyla eklendi' : 'Gider başarıyla eklendi/güncellendi');
       } else {
         const selectedMerchant = merchants.find(m => m.id === merchantId);
         const selectedAccount = accounts.find(a => a.id === merchantId);
         
-        for (const payload of payloads) {
-          const { _planId, ...rest } = payload;
-          const finalPayload = { ...rest, source: selectedMerchant ? selectedMerchant.name : (selectedAccount ? selectedAccount.name : null), accountId: isAccount ? merchantId : null };
-          if (_planId) finalPayload.parentId = _planId; // Use parentId for incomes as a grouping mechanism
-          
-          if (editData && payloads.length === 1) {
-            await fetchApi(`/incomes/${editData.id}`, { method: 'PUT', body: JSON.stringify(finalPayload) });
-          } else {
-            await fetchApi('/incomes', { method: 'POST', body: JSON.stringify(finalPayload) });
+        if (editData && editData.isPlan) {
+          // Edit Receivable Plan
+          await fetchApi(`/receivables/plan/${editData.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              description,
+              merchantId: isMerchant ? merchantId : null,
+              accountId: isAccount ? merchantId : null,
+              categoryId: categoryId || null,
+              source: selectedMerchant ? selectedMerchant.name : (selectedAccount ? selectedAccount.name : null),
+            })
+          });
+          toast.success('Taksitli alacak planı güncellendi');
+        } else {
+          for (const payload of payloads) {
+            const { _planId, ...rest } = payload;
+            const finalPayload = { ...rest, source: selectedMerchant ? selectedMerchant.name : (selectedAccount ? selectedAccount.name : null), accountId: isAccount ? merchantId : null };
+            if (_planId) finalPayload.parentId = _planId; // Use parentId for incomes as a grouping mechanism
+            
+            if (editData && payloads.length === 1) {
+              await fetchApi(`/incomes/${editData.id}`, { method: 'PUT', body: JSON.stringify(finalPayload) });
+            } else {
+              await fetchApi('/incomes', { method: 'POST', body: JSON.stringify(finalPayload) });
+            }
           }
+          toast.success(isInstallment && !editData ? 'Taksitli gelir başarıyla eklendi' : 'Gelir başarıyla eklendi/güncellendi');
         }
-        toast.success(isInstallment && !editData ? 'Taksitli gelir başarıyla eklendi' : 'Gelir başarıyla eklendi/güncellendi');
       }
       onClose();
       if (onSuccess) onSuccess();
@@ -227,13 +276,43 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
           
           {/* Amount Input */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Tutar (₺)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700">Tutar (₺)</label>
+              <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => !editData && setIsInstallment(false)}
+                  disabled={!!editData}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                    !isInstallment 
+                      ? 'bg-white text-slate-800 shadow-sm' 
+                      : 'text-slate-500 hover:text-slate-800'
+                  } ${editData ? 'opacity-80 cursor-not-allowed' : ''}`}
+                >
+                  Tek Çekim
+                </button>
+                <button
+                  type="button"
+                  onClick={() => !editData && setIsInstallment(true)}
+                  disabled={!!editData}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 ${
+                    isInstallment 
+                      ? 'bg-white text-slate-800 shadow-sm' 
+                      : 'text-slate-500 hover:text-slate-800'
+                  } ${editData ? 'opacity-80 cursor-not-allowed' : ''}`}
+                >
+                  <Hash size={12} />
+                  Taksitli
+                </button>
+              </div>
+            </div>
             <input 
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full text-center text-3xl font-bold text-text-muted bg-white border border-slate-200 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 transition-shadow"
+              disabled={editData?.isPlan}
+              className={`w-full text-center text-3xl font-bold text-slate-800 bg-white border border-slate-200 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300 transition-shadow ${editData?.isPlan ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
               autoFocus
             />
           </div>
@@ -288,8 +367,9 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
                 <input 
                   type="date"
                   value={date}
+                  disabled={editData?.isPlan}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full appearance-none bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  className={`w-full appearance-none bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer ${editData?.isPlan ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
                 />
                 <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none text-slate-900">
                   <Calendar size={16} strokeWidth={2} />
@@ -310,25 +390,9 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
             </div>
           </div>
 
-          <div className="flex flex-col bg-slate-50/80 rounded-xl border border-border overflow-hidden">
-            <div className="flex items-center justify-between p-3">
-              <div className="flex items-center gap-3">
-                <TrendingUp size={18} className="text-text-muted" strokeWidth={1.5} />
-                <div>
-                  <p className="text-[14px] font-bold text-slate-800">Taksitli İşlem</p>
-                  <p className="text-[11px] text-text-muted font-medium">Bu işlemi taksitlere böl</p>
-                </div>
-              </div>
-              <button 
-                type="button"
-                className={`w-10 h-5 rounded-full transition-colors duration-200 ease-in-out relative ${isInstallment ? headerColor : 'bg-slate-200'}`}
-                onClick={() => setIsInstallment(!isInstallment)}
-              >
-                <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform duration-200 ease-in-out ${isInstallment ? 'translate-x-5' : 'translate-x-0.5'} shadow-sm`} />
-              </button>
-            </div>
-            {isInstallment && (
-              <div className="p-3 border-t border-slate-200 bg-white">
+          {isInstallment && (
+            <div className="flex flex-col bg-slate-50/80 rounded-xl border border-border overflow-hidden">
+              <div className="p-3 bg-white border-t border-slate-200">
                 <div className="flex gap-4">
                   <div className="flex-1">
                     <label className="block text-[11px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Taksit Sayısı</label>
@@ -336,9 +400,10 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
                       type="number"
                       min="2"
                       max="36"
+                      disabled={editData?.isPlan}
                       value={installmentCount}
                       onChange={(e) => setInstallmentCount(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 text-sm font-medium focus:outline-none focus:border-slate-300 transition-colors"
+                      className={`w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 text-sm font-medium focus:outline-none focus:border-slate-300 transition-colors ${editData?.isPlan ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                   </div>
                   <div className="flex-1">
@@ -346,6 +411,7 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
                     <div className="relative">
                       <input 
                         type="date"
+                        disabled={editData?.isPlan}
                         value={firstInstallmentDate}
                         onChange={(e) => setFirstInstallmentDate(e.target.value)}
                         className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-slate-800 text-[13px] font-medium focus:outline-none focus:border-slate-300 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-10 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
@@ -363,8 +429,8 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Submit Button */}
           <button 
