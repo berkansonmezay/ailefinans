@@ -22,7 +22,12 @@ import {
   Coins,
   PieChart,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  Info,
+  ArrowRight,
+  RefreshCw,
+  List,
+  LayoutList
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -45,6 +50,7 @@ export default function DebtsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'OVERDUE' | 'PAID'>('ALL');
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
+  const [viewMode, setViewMode] = useState<'plan' | 'list'>('plan');
 
   // Form data for new installment debt
   const [formData, setFormData] = useState({
@@ -77,12 +83,7 @@ export default function DebtsPage() {
       
       setMerchants(Array.isArray(merRes) ? merRes : (merRes.items || merRes.data || []));
 
-      // Expand all plans by default so user immediately sees their installments
-      const initialExpanded: Record<string, boolean> = {};
-      debtList.forEach((item: any) => {
-        initialExpanded[item.id] = true;
-      });
-      setExpandedPlans(initialExpanded);
+      // Removed initialExpanded reset to prevent auto-collapse on refresh
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || 'Veriler yüklenemedi');
@@ -113,7 +114,7 @@ export default function DebtsPage() {
   };
 
   const handleDeleteInstallment = async (installment: any) => {
-    if (!confirm(`${installment.number}. taksiti silmek istediğinize emin misiniz?`)) {
+    if (!confirm(`${installment.number || installment.installmentNumber || ''}. taksiti silmek istediğinize emin misiniz?`)) {
       return;
     }
     try {
@@ -224,18 +225,23 @@ export default function DebtsPage() {
     });
   }, [items, searchQuery, statusFilter]);
 
-  // Extract all individual installments across all plans for exact KPI calculation
+  // Extract all individual installments across all filtered plans for exact KPI / list view calculation
   const allInstallments = useMemo(() => {
     const list: any[] = [];
-    items.forEach(item => {
+    filteredItems.forEach(item => {
       if (Array.isArray(item.installments)) {
         item.installments.forEach((inst: any) => {
-          list.push({ ...inst, parentPlan: item });
+          list.push({ 
+            ...inst, 
+            planName: item.description || item.creditor, 
+            planId: item.id, 
+            currency: item.currency 
+          });
         });
       }
     });
-    return list;
-  }, [items]);
+    return list.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  }, [filteredItems]);
 
   // Statistics calculation matching 5-card reference
   const stats = useMemo(() => {
@@ -542,6 +548,23 @@ export default function DebtsPage() {
             Tamamlananlar
           </button>
         </div>
+        
+        <div className="flex items-center bg-bg-secondary p-1 rounded-lg ml-auto sm:ml-4">
+          <button
+            onClick={() => setViewMode('plan')}
+            className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'plan' ? 'bg-bg-card shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
+            title="Plan Görünümü"
+          >
+            <LayoutList size={16} />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-bg-card shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
+            title="Taksit Listesi Görünümü"
+          >
+            <List size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Installment Plans List */}
@@ -559,9 +582,108 @@ export default function DebtsPage() {
               Harcama yaparken "Taksitli İşlem" seçeneğini kullanarak taksit planları ekleyebilirsiniz.
             </p>
           </div>
+        ) : viewMode === 'list' ? (
+          <div className="bg-bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+             <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="bg-bg-sidebar border-b border-border text-text-secondary">
+                      <th className="px-5 py-3 font-semibold">Taksit Planı</th>
+                      <th className="px-5 py-3 font-semibold">Taksit No</th>
+                      <th className="px-5 py-3 font-semibold">Vade Tarihi</th>
+                      <th className="px-5 py-3 font-semibold">Tutar</th>
+                      <th className="px-5 py-3 font-semibold">Durum</th>
+                      <th className="px-5 py-3 font-semibold text-right">İşlem</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {allInstallments.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-5 py-8 text-center text-text-muted">
+                          Gösterilecek taksit bulunamadı.
+                        </td>
+                      </tr>
+                    ) : (
+                      allInstallments.map((inst: any) => {
+                        const isPaid = inst.status === 'PAID';
+                        const instDate = new Date(inst.dueDate);
+                        const now = new Date();
+                        const diffDays = Math.ceil((instDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                        const isOverdue = !isPaid && diffDays < 0;
+                        const isDueSoon = !isPaid && !isOverdue && diffDays >= 0 && diffDays <= 7;
+
+                        return (
+                          <tr key={inst.id} className="hover:bg-bg-sidebar/50 transition-colors">
+                            <td className="px-5 py-3 font-medium text-text-primary">
+                              {inst.planName}
+                            </td>
+                            <td className="px-5 py-3 font-semibold text-text-primary">
+                              {inst.number}. Taksit
+                            </td>
+                            <td className="px-5 py-3">
+                              <div className={`flex items-center gap-1.5 ${
+                                isOverdue ? 'text-rose-500 font-bold' : 
+                                isDueSoon ? 'text-amber-500 font-bold' : 'text-text-secondary'
+                              }`}>
+                                <CalendarDays className="w-3.5 h-3.5" />
+                                {formatDate(inst.dueDate)}
+                              </div>
+                              {isOverdue && (
+                                <div className="text-[10px] text-rose-500 mt-0.5">
+                                  {Math.abs(diffDays)} gün gecikti
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-5 py-3 font-bold text-text-primary">
+                              {formatCurrency(inst.amount, inst.currency)}
+                            </td>
+                            <td className="px-5 py-3">
+                              {isPaid ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-500 w-fit">
+                                    <CheckCircle2 size={12} /> Ödendi
+                                  </span>
+                                  {inst.paidDate && (
+                                    <span className="text-[10px] text-text-muted">{formatDate(inst.paidDate)}</span>
+                                  )}
+                                </div>
+                              ) : isOverdue ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-rose-500/10 text-rose-500 w-fit">
+                                  <AlertCircle size={12} /> Gecikmiş
+                                </span>
+                              ) : isDueSoon ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-500/10 text-amber-500 w-fit">
+                                  <Clock size={12} /> Yaklaşıyor
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-slate-500/10 text-slate-500 w-fit">
+                                  Bekliyor
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              <button
+                                onClick={() => openInstallmentModal(inst, inst.planName, inst.currency)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                                  isPaid 
+                                    ? 'border-border text-text-secondary hover:bg-bg-sidebar hover:text-text-primary' 
+                                    : 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white'
+                                }`}
+                              >
+                                {isPaid ? 'Detay' : 'Öde'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+          </div>
         ) : (
           filteredItems.map((item) => {
-            const isExpanded = expandedPlans[item.id] !== false;
+            const isExpanded = expandedPlans[item.id] === true;
             const installments = item.installments || [];
             const count = item.installmentCount || installments.length || 1;
             const paidCount = installments.filter((i: any) => i.status === 'PAID').length;
@@ -572,8 +694,11 @@ export default function DebtsPage() {
                 key={item.id} 
                 className="bg-bg-card border border-border hover:border-emerald-500/30 rounded-2xl overflow-hidden transition-all shadow-sm"
               >
-                {/* Plan Header */}
-                <div className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                {/* Plan Header & Progress (Clickable) */}
+                <div 
+                  className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer hover:bg-bg-sidebar/30 transition-colors"
+                  onClick={() => toggleExpand(item.id)}
+                >
                   <div className="flex items-start gap-3.5">
                     <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <CreditCard className="w-6 h-6" />
@@ -637,7 +762,7 @@ export default function DebtsPage() {
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => toggleExpand(item.id)}
+                        onClick={(e) => { e.stopPropagation(); toggleExpand(item.id); }}
                         className="p-2 rounded-xl bg-bg-secondary hover:bg-slate-700/50 text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
                         title="Taksitleri Göster/Gizle"
                       >
@@ -655,7 +780,7 @@ export default function DebtsPage() {
                       </button>
 
                       <button
-                        onClick={() => handleDeletePlan(item)}
+                        onClick={(e) => { e.stopPropagation(); handleDeletePlan(item); }}
                         className="p-2 rounded-xl bg-bg-secondary hover:bg-rose-500/20 text-text-muted hover:text-rose-400 transition-colors"
                         title="Taksitli Borç Planını Sil"
                       >
@@ -665,8 +790,11 @@ export default function DebtsPage() {
                   </div>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="px-5 pb-3">
+                {/* Progress Bar (Clickable) */}
+                <div 
+                  className="px-5 pb-3 cursor-pointer hover:bg-bg-sidebar/30 transition-colors"
+                  onClick={() => toggleExpand(item.id)}
+                >
                   <div className="w-full bg-bg-secondary h-2 rounded-full overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-500 rounded-full ${
