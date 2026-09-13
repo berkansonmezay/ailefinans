@@ -36,6 +36,18 @@ export class MerchantsService {
     });
   }
 
+  async createBulk(tenantId: string, userId: string, dtos: any[]) {
+    const data = dtos.map(dto => ({
+      ...dto,
+      tenantId,
+      createdBy: userId,
+    }));
+    return this.prisma.merchant.createMany({
+      data,
+      skipDuplicates: true,
+    });
+  }
+
   async update(id: string, tenantId: string, dto: any) {
     const m = await this.prisma.merchant.findFirst({
       where: { id, tenantId, deletedAt: null },

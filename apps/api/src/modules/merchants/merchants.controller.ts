@@ -38,6 +38,18 @@ export class MerchantsController {
     );
   }
 
+  @Post("bulk")
+  async createBulk(
+    @ActiveTenant() tenantId: string,
+    @CurrentUser() user: any,
+    @Body() dtos: any[],
+  ) {
+    return success(
+      await this.service.createBulk(tenantId, user.userId, dtos),
+      "Harcama yerleri başarıyla içe aktarıldı.",
+    );
+  }
+
   @Put(":id")
   async update(
     @Param("id") id: string,

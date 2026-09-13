@@ -284,6 +284,7 @@ export class DashboardService {
         amount: true,
         transactionDate: true,
         categoryId: true,
+        merchantId: true,
       },
     });
 
@@ -291,7 +292,12 @@ export class DashboardService {
       where: { tenantId, type: "EXPENSE" },
     });
 
+    const merchants = await this.prisma.merchant.findMany({
+      where: { tenantId },
+    });
+
     const catMap = new Map(categories.map((c) => [c.id, c]));
+    const merchMap = new Map(merchants.map((m) => [m.id, m]));
     const parentGroups = new Map<string, any>();
 
     const getOrCreateParent = (id: string, name: string) => {
@@ -312,18 +318,20 @@ export class DashboardService {
       const month = date.getMonth();
       const amount = parseFloat(tx.amount.toString());
 
-      let parentId = "uncategorized";
-      let parentName = "Diğer";
+      let parentId = "unspecified_merchant";
+      let parentName = "Belirtilmemiş (Kurum Yok)";
       let childId = "uncategorized";
-      let childName = "Genel";
+      let childName = "Kategorisiz";
+
+      if (tx.merchantId && merchMap.has(tx.merchantId)) {
+        const m = merchMap.get(tx.merchantId)!;
+        parentId = m.id;
+        parentName = m.name;
+      }
 
       if (tx.categoryId && catMap.has(tx.categoryId)) {
         const cat = catMap.get(tx.categoryId)!;
-        parentId = cat.parentId ? cat.parentId : cat.id;
-        const parentCat = cat.parentId ? catMap.get(cat.parentId) : cat;
-        parentName = parentCat ? parentCat.name : "Diğer";
         childId = cat.id;
-        // Eğer alt kategori ise adını al, ana kategori ise yine adını al
         childName = cat.name;
       }
 

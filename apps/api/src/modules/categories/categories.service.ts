@@ -19,6 +19,22 @@ export class CategoriesService {
     return this.prisma.category.create({ data: { ...dto, tenantId } });
   }
 
+  async createBulk(tenantId: string, dtos: any[]) {
+    // Generate data array
+    const data = dtos.map(dto => ({
+      ...dto,
+      tenantId,
+      sortOrder: dto.sortOrder || 0,
+      isSystem: dto.isSystem || false,
+    }));
+    
+    // Use createMany for bulk insert
+    return this.prisma.category.createMany({
+      data,
+      skipDuplicates: true,
+    });
+  }
+
   async update(id: string, tenantId: string, dto: any) {
     const cat = await this.prisma.category.findFirst({
       where: { id, tenantId, deletedAt: null },

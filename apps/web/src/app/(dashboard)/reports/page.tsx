@@ -108,7 +108,12 @@ export default function ReportsPage() {
           fetchApi<any>(`/dashboard/monthly-trends?year=${y}`)
         ]);
 
-        setMonthlyKpi(kpi?.data || kpi || { income: 0, expense: 0, totalBalance: 0 });
+        const kpiData = kpi?.data || kpi || {};
+        setMonthlyKpi({ 
+          income: parseFloat(kpiData.totalIncome || '0'), 
+          expense: parseFloat(kpiData.totalExpense || '0'), 
+          totalBalance: parseFloat(kpiData.netCashFlow || '0') 
+        });
         setMonthlyCatData(Array.isArray(cat) ? cat : (cat?.data || []));
         setMonthlyMerchantData(Array.isArray(mer) ? mer : (mer?.data || []));
         
@@ -154,8 +159,19 @@ export default function ReportsPage() {
           fetchApi<any>(`/dashboard/merchant-breakdown?startDate=${startB}&endDate=${endB}`)
         ]);
 
-        setCompKpiA(kpiA?.data || kpiA || { income: 0, expense: 0, totalBalance: 0 });
-        setCompKpiB(kpiB?.data || kpiB || { income: 0, expense: 0, totalBalance: 0 });
+        const kpiDataA = kpiA?.data || kpiA || {};
+        setCompKpiA({ 
+          income: parseFloat(kpiDataA.totalIncome || '0'), 
+          expense: parseFloat(kpiDataA.totalExpense || '0'), 
+          totalBalance: parseFloat(kpiDataA.netCashFlow || '0') 
+        });
+
+        const kpiDataB = kpiB?.data || kpiB || {};
+        setCompKpiB({ 
+          income: parseFloat(kpiDataB.totalIncome || '0'), 
+          expense: parseFloat(kpiDataB.totalExpense || '0'), 
+          totalBalance: parseFloat(kpiDataB.netCashFlow || '0') 
+        });
         
         setCompCatA(Array.isArray(catA) ? catA : (catA?.data || []));
         setCompCatB(Array.isArray(catB) ? catB : (catB?.data || []));
@@ -596,11 +612,11 @@ export default function ReportsPage() {
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 dark:bg-bg-secondary border-b border-slate-200 dark:border-border text-slate-600 dark:text-text-secondary font-semibold">
                   <tr>
-                    <th className="p-4 min-w-[200px] border-r border-slate-200 dark:border-border text-center">Harcama Yeri / Kategori</th>
+                    <th className="p-2 min-w-[150px] border-r border-slate-200 dark:border-border text-center text-xs">Harcama Yeri / Kategori</th>
                     {['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'].map(m => (
-                      <th key={m} className="p-4 min-w-[100px] text-center">{m}</th>
+                      <th key={m} className="p-2 min-w-[80px] text-center text-xs">{m}</th>
                     ))}
-                    <th className="p-4 min-w-[120px] text-right font-bold">Toplam</th>
+                    <th className="p-2 min-w-[100px] text-right font-bold text-xs">Toplam</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-border/50">
@@ -614,30 +630,30 @@ export default function ReportsPage() {
                         <React.Fragment key={parent.id}>
                           {/* Parent Row */}
                           <tr className="bg-slate-50/50 dark:bg-bg-secondary/30">
-                            <td className="p-3 font-bold text-slate-800 dark:text-text-primary border-r border-slate-200 dark:border-border text-center">
+                            <td className="p-2 font-bold text-slate-800 dark:text-text-primary border-r border-slate-200 dark:border-border text-center text-xs">
                               {parent.name}
                             </td>
                             {parent.months.map((val: number, i: number) => (
-                              <td key={i} className="p-3 text-center font-medium text-emerald-500">
+                              <td key={i} className="p-2 text-center font-medium text-emerald-500 text-xs">
                                 {val > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(val) : ''}
                               </td>
                             ))}
-                            <td className="p-3 text-right font-bold text-emerald-500">
+                            <td className="p-2 text-right font-bold text-emerald-500 text-xs">
                               {parent.total > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(parent.total) : ''}
                             </td>
                           </tr>
                           {/* Child Rows */}
                           {parent.subCategories.map((child: any) => (
                             <tr key={child.id} className="bg-white dark:bg-bg-card">
-                              <td className="p-3 pl-6 font-medium text-slate-600 dark:text-text-secondary border-r border-slate-200 dark:border-border">
+                              <td className="p-2 pl-4 font-medium text-slate-600 dark:text-text-secondary border-r border-slate-200 dark:border-border text-xs">
                                 {child.name}
                               </td>
                               {child.months.map((val: number, i: number) => (
-                                <td key={i} className="p-3 text-center text-slate-500 dark:text-text-muted">
+                                <td key={i} className="p-2 text-center text-slate-500 dark:text-text-muted text-xs">
                                   {val > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(val) : ''}
                                 </td>
                               ))}
-                              <td className="p-3 text-right font-semibold text-red-500">
+                              <td className="p-2 text-right font-semibold text-red-500 text-xs">
                                 {child.total > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(child.total) : ''}
                               </td>
                             </tr>
@@ -646,19 +662,19 @@ export default function ReportsPage() {
                       ))}
                       {/* Genel Toplam */}
                       <tr className="bg-slate-100 dark:bg-bg-secondary border-t-2 border-slate-200 dark:border-border font-bold">
-                        <td className="p-4 text-right text-slate-800 dark:text-text-primary border-r border-slate-200 dark:border-border">
+                        <td className="p-3 text-right text-slate-800 dark:text-text-primary border-r border-slate-200 dark:border-border text-xs">
                           Genel Toplam
                         </td>
                         {Array(12).fill(0).map((_, i) => {
                           const monthTotal = yearlyData.reduce((acc, curr) => acc + curr.months[i], 0);
                           return (
-                            <td key={i} className="p-4 text-center text-red-500">
+                            <td key={i} className="p-3 text-center text-red-500 text-xs">
                               {monthTotal > 0 ? new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(monthTotal) : ''}
                             </td>
                           );
                         })}
-                        <td className="p-4 text-right text-red-500">
-                          {new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(yearlyData.reduce((acc, curr) => acc + curr.total, 0))}
+                        <td className="p-3 text-right text-red-500 text-xs">
+                          {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(yearlyData.reduce((acc, curr) => acc + curr.total, 0))}
                         </td>
                       </tr>
                     </>

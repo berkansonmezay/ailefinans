@@ -142,10 +142,12 @@ export class AuthService {
     });
 
     if (!user) {
+      console.log('Login failed: user not found');
       throw new UnauthorizedException("Geçersiz e-posta veya şifre.");
     }
 
     if (!user.isActive) {
+      console.log('Login failed: user not active');
       throw new UnauthorizedException("Hesabınız henüz onaylanmamış. Lütfen sistem yöneticisinin onayını bekleyin.");
     }
 
@@ -153,7 +155,9 @@ export class AuthService {
       dto.password,
       user.passwordHash,
     );
+    console.log('isPasswordValid:', isPasswordValid, 'for password:', dto.password);
     if (!isPasswordValid) {
+      console.log('Login failed: invalid password');
       throw new UnauthorizedException("Geçersiz e-posta veya şifre.");
     }
 

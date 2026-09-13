@@ -36,6 +36,15 @@ export class CategoriesController {
     );
   }
 
+  @Post("bulk")
+  async createBulk(@ActiveTenant() tenantId: string, @Body() dtos: any[]) {
+    const result = await this.service.createBulk(tenantId, dtos);
+    return success(
+      result,
+      `${result.count} kategori başarıyla içe aktarıldı.`,
+    );
+  }
+
   @Put(":id")
   async update(
     @Param("id") id: string,
