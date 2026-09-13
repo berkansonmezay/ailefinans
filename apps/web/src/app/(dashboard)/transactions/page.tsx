@@ -543,6 +543,69 @@ export default function TransactionsPage() {
         </div>
       </div>
 
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* 1. TOPLAM GELİR (Green) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500">
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <span className="text-xl font-bold">₺</span>
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              TOPLAM GELİR
+            </span>
+            <div className="text-xl font-black text-emerald-600 dark:text-emerald-500 tracking-tight leading-tight truncate">
+              {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totals.income)}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. TOPLAM GİDER (Red) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-rose-500">
+          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+            <span className="text-xl font-bold">₺</span>
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              TOPLAM GİDER
+            </span>
+            <div className="text-xl font-black text-rose-600 dark:text-rose-500 tracking-tight leading-tight truncate">
+              {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totals.expense)}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. NET BAKİYE (Blue/Gray) */}
+        <div className={`bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] ${totals.balance >= 0 ? 'border-l-blue-500' : 'border-l-slate-500'}`}>
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${totals.balance >= 0 ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400' : 'bg-slate-50 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400'}`}>
+            <span className="text-xl font-bold">₺</span>
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              NET BAKİYE
+            </span>
+            <div className={`text-xl font-black tracking-tight leading-tight truncate ${totals.balance >= 0 ? 'text-blue-600 dark:text-blue-500' : 'text-slate-600 dark:text-slate-400'}`}>
+              {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(totals.balance)}
+            </div>
+          </div>
+        </div>
+
+        {/* 4. İŞLEM SAYISI (Purple) */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500">
+          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 dark:text-text-muted uppercase">
+              İŞLEM SAYISI
+            </span>
+            <div className="text-xl font-black text-purple-600 dark:text-purple-500 tracking-tight leading-tight truncate">
+              {filteredTransactions.length} Adet
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Toolbar Area */}
       <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-2 w-full lg:w-auto">

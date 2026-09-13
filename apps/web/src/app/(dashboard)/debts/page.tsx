@@ -289,7 +289,7 @@ export default function DebtsPage() {
       accountId: item.installments[0]?.accountId || '',
       totalAmount: item.totalAmount.toString(),
       installmentCount: item.installmentCount.toString(),
-      firstPaymentDate: item.firstPaymentDate.split('T')[0],
+      firstPaymentDate: item.firstPaymentDate ? item.firstPaymentDate.split('T')[0] : '',
     });
     setIsModalOpen(true);
   };
