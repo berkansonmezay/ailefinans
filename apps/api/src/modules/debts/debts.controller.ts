@@ -4,6 +4,7 @@ import {
   Post,
   Delete,
   Put,
+  Patch,
   Body,
   Param,
   Query,
@@ -52,6 +53,19 @@ export class DebtsController {
     return success(
       await this.service.update(id, tenantId, dto),
       "Taksitli işlem güncellendi.",
+    );
+  }
+
+  @Patch(":id/reminder")
+  async toggleReminder(
+    @Param("id") id: string,
+    @ActiveTenant() tenantId: string,
+    @CurrentUser() user: any,
+    @Body("status") status: boolean,
+  ) {
+    return success(
+      await this.service.toggleReminder(id, tenantId, status, user.userId),
+      "Hatırlatıcı durumu güncellendi."
     );
   }
 

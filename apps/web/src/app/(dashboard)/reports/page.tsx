@@ -44,6 +44,8 @@ export default function ReportsPage() {
   const [compKpiB, setCompKpiB] = useState<any>({ income: 0, expense: 0, totalBalance: 0 });
   const [compCatA, setCompCatA] = useState<any[]>([]);
   const [compCatB, setCompCatB] = useState<any[]>([]);
+  const [compIncCatA, setCompIncCatA] = useState<any[]>([]);
+  const [compIncCatB, setCompIncCatB] = useState<any[]>([]);
   const [compMerA, setCompMerA] = useState<any[]>([]);
   const [compMerB, setCompMerB] = useState<any[]>([]);
   
@@ -159,11 +161,13 @@ export default function ReportsPage() {
         const startB = new Date(yB, mB, 1).toISOString();
         const endB = new Date(yB, mB + 1, 0, 23, 59, 59).toISOString();
 
-        const [kpiA, kpiB, catA, catB, merA, merB] = await Promise.all([
+        const [kpiA, kpiB, catA, catB, incCatA, incCatB, merA, merB] = await Promise.all([
           fetchApi<any>(`/dashboard/kpis?startDate=${startA}&endDate=${endA}`),
           fetchApi<any>(`/dashboard/kpis?startDate=${startB}&endDate=${endB}`),
           fetchApi<any>(`/dashboard/category-breakdown?startDate=${startA}&endDate=${endA}`),
           fetchApi<any>(`/dashboard/category-breakdown?startDate=${startB}&endDate=${endB}`),
+          fetchApi<any>(`/dashboard/category-breakdown?startDate=${startA}&endDate=${endA}&type=INCOME`),
+          fetchApi<any>(`/dashboard/category-breakdown?startDate=${startB}&endDate=${endB}&type=INCOME`),
           fetchApi<any>(`/dashboard/merchant-breakdown?startDate=${startA}&endDate=${endA}`),
           fetchApi<any>(`/dashboard/merchant-breakdown?startDate=${startB}&endDate=${endB}`)
         ]);
@@ -184,6 +188,9 @@ export default function ReportsPage() {
         
         setCompCatA(Array.isArray(catA) ? catA : (catA?.data || []));
         setCompCatB(Array.isArray(catB) ? catB : (catB?.data || []));
+        
+        setCompIncCatA(Array.isArray(incCatA) ? incCatA : (incCatA?.data || []));
+        setCompIncCatB(Array.isArray(incCatB) ? incCatB : (incCatB?.data || []));
         
         setCompMerA(Array.isArray(merA) ? merA : (merA?.data || []));
         setCompMerB(Array.isArray(merB) ? merB : (merB?.data || []));
@@ -555,7 +562,7 @@ export default function ReportsPage() {
                   
                   <div className="flex-1 h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={monthlyTrends.categoryTrends?.find((c: any) => c.id === selectedTrendCat)?.months || []}>
+                      <BarChart data={(monthlyTrends.categoryTrends?.find((c: any) => c.id === selectedTrendCat)?.months || []).map((val: number, i: number) => ({ month: ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"][i], total: val }))}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                         <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                         <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
@@ -592,7 +599,7 @@ export default function ReportsPage() {
                   <div className="w-full md:w-64 shrink-0 flex flex-col">
                     <span className="text-xs font-bold text-text-muted uppercase tracking-wider mb-4">HARCAMA YERİ SEÇİN</span>
                     <div className="flex flex-col gap-1 border border-border rounded-xl p-2 max-h-64 overflow-y-auto custom-scrollbar">
-                      {monthlyTrends.parentCategoryTrends?.map((c: any) => (
+                      {monthlyTrends.merchantTrends?.map((c: any) => (
                         <button
                           key={c.id}
                           onClick={() => setSelectedTrendMerchant(c.id)}
@@ -606,7 +613,7 @@ export default function ReportsPage() {
                           {c.name}
                         </button>
                       ))}
-                      {!monthlyTrends.parentCategoryTrends?.length && (
+                      {!monthlyTrends.merchantTrends?.length && (
                         <div className="p-4 text-sm text-text-muted text-center">Harcama yeri bulunamadı</div>
                       )}
                     </div>
@@ -614,7 +621,7 @@ export default function ReportsPage() {
                   
                   <div className="flex-1 h-72">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={monthlyTrends.parentCategoryTrends?.find((c: any) => c.id === selectedTrendMerchant)?.months || []}>
+                      <BarChart data={(monthlyTrends.merchantTrends?.find((c: any) => c.id === selectedTrendMerchant)?.months || []).map((val: number, i: number) => ({ month: ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"][i], total: val }))}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                         <XAxis dataKey="month" stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                         <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => value >= 1000 ? `${value / 1000}K` : value} />
@@ -785,16 +792,6 @@ export default function ReportsPage() {
                   />
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <span className="block text-xs font-bold text-text-muted uppercase mb-1">Toplam Gelir</span>
-                  <span className="text-lg font-bold text-emerald-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiA.income)}</span>
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-text-muted uppercase mb-1">Toplam Gider</span>
-                  <span className="text-lg font-bold text-red-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiA.expense)}</span>
-                </div>
-              </div>
             </div>
 
             <div className="flex items-center justify-center">
@@ -838,17 +835,171 @@ export default function ReportsPage() {
                   />
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-4">
+            </div>
+          </div>
+
+          {/* COMPARISON KPI ROW */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Gelir KPI */}
+            <Card className="border-border shadow-sm p-5">
+              <div className="text-sm font-bold text-text-muted uppercase mb-4">TOPLAM GELİR</div>
+              <div className="flex justify-between items-end">
                 <div>
-                  <span className="block text-xs font-bold text-text-muted uppercase mb-1">Toplam Gelir</span>
-                  <span className="text-lg font-bold text-emerald-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiB.income)}</span>
+                  <div className="text-xs font-semibold text-text-muted mb-1">1. DÖNEM</div>
+                  <div className="text-lg font-bold text-emerald-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(compKpiA.income)}</div>
                 </div>
                 <div>
-                  <span className="block text-xs font-bold text-text-muted uppercase mb-1">Toplam Gider</span>
-                  <span className="text-lg font-bold text-red-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(compKpiB.expense)}</span>
+                  <div className="text-xs font-semibold text-text-muted text-right mb-1">2. DÖNEM</div>
+                  <div className="text-xl font-bold text-emerald-500 text-right">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(compKpiB.income)}</div>
                 </div>
               </div>
-            </div>
+              <div className="mt-4 pt-3 border-t border-border flex justify-between items-center text-sm">
+                <span className="font-semibold text-text-secondary">Değişim</span>
+                <span className={clsx("font-bold", compKpiB.income >= compKpiA.income ? "text-emerald-500" : "text-red-500")}>
+                  {compKpiA.income > 0 ? `${compKpiB.income >= compKpiA.income ? '+' : ''}${(((compKpiB.income - compKpiA.income) / compKpiA.income) * 100).toFixed(1)}%` : '-'}
+                </span>
+              </div>
+            </Card>
+
+            {/* Gider KPI */}
+            <Card className="border-border shadow-sm p-5">
+              <div className="text-sm font-bold text-text-muted uppercase mb-4">TOPLAM GİDER</div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-xs font-semibold text-text-muted mb-1">1. DÖNEM</div>
+                  <div className="text-lg font-bold text-red-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(compKpiA.expense)}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-text-muted text-right mb-1">2. DÖNEM</div>
+                  <div className="text-xl font-bold text-red-500 text-right">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(compKpiB.expense)}</div>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-border flex justify-between items-center text-sm">
+                <span className="font-semibold text-text-secondary">Değişim</span>
+                <span className={clsx("font-bold", compKpiB.expense <= compKpiA.expense ? "text-emerald-500" : "text-red-500")}>
+                  {compKpiA.expense > 0 ? `${compKpiB.expense >= compKpiA.expense ? '+' : ''}${(((compKpiB.expense - compKpiA.expense) / compKpiA.expense) * 100).toFixed(1)}%` : '-'}
+                </span>
+              </div>
+            </Card>
+
+            {/* Net Tasarruf KPI */}
+            <Card className="border-border shadow-sm p-5 bg-gradient-to-br from-indigo-50/50 to-bg-card dark:from-indigo-950/20">
+              <div className="text-sm font-bold text-indigo-500 uppercase mb-4">NET TASARRUF (GELİR - GİDER)</div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-xs font-semibold text-text-muted mb-1">1. DÖNEM</div>
+                  <div className={clsx("text-lg font-bold", compKpiA.income - compKpiA.expense >= 0 ? "text-indigo-600 dark:text-indigo-400" : "text-red-500")}>{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(compKpiA.income - compKpiA.expense)}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-text-muted text-right mb-1">2. DÖNEM</div>
+                  <div className={clsx("text-xl font-bold text-right", compKpiB.income - compKpiB.expense >= 0 ? "text-indigo-600 dark:text-indigo-400" : "text-red-500")}>{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(compKpiB.income - compKpiB.expense)}</div>
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-indigo-100 dark:border-indigo-900/50 flex justify-between items-center text-sm">
+                <span className="font-semibold text-indigo-700/70 dark:text-indigo-300/70">Tasarruf Oranı (2. Dönem)</span>
+                <span className={clsx("font-bold", compKpiB.income > 0 && (compKpiB.income - compKpiB.expense) > 0 ? "text-indigo-600 dark:text-indigo-400" : "text-text-muted")}>
+                  {compKpiB.income > 0 ? `${(((compKpiB.income - compKpiB.expense) / compKpiB.income) * 100).toFixed(1)}%` : '-'}
+                </span>
+              </div>
+            </Card>
+          </div>
+
+          {/* EN ÇOK ARTAN / AZALAN ÖZET ANALİZİ */}
+          {(() => {
+            const expenseDiffs = Array.from(new Set([...compCatA.map(c => c.label), ...compCatB.map(c => c.label)])).map(label => {
+              const valA = compCatA.find(c => c.label === label)?.value || 0;
+              const valB = compCatB.find(c => c.label === label)?.value || 0;
+              return { label, diff: valB - valA };
+            }).filter(d => d.diff !== 0).sort((a, b) => b.diff - a.diff);
+            
+            const topIncreases = expenseDiffs.filter(d => d.diff > 0).slice(0, 2);
+            const topDecreases = expenseDiffs.filter(d => d.diff < 0).reverse().slice(0, 2);
+            
+            if (topIncreases.length === 0 && topDecreases.length === 0) return null;
+            
+            return (
+              <Card className="border-border shadow-sm border-l-4 border-l-amber-500 overflow-hidden">
+                <div className="bg-amber-50/50 dark:bg-amber-950/20 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp className="w-4 h-4 text-amber-600" />
+                    <h3 className="font-bold text-amber-800 dark:text-amber-500">Harcama Kırılımı Özet Analizi (1. Dönem → 2. Dönem)</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {topIncreases.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold text-text-muted uppercase">Dikkat Çeken Artışlar</span>
+                        {topIncreases.map(inc => (
+                          <div key={inc.label} className="flex justify-between items-center text-sm bg-bg-card p-2 rounded border border-border/50">
+                            <span className="font-medium">{inc.label}</span>
+                            <span className="font-bold text-red-500">+{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(inc.diff)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {topDecreases.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold text-text-muted uppercase">Dikkat Çeken Düşüşler</span>
+                        {topDecreases.map(dec => (
+                          <div key={dec.label} className="flex justify-between items-center text-sm bg-bg-card p-2 rounded border border-border/50">
+                            <span className="font-medium">{dec.label}</span>
+                            <span className="font-bold text-emerald-500">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(dec.diff)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Income Category Comparison Table */}
+            <Card className="border-border shadow-sm overflow-hidden lg:col-span-2">
+              <CardContent className="p-0">
+                <div className="p-4 border-b border-border bg-emerald-50/50 dark:bg-emerald-950/20">
+                  <h3 className="font-bold text-emerald-700 dark:text-emerald-500">Gelir Kategori Karşılaştırması</h3>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-bg-card sticky top-0 border-b border-border text-text-muted">
+                      <tr>
+                        <th className="p-4 font-medium">Kategori</th>
+                        <th className="p-4 font-medium text-right">1. Dönem</th>
+                        <th className="p-4 font-medium text-right">2. Dönem</th>
+                        <th className="p-4 font-medium text-right">Değişim</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50 bg-bg-card">
+                      {Array.from(new Set([...compIncCatA.map(c => c.label), ...compIncCatB.map(c => c.label)])).sort().map((catLabel, i) => {
+                        const valA = compIncCatA.find(c => c.label === catLabel)?.value || 0;
+                        const valB = compIncCatB.find(c => c.label === catLabel)?.value || 0;
+                        const diff = valB - valA;
+                        const percentDiff = valA > 0 ? (diff / valA) * 100 : (valB > 0 ? 100 : 0);
+                        
+                        return (
+                          <tr key={i} className="hover:bg-bg-secondary/50 dark:hover:bg-bg-secondary/30 transition-colors">
+                            <td className="p-4 font-medium text-slate-700 dark:text-text-secondary">{catLabel}</td>
+                            <td className="p-4 text-right text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valA)}</td>
+                            <td className="p-4 text-right text-text-secondary">{new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 }).format(valB)}</td>
+                            <td className="p-4 text-right font-medium">
+                              {diff !== 0 ? (
+                                <div className={`flex items-center justify-end gap-1 ${diff > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                  {diff > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                  {Math.abs(percentDiff).toFixed(1)}%
+                                </div>
+                              ) : (
+                                <span className="text-text-muted">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

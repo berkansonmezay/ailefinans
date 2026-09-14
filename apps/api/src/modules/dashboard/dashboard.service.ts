@@ -182,33 +182,48 @@ export class DashboardService {
     return result;
   }
 
-  async getCategoryBreakdown(tenantId: string, startDate: Date, endDate: Date) {
-    const expenses = await this.prisma.expenseTransaction.groupBy({
-      by: ["categoryId"],
-      where: {
-        tenantId,
-        deletedAt: null,
-        NOT: {
-          AND: [
-            { installmentPlanId: { not: null } },
-            { notes: { not: 'PAID' } }
-          ]
+  async getCategoryBreakdown(tenantId: string, startDate: Date, endDate: Date, type: "INCOME" | "EXPENSE" = "EXPENSE") {
+    let transactions;
+    if (type === "EXPENSE") {
+      transactions = await this.prisma.expenseTransaction.groupBy({
+        by: ["categoryId"],
+        where: {
+          tenantId,
+          deletedAt: null,
+          NOT: {
+            AND: [
+              { installmentPlanId: { not: null } },
+              { notes: { not: 'PAID' } }
+            ]
+          },
+          transactionDate: { gte: startDate, lte: endDate },
         },
-        transactionDate: { gte: startDate, lte: endDate },
-      },
-      _sum: { amount: true },
-      orderBy: { _sum: { amount: "desc" } },
-      take: 10,
-    });
+        _sum: { amount: true },
+        orderBy: { _sum: { amount: "desc" } },
+        take: 10,
+      });
+    } else {
+      transactions = await this.prisma.incomeTransaction.groupBy({
+        by: ["categoryId"],
+        where: {
+          tenantId,
+          deletedAt: null,
+          transactionDate: { gte: startDate, lte: endDate },
+        },
+        _sum: { amount: true },
+        orderBy: { _sum: { amount: "desc" } },
+        take: 10,
+      });
+    }
 
     const categories = await this.prisma.category.findMany({
-      where: { tenantId, type: "EXPENSE" },
+      where: { tenantId, type },
     });
     const catMap = new Map(categories.map((c) => [c.id, c.name]));
 
-    return expenses.map((e) => ({
-      label: catMap.get(e.categoryId || "") || "Diğer",
-      value: parseFloat(e._sum.amount?.toString() || "0"),
+    return transactions.map((t) => ({
+      label: catMap.get(t.categoryId || "") || "Diğer",
+      value: parseFloat(t._sum.amount?.toString() || "0"),
     }));
   }
 
@@ -447,6 +462,7 @@ export class DashboardService {
         amount: true,
         transactionDate: true,
         categoryId: true,
+        merchantId: true,
       },
     });
 
@@ -454,10 +470,16 @@ export class DashboardService {
       where: { tenantId, type: "EXPENSE" },
     });
 
+    const merchants = await this.prisma.merchant.findMany({
+      where: { tenantId },
+    });
+
     const catMap = new Map(categories.map((c) => [c.id, c]));
+    const merchMap = new Map(merchants.map((m) => [m.id, m]));
 
     const childGroups = new Map<string, any>();
     const parentGroups = new Map<string, any>();
+    const merchantGroups = new Map<string, any>();
 
     const getOrCreateGroup = (map: Map<string, any>, id: string, name: string) => {
       if (!map.has(id)) {
@@ -492,6 +514,12 @@ export class DashboardService {
       const cGroup = getOrCreateGroup(childGroups, childId, childName);
       cGroup.months[month] += amount;
       cGroup.total += amount;
+      if (tx.merchantId && merchMap.has(tx.merchantId)) {
+        const m = merchMap.get(tx.merchantId)!;
+        const mGroup = getOrCreateGroup(merchantGroups, m.id, m.name);
+        mGroup.months[month] += amount;
+        mGroup.total += amount;
+      }
     });
 
     return {
@@ -500,7 +528,10 @@ export class DashboardService {
         .sort((a, b) => b.total - a.total),
       parentCategoryTrends: Array.from(parentGroups.values())
         .map((g: any) => ({ ...g, months: g.months.map((m: number) => Number(m.toFixed(2))), total: Number(g.total.toFixed(2)) }))
-        .sort((a, b) => b.total - a.total)
+        .sort((a, b) => b.total - a.total),
+      merchantTrends: Array.from(merchantGroups.values())
+        .map((g: any) => ({ ...g, months: g.months.map((m: number) => Number(m.toFixed(2))), total: Number(g.total.toFixed(2)) }))
+        .sort((a, b) => b.total - a.total),
     };
   }
 }

@@ -16,7 +16,7 @@ export class DebtsService {
     const where: any = { tenantId, deletedAt: null };
     if (query.status) where.status = query.status;
 
-    const [debts, expenseInstallments, merchants, categories, accounts] =
+    const [debts, expenseInstallments, merchants, categories, accounts, reminders] =
       await Promise.all([
         this.prisma.debt.findMany({
           where,
@@ -30,7 +30,10 @@ export class DebtsService {
         this.prisma.merchant.findMany({ where: { tenantId, deletedAt: null } }),
         this.prisma.category.findMany({ where: { tenantId, deletedAt: null } }),
         this.prisma.account.findMany({ where: { tenantId, deletedAt: null } }),
+        this.prisma.reminder.findMany({ where: { tenantId, referenceType: "DEBT" }, select: { referenceId: true } }),
       ]);
+
+    const activeReminderRefIds = new Set(reminders.map(r => r.referenceId));
 
     const merchantMap = new Map(merchants.map((m) => [m.id, m.name]));
     const categoryMap = new Map(categories.map((c) => [c.id, c]));
@@ -128,6 +131,7 @@ export class DebtsService {
           : null,
         merchantName,
         accountName,
+        hasReminder: activeReminderRefIds.has(`plan_${planId}`),
         installments: planInstallments,
         createdAt: firstItem.createdAt,
       });
@@ -429,6 +433,77 @@ export class DebtsService {
         });
       }
       return deletedDebt;
+    });
+  }
+  async toggleReminder(id: string, tenantId: string, status: boolean, userId: string) {
+    if (id.startsWith("plan_")) {
+      const planId = id.replace("plan_", "");
+      const all = await this.findAll(tenantId, {});
+      const item = all.data.find((d: any) => d.id === id);
+      if (!item) throw new NotFoundException("Taksit planı bulunamadı.");
+
+      return this.prisma.$transaction(async (tx) => {
+        if (status) {
+          const unpaidInstallments = item.installments.filter((i: any) => i.status !== "PAID" && !i.isPaid);
+          for (const inst of unpaidInstallments) {
+            await tx.reminder.create({
+              data: {
+                tenantId,
+                title: `${item.creditor} Taksidi (${inst.number}/${item.installmentCount})`,
+                description: item.description,
+                amount: inst.amount,
+                currency: item.currency,
+                dueDate: inst.dueDate,
+                isRecurring: false,
+                status: "ACTIVE",
+                referenceId: id,
+                referenceType: "DEBT",
+                createdBy: userId,
+              }
+            });
+          }
+        } else {
+          await tx.reminder.deleteMany({
+            where: { tenantId, referenceId: id, referenceType: "DEBT" }
+          });
+        }
+        return { ...item, hasReminder: status };
+      });
+    }
+
+    const debt = await this.findOne(id, tenantId);
+    return this.prisma.$transaction(async (tx) => {
+      const updatedDebt = await tx.debt.update({
+        where: { id },
+        data: { hasReminder: status },
+      });
+
+      if (status) {
+        const unpaidInstallments = debt.installments.filter(i => i.status !== "PAID" && !i.isPaid);
+        for (const inst of unpaidInstallments) {
+          await tx.reminder.create({
+            data: {
+              tenantId,
+              title: `${debt.creditor} Taksidi (${inst.number}/${debt.installmentCount})`,
+              description: debt.description,
+              amount: inst.amount,
+              currency: debt.currency,
+              dueDate: inst.dueDate,
+              isRecurring: false,
+              status: "ACTIVE",
+              referenceId: debt.id,
+              referenceType: "DEBT",
+              createdBy: userId,
+            }
+          });
+        }
+      } else {
+        await tx.reminder.deleteMany({
+          where: { tenantId, referenceId: debt.id, referenceType: "DEBT" }
+        });
+      }
+
+      return updatedDebt;
     });
   }
 }

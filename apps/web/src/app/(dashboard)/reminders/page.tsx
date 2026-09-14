@@ -36,6 +36,7 @@ export default function RemindersPage() {
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -73,21 +74,38 @@ export default function RemindersPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetchApi('/reminders', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description || undefined,
-          amount: formData.amount ? Number(formData.amount) : undefined,
-          currency: formData.currency,
-          dueDate: new Date(formData.dueDate).toISOString(),
-          isRecurring: formData.isRecurring,
-          recurrenceRule: formData.isRecurring ? formData.recurrenceRule : undefined
-        })
-      });
+      if (editId) {
+        await fetchApi(`/reminders/${editId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            title: formData.title,
+            description: formData.description || undefined,
+            amount: formData.amount ? Number(formData.amount) : undefined,
+            currency: formData.currency,
+            dueDate: new Date(formData.dueDate).toISOString(),
+            isRecurring: formData.isRecurring,
+            recurrenceRule: formData.isRecurring ? formData.recurrenceRule : undefined
+          })
+        });
+        toast.success('Hatırlatıcı başarıyla güncellendi');
+      } else {
+        await fetchApi('/reminders', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: formData.title,
+            description: formData.description || undefined,
+            amount: formData.amount ? Number(formData.amount) : undefined,
+            currency: formData.currency,
+            dueDate: new Date(formData.dueDate).toISOString(),
+            isRecurring: formData.isRecurring,
+            recurrenceRule: formData.isRecurring ? formData.recurrenceRule : undefined
+          })
+        });
+        toast.success('Hatırlatıcı başarıyla eklendi');
+      }
       
-      toast.success('Hatırlatıcı başarıyla eklendi');
       setIsModalOpen(false);
+      setEditId(null);
       fetchReminders();
       setFormData({
         title: '', description: '', amount: '', currency: 'TRY',
@@ -98,6 +116,30 @@ export default function RemindersPage() {
       console.error('Save error:', err);
       toast.error(err.message || 'Hatırlatıcı kaydedilemedi');
     }
+  };
+
+  const openAddModal = () => {
+    setEditId(null);
+    setFormData({
+      title: '', description: '', amount: '', currency: 'TRY',
+      dueDate: new Date().toISOString().split('T')[0],
+      isRecurring: false, recurrenceRule: 'MONTHLY'
+    });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (reminder: Reminder) => {
+    setEditId(reminder.id);
+    setFormData({
+      title: reminder.title,
+      description: reminder.description || '',
+      amount: reminder.amount ? reminder.amount.toString() : '',
+      currency: reminder.currency,
+      dueDate: new Date(reminder.dueDate).toISOString().split('T')[0],
+      isRecurring: reminder.isRecurring,
+      recurrenceRule: reminder.recurrenceRule || 'MONTHLY'
+    });
+    setIsModalOpen(true);
   };
 
   const handleComplete = async (id: string) => {
@@ -226,7 +268,7 @@ export default function RemindersPage() {
         </div>
         <div className="flex gap-2 w-full lg:w-auto">
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={openAddModal}
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-500 text-slate-950 px-5 py-2 rounded-xl text-sm font-medium hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95"
           >
             <Plus className="w-4 h-4" />
@@ -313,6 +355,15 @@ export default function RemindersPage() {
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => openEditModal(reminder)}
+                            className="p-1.5 hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors text-text-muted"
+                            title="Düzenle"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
                             onClick={() => handleDelete(reminder.id)}
                             className="p-1.5 hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors text-text-muted"
                             title="Sil"
@@ -335,8 +386,8 @@ export default function RemindersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-bg-card w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-5 border-b border-border flex justify-between items-center bg-bg-screen/30">
-              <h2 className="text-lg font-bold text-text-primary">Yeni Hatırlatıcı Ekle</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-text-muted hover:text-text-primary p-1 rounded-lg transition-colors">
+              <h2 className="text-lg font-bold text-text-primary">{editId ? 'Hatırlatıcıyı Düzenle' : 'Yeni Hatırlatıcı Ekle'}</h2>
+              <button onClick={() => { setIsModalOpen(false); setEditId(null); }} className="text-text-muted hover:text-text-primary p-1 rounded-lg transition-colors">
                 ✕
               </button>
             </div>

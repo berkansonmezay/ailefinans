@@ -283,6 +283,7 @@ model Debt {
   lastPaymentDate   DateTime?
   interestRate      Float?   
   status            DebtStatus @default(ACTIVE)
+  hasReminder       Boolean    @default(false)
   accountId         String?
   categoryId        String?
   merchantId        String?
@@ -652,6 +653,8 @@ model Reminder {
   recurrenceRule  String?  // DAILY, WEEKLY, MONTHLY, YEARLY, ONCE
   status          String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
   categoryId      String?
+  referenceId     String?
+  referenceType   String?
   createdBy       String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

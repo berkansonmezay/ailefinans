@@ -55,6 +55,7 @@ export class DashboardController {
     @ActiveTenant() tenantId: string,
     @Query("startDate") startDate?: string,
     @Query("endDate") endDate?: string,
+    @Query("type") type: "INCOME" | "EXPENSE" = "EXPENSE",
   ) {
     const now = new Date();
     const start = startDate
@@ -64,7 +65,7 @@ export class DashboardController {
       ? new Date(endDate)
       : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     return success(
-      await this.service.getCategoryBreakdown(tenantId, start, end),
+      await this.service.getCategoryBreakdown(tenantId, start, end, type),
     );
   }
 

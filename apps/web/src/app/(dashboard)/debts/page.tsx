@@ -29,7 +29,8 @@ import {
   List,
   LayoutList,
   Filter,
-  LayoutGrid
+  LayoutGrid,
+  Bell
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -128,6 +129,25 @@ export default function DebtsPage() {
       loadData();
     } catch (error: any) {
       toast.error(error.message || 'Silinirken bir hata oluştu');
+    }
+  };
+
+  const handleToggleReminder = async (item: any) => {
+    try {
+      setLoading(true);
+      await fetchApi(`/debts/${item.id}/reminder`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: !item.hasReminder })
+      });
+      toast.success(
+        !item.hasReminder 
+          ? 'Hatırlatıcı başarıyla aktifleştirildi.' 
+          : 'Hatırlatıcı başarıyla kapatıldı.'
+      );
+      await loadData();
+    } catch (error: any) {
+      toast.error(error.message || 'Hatırlatıcı durumu değiştirilemedi.');
+      setLoading(false);
     }
   };
 
@@ -980,6 +1000,27 @@ export default function DebtsPage() {
                             </td>
                             <td className="px-5 py-3 text-right">
                               <div className="flex items-center justify-end gap-2">
+                                {!isPaid && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Find the parent plan to toggle reminder for the whole plan
+                                      const parentPlan = filteredItems.find(p => p.id === inst.planId);
+                                      if (parentPlan) handleToggleReminder(parentPlan);
+                                    }}
+                                    className={`px-2 py-1.5 rounded-lg transition-colors border flex items-center justify-center ${
+                                      (() => {
+                                        const parentPlan = filteredItems.find(p => p.id === inst.planId);
+                                        return parentPlan?.hasReminder
+                                          ? 'border-blue-500/30 text-blue-500 bg-blue-500/10 hover:bg-blue-500 hover:text-white'
+                                          : 'border-border text-text-secondary hover:border-blue-500/30 hover:text-blue-500'
+                                      })()
+                                    }`}
+                                    title="Tüm plan için hatırlatıcıyı aç/kapat"
+                                  >
+                                    <Bell className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => handleTogglePaid(inst.planId, inst)}
                                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
@@ -1116,6 +1157,22 @@ export default function DebtsPage() {
                       </button>
 
                       <div className="flex gap-2">
+                        {item.status !== 'PAID' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleReminder(item);
+                            }}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              item.hasReminder
+                                ? 'text-blue-500 hover:bg-blue-500/10'
+                                : 'text-text-muted hover:text-blue-500 hover:bg-blue-500/10'
+                            }`}
+                            title={item.hasReminder ? 'Hatırlatıcıları Kapat' : 'Hatırlatıcıları Aç'}
+                          >
+                            <Bell className="w-4 h-4" fill={item.hasReminder ? 'currentColor' : 'none'} />
+                          </button>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
