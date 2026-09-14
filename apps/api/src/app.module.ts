@@ -23,6 +23,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { CronModule } from './modules/cron/cron.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { RemindersModule } from './modules/reminders/reminders.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { AdminModule } from './modules/admin/admin.module';
     CronModule,
     BudgetsModule,
     AdminModule,
+    RemindersModule,
   ],
   providers: [
     {

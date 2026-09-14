@@ -193,22 +193,14 @@ export default function MerchantsPage() {
       const worksheet = workbook.addWorksheet('Harcama Yerleri');
       
       worksheet.columns = [
-        { header: 'İsim', key: 'name', width: 25 },
-        { header: 'Kategori', key: 'type', width: 15 },
-        { header: 'İletişim (Telefon)', key: 'phone', width: 15 },
-        { header: 'İletişim (Web)', key: 'website', width: 20 },
+        { header: 'İsim', key: 'name', width: 30 }
       ];
 
       merchants.forEach(m => {
         worksheet.addRow({
-          name: m.name,
-          type: m.type || '-',
-          phone: m.phone || '-',
-          website: m.website || '-'
+          name: m.name
         });
       });
-
-      worksheet.autoFilter = 'A1:D1';
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -264,12 +256,9 @@ export default function MerchantsPage() {
       doc.setTextColor(100);
       doc.text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, 14, 30);
 
-      const headers = [['İsim', 'Kategori', 'Telefon', 'Website']];
+      const headers = [['İsim']];
       const data = merchants.map(m => [
-        m.name,
-        m.type || '-',
-        m.phone || '-',
-        m.website || '-'
+        m.name
       ]);
 
       autoTable(doc, {
@@ -333,8 +322,6 @@ export default function MerchantsPage() {
               <thead className="bg-bg-sidebar border-b border-border">
                 <tr>
                   <th className="px-4 py-2 font-semibold text-text-secondary">İsim</th>
-                  <th className="px-4 py-2 font-semibold text-text-secondary">Kategori</th>
-                  <th className="px-4 py-2 font-semibold text-text-secondary">İletişim</th>
                   <th className="px-4 py-2 font-semibold text-text-secondary text-right">İşlemler</th>
                 </tr>
               </thead>
@@ -347,16 +334,6 @@ export default function MerchantsPage() {
                           <Store className="w-4 h-4" />
                         </div>
                         <div className="font-medium text-text-primary">{merchant.name}</div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 text-text-secondary">
-                      {merchant.type || '-'}
-                    </td>
-                    <td className="px-4 py-2 text-text-secondary">
-                      <div className="flex gap-4">
-                        {merchant.phone && <div className="flex items-center gap-1"><Phone className="w-3 h-3" /> {merchant.phone}</div>}
-                        {merchant.website && <div className="flex items-center gap-1"><Globe className="w-3 h-3" /> <a href={merchant.website} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-blue-500">Site</a></div>}
-                        {!merchant.phone && !merchant.website && '-'}
                       </div>
                     </td>
                     <td className="px-4 py-2 text-right">

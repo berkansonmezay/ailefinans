@@ -76,6 +76,7 @@ model Tenant {
   events        Event[]
   notifications Notification[]
   budgets       Budget[]
+  reminders     Reminder[]
   auditLogs     AuditLog[]
 }
 
@@ -635,15 +636,46 @@ model Notification {
   @@index([userId, isRead])
 }
 
+// ========================
+// REMINDERS
+// ========================
+
+model Reminder {
+  id              String   @id @default(uuid())
+  tenantId        String
+  title           String
+  description     String?
+  amount          Float?
+  currency        String   @default("TRY")
+  dueDate         DateTime
+  isRecurring     Boolean  @default(false)
+  recurrenceRule  String?  // DAILY, WEEKLY, MONTHLY, YEARLY, ONCE
+  status          String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  categoryId      String?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, dueDate])
+  @@index([tenantId, status])
+}
+
 enum NotificationType {
   INSTALLMENT_DUE
   INSTALLMENT_OVERDUE
+  BUDGET_EXCEEDED
+  SUBSCRIPTION_DUE
   RECEIVABLE_DUE
   SUBSCRIPTION_RENEWAL
   INVOICE_DUE
   WARRANTY_EXPIRING
   EVENT_REMINDER
   SAVINGS_REMINDER
+  PAYMENT_REMINDER
   SYSTEM
 }
 

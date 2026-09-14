@@ -22,7 +22,8 @@ import {
   Banknote,
   PieChart,
   FileText,
-  Shield
+  Shield,
+  BellRing
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -33,6 +34,7 @@ const menuItems = [
   { name: 'Harcama Yerleri', href: '/merchants', icon: MapPin },
   { name: 'Taksitli Borçlar', href: '/debts', icon: CreditCard },
   { name: 'Taksitli Alacaklar', href: '/receivables', icon: Wallet },
+  { name: 'Hatırlatıcılar', href: '/reminders', icon: BellRing },
   { name: 'Takvim', href: '/calendar', icon: Calendar },
   { name: 'Etkinlikler', href: '/events', icon: CalendarDays },
   { name: 'Raporlar', href: '/reports', icon: BarChart3 },

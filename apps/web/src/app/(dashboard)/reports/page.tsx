@@ -57,10 +57,19 @@ export default function ReportsPage() {
     const loadReports = async () => {
       try {
         setLoading(true);
+        const end = new Date();
+        const start = new Date();
+        start.setMonth(start.getMonth() - 11);
+        start.setDate(1);
+        start.setHours(0, 0, 0, 0);
+        
+        const startStr = start.toISOString();
+        const endStr = end.toISOString();
+
         const [monthly, category, merchant] = await Promise.all([
           fetchApi<any>('/dashboard/monthly-chart?months=12'),
-          fetchApi<any>('/dashboard/category-breakdown'),
-          fetchApi<any>('/dashboard/merchant-breakdown'),
+          fetchApi<any>(`/dashboard/category-breakdown?startDate=${startStr}&endDate=${endStr}`),
+          fetchApi<any>(`/dashboard/merchant-breakdown?startDate=${startStr}&endDate=${endStr}`),
         ]);
 
         setMonthlyData(Array.isArray(monthly) ? monthly : (monthly?.data || []));
@@ -300,7 +309,7 @@ export default function ReportsPage() {
           {/* Kategori Dağılımı */}
           <Card className="border-border shadow-sm">
             <CardContent className="p-6">
-              <h3 className="text-lg font-bold text-text-primary mb-8">Kategori Dağılımı</h3>
+              <h3 className="text-lg font-bold text-text-primary mb-8">Kategori Dağılımı (Son 12 Ay)</h3>
               {categoryData.length === 0 ? (
                 <div className="flex items-center justify-center h-80 text-text-muted">
                   Bu tarih aralığında veri bulunamadı.
