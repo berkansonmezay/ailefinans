@@ -11,9 +11,14 @@ export class RemindersService {
   constructor(private prisma: PrismaService) {}
 
   async create(createReminderDto: CreateReminderDto, tenantId: string, userId: string) {
+    const dataToCreate = { ...createReminderDto };
+    if (dataToCreate.dueDate) {
+      dataToCreate.dueDate = new Date(dataToCreate.dueDate) as any;
+    }
+
     return this.prisma.reminder.create({
       data: {
-        ...createReminderDto,
+        ...dataToCreate,
         tenantId,
         createdBy: userId,
       },
@@ -47,9 +52,14 @@ export class RemindersService {
   async update(id: string, updateReminderDto: UpdateReminderDto, tenantId: string) {
     await this.findOne(id, tenantId);
 
+    const dataToUpdate = { ...updateReminderDto };
+    if (dataToUpdate.dueDate) {
+      dataToUpdate.dueDate = new Date(dataToUpdate.dueDate) as any;
+    }
+
     return this.prisma.reminder.update({
       where: { id },
-      data: updateReminderDto,
+      data: dataToUpdate,
     });
   }
 

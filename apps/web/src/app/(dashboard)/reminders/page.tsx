@@ -215,6 +215,13 @@ export default function RemindersPage() {
           </h1>
           <p className="text-text-muted mt-1">Gelecek ödemelerinizi ve önemli tarihlerinizi takip edin.</p>
         </div>
+        <button
+          onClick={openAddModal}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-all shadow-sm shadow-blue-500/20 active:scale-95"
+        >
+          <Plus className="w-5 h-5" />
+          Yeni Hatırlatıcı
+        </button>
       </div>
 
       {/* KPI Cards */}

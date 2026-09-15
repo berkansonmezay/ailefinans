@@ -46,7 +46,12 @@ export class SubscriptionsService {
       where: { id, tenantId, deletedAt: null },
     });
     if (!sub) throw new NotFoundException("Abonelik bulunamadı.");
-    return this.prisma.subscription.update({ where: { id }, data: dto });
+    
+    const dataToUpdate = { ...dto };
+    if (dataToUpdate.startDate) dataToUpdate.startDate = new Date(dataToUpdate.startDate);
+    if (dataToUpdate.nextPaymentDate) dataToUpdate.nextPaymentDate = new Date(dataToUpdate.nextPaymentDate);
+    
+    return this.prisma.subscription.update({ where: { id }, data: dataToUpdate });
   }
 
   async remove(id: string, tenantId: string) {
