@@ -23,7 +23,7 @@ interface Merchant {
   notes: string | null;
 }
 
-export default function MerchantsPage() {
+export function MerchantsTab() {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -281,12 +281,8 @@ export default function MerchantsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Harcama Yerleri</h1>
-          <p className="text-text-muted mt-1">Sık alışveriş yaptığınız yerleri ve hizmet aldığınız kurumları yönetin.</p>
-        </div>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 bg-bg-card p-3 rounded-xl border border-border">
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleExportExcel} variant="secondary" className="px-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-transparent h-9">
             <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -319,30 +315,30 @@ export default function MerchantsPage() {
         <Card className="overflow-hidden border border-border bg-bg-card backdrop-blur-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-bg-sidebar border-b border-border">
+              <thead className="bg-bg-sidebar/50 border-b border-border">
                 <tr>
-                  <th className="px-4 py-2 font-semibold text-text-secondary">İsim</th>
-                  <th className="px-4 py-2 font-semibold text-text-secondary text-right">İşlemler</th>
+                  <th className="px-3 py-2 font-semibold text-text-secondary">İsim</th>
+                  <th className="px-3 py-2 font-semibold text-text-secondary text-right">İşlemler</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {merchants.map((merchant) => (
                   <tr key={merchant.id} className="hover:bg-bg-sidebar/50 transition-colors">
-                    <td className="px-4 py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-1.5 bg-blue-500/20 text-blue-400 rounded-lg">
-                          <Store className="w-4 h-4" />
+                    <td className="px-3 py-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 bg-blue-500/20 text-blue-400 rounded-md">
+                          <Store className="w-3.5 h-3.5" />
                         </div>
-                        <div className="font-medium text-text-primary">{merchant.name}</div>
+                        <div className="text-sm font-medium text-text-primary">{merchant.name}</div>
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => handleEdit(merchant)} className="p-1.5 hover:text-blue-400 hover:bg-blue-400/10 rounded-md transition-colors" title="Düzenle">
-                          <Edit2 size={16} />
+                    <td className="px-3 py-1.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => handleEdit(merchant)} className="p-1 hover:text-blue-400 hover:bg-blue-400/10 rounded-md transition-colors" title="Düzenle">
+                          <Edit2 size={14} />
                         </button>
-                        <button onClick={() => handleDelete(merchant.id)} className="p-1.5 hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors" title="Sil">
-                          <Trash2 size={16} />
+                        <button onClick={() => handleDelete(merchant.id)} className="p-1 hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors" title="Sil">
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>

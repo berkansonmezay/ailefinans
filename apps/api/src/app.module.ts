@@ -24,6 +24,10 @@ import { CronModule } from './modules/cron/cron.module';
 import { BudgetsModule } from './modules/budgets/budgets.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
+import { StocksModule } from './modules/stocks/stocks.module';
+import { MarketModule } from './modules/market/market.module';
+import { SavingsAssetsModule } from './modules/savings-assets/savings-assets.module';
 
 @Module({
   imports: [
@@ -56,6 +60,10 @@ import { RemindersModule } from './modules/reminders/reminders.module';
     BudgetsModule,
     AdminModule,
     RemindersModule,
+    CalendarModule,
+    StocksModule,
+    MarketModule,
+    SavingsAssetsModule,
   ],
   providers: [
     {

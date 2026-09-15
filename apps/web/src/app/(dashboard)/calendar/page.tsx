@@ -1,264 +1,475 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
-import { Input } from '@/components/ui/Input';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { Calendar, List, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
-import { Plus, Calendar, Edit2, Trash2, Clock, MapPin } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { CalendarGrid } from '@/components/shared/CalendarGrid';
+import { CalendarDayDetail } from '@/components/shared/CalendarDayDetail';
+import { CalendarLegend } from '@/components/shared/CalendarLegend';
+import { CalendarSummaryBar } from '@/components/shared/CalendarSummaryBar';
 
-interface Event {
+interface CalendarItem {
   id: string;
+  type: 'DEBT_INSTALLMENT' | 'RECEIVABLE_INSTALLMENT' | 'REMINDER';
   title: string;
-  description: string | null;
-  startDate: string;
-  endDate: string | null;
-  isAllDay: boolean;
-  location: string | null;
+  description?: string;
+  date: string;
+  amount?: number;
+  currency: string;
+  status: string;
+  color: string;
+  meta: Record<string, any>;
+}
+
+interface CalendarSummary {
+  totalDebtAmount: number;
+  totalReceivableAmount: number;
+  overdueCount: number;
+  dueTodayCount: number;
+  activeReminderCount: number;
+  debtInstallmentCount: number;
+  receivableInstallmentCount: number;
+}
+
+type ViewMode = 'month' | 'week' | 'list';
+
+const MONTHS_TR = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+];
+
+const DAYS_FULL_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatCurrency(val: number, currency: string = 'TRY') {
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+  }).format(val);
+}
+
+function getWeekDays(date: Date): Date[] {
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // Monday start
+  const monday = new Date(date);
+  monday.setDate(date.getDate() + diff);
+  
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return days;
 }
 
 export default function CalendarPage() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [items, setItems] = useState<CalendarItem[]>([]);
+  const [summary, setSummary] = useState<CalendarSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    startDate: '',
-    endDate: '',
-    isAllDay: false,
-    location: '',
+  const [filters, setFilters] = useState({
+    debts: true,
+    receivables: true,
+    reminders: true,
   });
 
-  const loadData = async () => {
+  // Calculate date range for API call
+  const getDateRange = useCallback(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    if (viewMode === 'week' && selectedDate) {
+      const weekDays = getWeekDays(selectedDate);
+      return {
+        startDate: weekDays[0].toISOString().split('T')[0],
+        endDate: weekDays[6].toISOString().split('T')[0],
+      };
+    }
+    
+    // For month view, include buffer for prev/next month overflow in grid
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month + 2, 0);
+    
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0],
+    };
+  }, [currentDate, viewMode, selectedDate]);
+
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetchApi<any>('/events');
-      setEvents(Array.isArray(res) ? res : res.items || res.data || []);
+      const { startDate, endDate } = getDateRange();
+      
+      const [itemsData, summaryData] = await Promise.all([
+        fetchApi<CalendarItem[]>(`/calendar?startDate=${startDate}&endDate=${endDate}`),
+        fetchApi<CalendarSummary>(`/calendar/summary?startDate=${startDate}&endDate=${endDate}`),
+      ]);
+      
+      setItems(Array.isArray(itemsData) ? itemsData : []);
+      setSummary(summaryData || null);
     } catch (error: any) {
-      toast.error(error.message || 'Etkinlikler yüklenemedi');
+      console.error('Calendar data error:', error);
+      toast.error(error.message || 'Takvim verileri yüklenemedi');
+      setItems([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [getDateRange]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
-  const openNewModal = () => {
-    setEditingId(null);
-    setFormData({ 
-      title: '', 
-      description: '', 
-      startDate: new Date().toISOString().slice(0, 16), 
-      endDate: '', 
-      isAllDay: false, 
-      location: '' 
+  // Filter items
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      if (item.type === 'DEBT_INSTALLMENT' && !filters.debts) return false;
+      if (item.type === 'RECEIVABLE_INSTALLMENT' && !filters.receivables) return false;
+      if (item.type === 'REMINDER' && !filters.reminders) return false;
+      return true;
     });
-    setIsModalOpen(true);
-  };
+  }, [items, filters]);
 
-  const handleEdit = (event: Event) => {
-    setEditingId(event.id);
-    setFormData({
-      title: event.title,
-      description: event.description || '',
-      startDate: event.startDate.slice(0, 16),
-      endDate: event.endDate ? event.endDate.slice(0, 16) : '',
-      isAllDay: event.isAllDay,
-      location: event.location || '',
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bu etkinliği silmek istediğinize emin misiniz?')) return;
-    try {
-      await fetchApi(`/events/${id}`, { method: 'DELETE' });
-      toast.success('Etkinlik silindi');
-      loadData();
-    } catch (error: any) {
-      toast.error(error.message || 'Silinirken hata oluştu');
+  // Group items by date
+  const itemsByDate = useMemo(() => {
+    const map = new Map<string, CalendarItem[]>();
+    for (const item of filteredItems) {
+      const key = dateKey(new Date(item.date));
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
     }
+    return map;
+  }, [filteredItems]);
+
+  // Selected day items
+  const selectedDayItems = useMemo(() => {
+    if (!selectedDate) return [];
+    const key = dateKey(selectedDate);
+    return itemsByDate.get(key) || [];
+  }, [selectedDate, itemsByDate]);
+
+  // Counts for legend
+  const filterCounts = useMemo(() => ({
+    debts: items.filter(i => i.type === 'DEBT_INSTALLMENT').length,
+    receivables: items.filter(i => i.type === 'RECEIVABLE_INSTALLMENT').length,
+    reminders: items.filter(i => i.type === 'REMINDER').length,
+  }), [items]);
+
+  // Week view data
+  const weekDays = useMemo(() => {
+    if (!selectedDate) return getWeekDays(new Date());
+    return getWeekDays(selectedDate);
+  }, [selectedDate]);
+
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(date);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        title: formData.title,
-        description: formData.description || null,
-        startDate: new Date(formData.startDate).toISOString(),
-        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-        isAllDay: formData.isAllDay,
-        location: formData.location || null,
-      };
-
-      if (editingId) {
-        await fetchApi(`/events/${editingId}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        });
-        toast.success('Etkinlik güncellendi');
-      } else {
-        await fetchApi('/events', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-        toast.success('Etkinlik oluşturuldu');
-      }
-      setIsModalOpen(false);
-      loadData();
-    } catch (error: any) {
-      toast.error(error.message || 'Hata oluştu');
-    }
+  const handleDaySelect = (date: Date) => {
+    setSelectedDate(date);
   };
 
-  // Yaklaşan etkinlikleri tarihe göre sıralayalım
-  const sortedEvents = [...events].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  // List view: sorted upcoming items
+  const listItems = useMemo(() => {
+    const now = new Date();
+    return filteredItems
+      .filter(i => new Date(i.date) >= new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [filteredItems]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Ajanda & Etkinlikler</h1>
-          <p className="text-text-muted mt-1">Önemli ödemeleri, finansal tarihleri ve aile etkinliklerinizi takip edin.</p>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Finansal Takvim</h1>
+          <p className="text-text-muted mt-1">
+            Taksitli borçlar, alacaklar ve hatırlatmalarınızı takvim üzerinde takip edin.
+          </p>
         </div>
-        <Button onClick={openNewModal}>
-          <Plus className="w-5 h-5 mr-2" />
-          Etkinlik Ekle
-        </Button>
+        
+        {/* View mode toggle */}
+        <div className="flex items-center bg-bg-secondary rounded-xl p-1 border border-border">
+          <button
+            onClick={() => setViewMode('month')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              viewMode === 'month'
+                ? 'bg-bg-card text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Ay
+          </button>
+          <button
+            onClick={() => setViewMode('week')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              viewMode === 'week'
+                ? 'bg-bg-card text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            Hafta
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              viewMode === 'list'
+                ? 'bg-bg-card text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            Liste
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 max-w-4xl">
-        {loading ? (
-          <p className="text-text-muted">Yükleniyor...</p>
-        ) : sortedEvents.length === 0 ? (
-          <div className="text-center py-16 bg-bg-card rounded-2xl border border-border">
-            <Calendar className="w-16 h-16 text-text-muted mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-text-primary mb-2">Henüz etkinlik eklenmemiş</h3>
-            <p className="text-text-muted max-w-md mx-auto mb-6">Ödemeleriniz veya planlarınız için ajandaya kayıt ekleyebilirsiniz.</p>
-            <Button onClick={openNewModal}>Etkinlik Oluştur</Button>
-          </div>
-        ) : (
-          sortedEvents.map(event => {
-            const eventDate = new Date(event.startDate);
-            const isPast = eventDate.getTime() < new Date().getTime();
-            
-            return (
-              <Card key={event.id} className={`group border-border backdrop-blur-xl transition-all ${isPast ? 'bg-bg-card opacity-75' : 'bg-bg-card'}`}>
-                <CardContent className="p-0 flex flex-col sm:flex-row">
-                  <div className={`p-6 flex flex-col justify-center items-center min-w-[120px] border-b sm:border-b-0 sm:border-r border-border ${isPast ? 'bg-bg-card text-text-muted' : 'bg-indigo-500/10 text-indigo-400'}`}>
-                    <span className="text-3xl font-bold">{eventDate.getDate()}</span>
-                    <span className="text-sm font-medium uppercase tracking-wider">
-                      {eventDate.toLocaleString('tr-TR', { month: 'short' })}
-                    </span>
-                  </div>
-                  
-                  <div className="p-6 flex-1 flex flex-col justify-center">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className={`text-lg font-bold ${isPast ? 'text-text-muted' : 'text-text-primary'}`}>{event.title}</h3>
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleEdit(event)} className="text-text-muted hover:text-emerald-400 p-1">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(event.id)} className="text-text-muted hover:text-red-400 p-1">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {event.description && (
-                      <p className="text-sm text-text-muted mb-4">{event.description}</p>
-                    )}
-                    
-                    <div className="flex flex-wrap gap-4 mt-auto">
-                      {!event.isAllDay && (
-                        <div className="flex items-center text-sm text-text-muted">
-                          <Clock className="w-4 h-4 mr-1.5" />
-                          {eventDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      )}
-                      {event.isAllDay && (
-                        <div className="flex items-center text-sm text-indigo-400">
-                          <Calendar className="w-4 h-4 mr-1.5" />
-                          Tüm Gün
-                        </div>
-                      )}
-                      {event.location && (
-                        <div className="flex items-center text-sm text-text-muted">
-                          <MapPin className="w-4 h-4 mr-1.5" />
-                          {event.location}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })
-        )}
-      </div>
+      {/* Summary Bar */}
+      <CalendarSummaryBar summary={summary} loading={loading} />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Etkinliği Düzenle" : "Yeni Etkinlik Ekle"}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input 
-            label="Başlık" 
-            placeholder="Örn: Ev Kirası Ödemesi" 
-            value={formData.title}
-            onChange={(e) => setFormData({...formData, title: e.target.value})}
-            required
+      {/* Legend / Filters */}
+      <CalendarLegend
+        filters={filters}
+        onFilterChange={setFilters}
+        counts={filterCounts}
+      />
+
+      {/* Main Content */}
+      {viewMode === 'month' && (
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-5">
+          {/* Calendar Grid */}
+          <CalendarGrid
+            currentDate={currentDate}
+            selectedDate={selectedDate}
+            items={items}
+            onDateChange={handleDateChange}
+            onDaySelect={handleDaySelect}
+            filters={filters}
           />
-          <Input 
-            label="Açıklama" 
-            placeholder="Kısa bir not..." 
-            value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
-          />
-          <div className="flex items-center gap-2 my-2">
-            <input 
-              type="checkbox" 
-              id="isAllDay"
-              checked={formData.isAllDay}
-              onChange={(e) => setFormData({...formData, isAllDay: e.target.checked})}
-              className="rounded border-border bg-bg-card text-indigo-500 focus:ring-indigo-500"
-            />
-            <label htmlFor="isAllDay" className="text-sm text-text-secondary">Tüm Gün Etkinliği</label>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input 
-              label="Başlangıç" 
-              type={formData.isAllDay ? "date" : "datetime-local"}
-              value={formData.isAllDay ? formData.startDate.split('T')[0] : formData.startDate}
-              onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-              required
-            />
-            {!formData.isAllDay && (
-              <Input 
-                label="Bitiş (Opsiyonel)" 
-                type="datetime-local"
-                value={formData.endDate}
-                onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+
+          {/* Day Detail Panel */}
+          {selectedDate && (
+            <div className="hidden xl:block">
+              <CalendarDayDetail
+                date={selectedDate}
+                items={selectedDayItems}
+                onClose={() => setSelectedDate(null)}
               />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Day Detail (below calendar for smaller screens) */}
+      {viewMode === 'month' && selectedDate && selectedDayItems.length > 0 && (
+        <div className="xl:hidden">
+          <CalendarDayDetail
+            date={selectedDate}
+            items={selectedDayItems}
+            onClose={() => setSelectedDate(null)}
+          />
+        </div>
+      )}
+
+      {/* Week View */}
+      {viewMode === 'week' && (
+        <div className="space-y-4">
+          {/* Week Navigation */}
+          <div className="flex items-center justify-between bg-bg-card border border-border rounded-2xl px-5 py-3">
+            <button
+              onClick={() => {
+                const prev = new Date(weekDays[0]);
+                prev.setDate(prev.getDate() - 7);
+                setSelectedDate(prev);
+                setCurrentDate(new Date(prev.getFullYear(), prev.getMonth(), 1));
+              }}
+              className="p-2 rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h3 className="text-base font-bold text-text-primary">
+              {weekDays[0].getDate()} {MONTHS_TR[weekDays[0].getMonth()]} – {weekDays[6].getDate()} {MONTHS_TR[weekDays[6].getMonth()]} {weekDays[6].getFullYear()}
+            </h3>
+            <button
+              onClick={() => {
+                const next = new Date(weekDays[0]);
+                next.setDate(next.getDate() + 7);
+                setSelectedDate(next);
+                setCurrentDate(new Date(next.getFullYear(), next.getMonth(), 1));
+              }}
+              className="p-2 rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Week Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+            {weekDays.map(day => {
+              const key = dateKey(day);
+              const dayItems = itemsByDate.get(key) || [];
+              const isToday = key === dateKey(new Date());
+              const isSelected = selectedDate && key === dateKey(selectedDate);
+
+              return (
+                <div
+                  key={key}
+                  className={`
+                    bg-bg-card border rounded-2xl overflow-hidden cursor-pointer transition-all
+                    ${isToday ? 'border-accent ring-1 ring-accent/20' : 'border-border'}
+                    ${isSelected ? 'ring-2 ring-accent/30' : ''}
+                    hover:shadow-md
+                  `}
+                  onClick={() => handleDaySelect(day)}
+                >
+                  <div className={`px-3 py-2 border-b border-border ${isToday ? 'bg-accent/10' : 'bg-bg-secondary/50'}`}>
+                    <p className="text-xs font-medium text-text-muted">{DAYS_FULL_TR[day.getDay()]}</p>
+                    <p className={`text-lg font-bold ${isToday ? 'text-accent' : 'text-text-primary'}`}>
+                      {day.getDate()}
+                    </p>
+                  </div>
+                  <div className="p-2 space-y-1.5 min-h-[60px]">
+                    {dayItems.length === 0 && (
+                      <p className="text-xs text-text-muted text-center py-2">—</p>
+                    )}
+                    {dayItems.slice(0, 4).map(item => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium"
+                        style={{
+                          backgroundColor: item.color + '15',
+                          color: item.color,
+                        }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="truncate">{item.title}</span>
+                      </div>
+                    ))}
+                    {dayItems.length > 4 && (
+                      <p className="text-[10px] text-text-muted text-center">+{dayItems.length - 4} daha</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Day Detail for Week View */}
+          {selectedDate && selectedDayItems.length > 0 && (
+            <CalendarDayDetail
+              date={selectedDate}
+              items={selectedDayItems}
+              onClose={() => setSelectedDate(null)}
+            />
+          )}
+        </div>
+      )}
+
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="bg-bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h3 className="text-lg font-bold text-text-primary">Yaklaşan Ödemeler ve Hatırlatmalar</h3>
+            <p className="text-sm text-text-muted mt-0.5">Bugünden itibaren sıralı görünüm</p>
+          </div>
+          
+          <div className="divide-y divide-border">
+            {loading ? (
+              <div className="p-8 text-center text-text-muted">Yükleniyor...</div>
+            ) : listItems.length === 0 ? (
+              <div className="text-center py-16">
+                <Calendar className="w-14 h-14 text-text-muted mx-auto mb-3" />
+                <h3 className="text-base font-semibold text-text-primary mb-1">Yaklaşan kayıt yok</h3>
+                <p className="text-sm text-text-muted">Tüm ödemeler ve hatırlatmalar güncel görünüyor.</p>
+              </div>
+            ) : (
+              listItems.map(item => {
+                const itemDate = new Date(item.date);
+                const isToday = dateKey(itemDate) === dateKey(new Date());
+                
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-bg-card-hover transition-colors"
+                  >
+                    {/* Date pill */}
+                    <div className={`
+                      shrink-0 w-14 text-center py-2 rounded-xl
+                      ${isToday ? 'bg-accent/10' : 'bg-bg-secondary'}
+                    `}>
+                      <p className={`text-lg font-bold ${isToday ? 'text-accent' : 'text-text-primary'}`}>
+                        {itemDate.getDate()}
+                      </p>
+                      <p className="text-[10px] font-medium text-text-muted uppercase">
+                        {MONTHS_TR[itemDate.getMonth()].slice(0, 3)}
+                      </p>
+                    </div>
+
+                    {/* Type indicator */}
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: item.color + '20', color: item.color }}
+                    >
+                      {item.type === 'DEBT_INSTALLMENT' && <span className="text-base">💳</span>}
+                      {item.type === 'RECEIVABLE_INSTALLMENT' && <span className="text-base">💰</span>}
+                      {item.type === 'REMINDER' && <span className="text-base">🔔</span>}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-text-primary truncate">{item.title}</p>
+                      <p className="text-xs text-text-muted truncate">
+                        {item.type === 'DEBT_INSTALLMENT' && 'Borç Taksiti'}
+                        {item.type === 'RECEIVABLE_INSTALLMENT' && 'Alacak Taksiti'}
+                        {item.type === 'REMINDER' && 'Hatırlatma'}
+                        {item.description ? ` • ${item.description}` : ''}
+                      </p>
+                    </div>
+
+                    {/* Amount & Status */}
+                    <div className="text-right shrink-0">
+                      {item.amount && item.amount > 0 && (
+                        <p className="text-sm font-bold" style={{ color: item.color }}>
+                          {item.type === 'RECEIVABLE_INSTALLMENT' ? '+' : '-'}{formatCurrency(item.amount, item.currency)}
+                        </p>
+                      )}
+                      <span
+                        className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                        style={{
+                          backgroundColor: item.color + '15',
+                          color: item.color,
+                        }}
+                      >
+                        {item.status === 'OVERDUE' && 'Gecikmiş'}
+                        {item.status === 'DUE_TODAY' && 'Bugün'}
+                        {item.status === 'PLANNED' && 'Planlı'}
+                        {item.status === 'ACTIVE' && 'Aktif'}
+                        {item.status === 'PAID' && 'Ödendi'}
+                        {item.status === 'COLLECTED' && 'Tahsil'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
-          <Input 
-            label="Konum (Opsiyonel)" 
-            placeholder="Örn: Online, İş Bankası vb." 
-            value={formData.location}
-            onChange={(e) => setFormData({...formData, location: e.target.value})}
-          />
-          <div className="pt-4 flex justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>İptal</Button>
-            <Button type="submit">Kaydet</Button>
-          </div>
-        </form>
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }

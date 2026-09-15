@@ -10,11 +10,13 @@ import { useAuthStore } from '@/store/auth';
 import { Settings as SettingsIcon, Users, UserPlus, Trash2, Building, Plus, ArrowRight, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
+import { CategoriesTab } from '@/components/settings/CategoriesTab';
+import { MerchantsTab } from '@/components/settings/MerchantsTab';
 
 export default function SettingsPage() {
   const { user, login } = useAuthStore();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'CURRENT' | 'TENANTS'>('CURRENT');
+  const [activeTab, setActiveTab] = useState<'CURRENT' | 'TENANTS' | 'CATEGORIES' | 'MERCHANTS'>('CURRENT');
   
   // Profile States
   const [username, setUsername] = useState('');
@@ -209,26 +211,41 @@ export default function SettingsPage() {
   };
 
   if (loading) return <div className="text-text-muted">Yükleniyor...</div>;
-
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-4 max-w-5xl">
       <div className="flex justify-between items-center flex-col sm:flex-row gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-            <SettingsIcon className="w-8 h-8 text-text-muted" />
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight flex items-center gap-2">
+            <SettingsIcon className="w-7 h-7 text-text-muted" />
             Ayarlar
           </h1>
           <p className="text-text-muted mt-1">Aile veya işletmenizin temel ayarlarını yönetin.</p>
         </div>
 
-        <div className="bg-bg-card p-1 rounded-xl border border-border flex">
+        <div className="bg-bg-card p-1 rounded-xl border border-border flex flex-wrap gap-1">
           <button
             onClick={() => setActiveTab('CURRENT')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'CURRENT' ? 'bg-bg-secondary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
             }`}
           >
-            Aktif Kurum
+            Profil & Kurum
+          </button>
+          <button
+            onClick={() => setActiveTab('CATEGORIES')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'CATEGORIES' ? 'bg-bg-secondary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            Kategoriler
+          </button>
+          <button
+            onClick={() => setActiveTab('MERCHANTS')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'MERCHANTS' ? 'bg-bg-secondary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
+            }`}
+          >
+            Harcama Yerleri
           </button>
           {user?.systemRole === 'ADMIN' && (
             <button
@@ -244,16 +261,16 @@ export default function SettingsPage() {
       </div>
 
       {activeTab === 'CURRENT' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="lg:col-span-2">
-            <CardHeader title={
+            <CardHeader className="py-3 px-4 border-b border-border/50" title={
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-indigo-400" />
                 Kişisel Profil Bilgileri
               </div>
             } />
-            <CardContent>
-              <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-2xl">
+            <CardContent className="p-4">
+              <form onSubmit={handleUpdateProfile} className="space-y-3 max-w-2xl">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Ad"
@@ -291,14 +308,14 @@ export default function SettingsPage() {
           </Card>
 
           <Card>
-            <CardHeader title={
+            <CardHeader className="py-3 px-4 border-b border-border/50" title={
               <div className="flex items-center gap-2">
                 <Building className="w-5 h-5 text-indigo-400" />
                 Aktif Aile / Kurum Bilgileri
               </div>
             } />
-            <CardContent>
-              <form onSubmit={handleUpdateTenant} className="space-y-4">
+            <CardContent className="p-4">
+              <form onSubmit={handleUpdateTenant} className="space-y-3">
                 <Input
                   label="Aile/Kurum Adı"
                   value={tenantName}
@@ -323,7 +340,7 @@ export default function SettingsPage() {
           </Card>
 
           <Card>
-            <CardHeader title={
+            <CardHeader className="py-3 px-4 border-b border-border/50" title={
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-emerald-400" />
@@ -334,10 +351,10 @@ export default function SettingsPage() {
                 </span>
               </div>
             } />
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="p-4">
+              <div className="space-y-2">
                 {tenant?.members?.map((m: any) => (
-                  <div key={m.id} className="flex justify-between items-center p-3 bg-bg-card rounded-xl border border-border">
+                  <div key={m.id} className="flex justify-between items-center p-2.5 bg-bg-card rounded-xl border border-border">
                     <div>
                       <p className="text-sm font-medium text-text-primary">{m.firstName} {m.lastName}</p>
                       <p className="text-xs text-text-muted">{m.email}</p>
@@ -394,8 +411,8 @@ export default function SettingsPage() {
       )}
 
       {activeTab === 'TENANTS' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
@@ -417,10 +434,10 @@ export default function SettingsPage() {
               {myTenants
                 .filter((t: any) => t.name.toLowerCase().includes(tenantSearchQuery.toLowerCase()))
                 .map((t: any) => (
-                  <div key={t.id} className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors hover:bg-bg-secondary/50 ${t.id === user?.activeTenantId ? 'bg-emerald-500/5' : ''}`}>
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2.5 rounded-xl flex-shrink-0 ${t.id === user?.activeTenantId ? 'bg-emerald-500/20 text-emerald-500' : 'bg-bg-secondary text-text-muted'}`}>
-                        <Building className="w-5 h-5" />
+                  <div key={t.id} className={`p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:bg-bg-secondary/50 ${t.id === user?.activeTenantId ? 'bg-emerald-500/5' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-xl flex-shrink-0 ${t.id === user?.activeTenantId ? 'bg-emerald-500/20 text-emerald-500' : 'bg-bg-secondary text-text-muted'}`}>
+                        <Building className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -460,6 +477,9 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {activeTab === 'CATEGORIES' && <CategoriesTab />}
+      {activeTab === 'MERCHANTS' && <MerchantsTab />}
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yeni Kurum/Aile Oluştur">
         <form onSubmit={handleCreateTenant} className="space-y-4">

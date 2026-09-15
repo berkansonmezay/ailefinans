@@ -23,29 +23,28 @@ import {
   PieChart,
   FileText,
   Shield,
-  BellRing
+  BellRing,
+  TrendingUp
 } from 'lucide-react';
 import clsx from 'clsx';
 
 const menuItems = [
   { name: 'Kontrol Paneli', href: '/', icon: LayoutDashboard },
   { name: 'İşlemler', href: '/transactions', icon: ArrowLeftRight },
-  { name: 'Kategoriler', href: '/categories', icon: Tag },
-  { name: 'Harcama Yerleri', href: '/merchants', icon: MapPin },
   { name: 'Taksitli Borçlar', href: '/debts', icon: CreditCard },
   { name: 'Taksitli Alacaklar', href: '/receivables', icon: Wallet },
+  { name: 'Hisselerim', href: '/stocks', icon: TrendingUp },
+  { name: 'Tasarruf (Altın/Döviz)', href: '/savings', icon: PiggyBank },
+  { name: 'Hesaplar', href: '/accounts', icon: Banknote },
   { name: 'Hatırlatıcılar', href: '/reminders', icon: BellRing },
   { name: 'Takvim', href: '/calendar', icon: Calendar },
-  { name: 'Etkinlikler', href: '/events', icon: CalendarDays },
   { name: 'Raporlar', href: '/reports', icon: BarChart3 },
-  { name: 'Tasarruf', href: '/savings', icon: PiggyBank },
+  { name: 'Bütçeler', href: '/budgets', icon: PieChart },
   { name: 'Garanti & Fatura', href: '/warranties', icon: ShieldCheck },
   { name: 'Abonelikler', href: '/subscriptions', icon: Repeat },
+  { name: 'Belgeler', href: '/documents', icon: FileText },
   { name: 'Ayarlar', href: '/settings', icon: Settings },
   { name: 'Yardım', href: '/guide', icon: HelpCircle },
-  { name: 'Hesaplar', href: '/accounts', icon: Banknote },
-  { name: 'Bütçeler', href: '/budgets', icon: PieChart },
-  { name: 'Belgeler', href: '/documents', icon: FileText },
 ];
 
 export function Sidebar() {

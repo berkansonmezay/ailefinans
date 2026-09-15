@@ -21,7 +21,7 @@ interface Category {
   isSystem: boolean;
 }
 
-export default function CategoriesPage() {
+export function CategoriesTab() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -304,12 +304,8 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Kategoriler</h1>
-          <p className="text-text-muted mt-1">Gelir ve gider işlemleriniz için kategorileri yönetin.</p>
-        </div>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center bg-bg-card p-3 rounded-xl border border-border">
         <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -318,11 +314,12 @@ export default function CategoriesPage() {
               placeholder="Kategori ara..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-bg-card border border-border rounded-xl text-sm text-text-primary focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 w-full sm:w-64 transition-all"
+              className="pl-9 pr-3 py-1.5 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 w-full sm:w-64 transition-all"
             />
           </div>
+        </div>
           
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <Button onClick={handleExportExcel} variant="secondary" className="px-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-transparent h-9">
               <FileSpreadsheet className="w-4 h-4 mr-2" />
               Excel
@@ -340,13 +337,12 @@ export default function CategoriesPage() {
               Yeni
             </Button>
           </div>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Gider Kategorileri */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <ArrowDownCircle className="w-5 h-5 text-red-400" />
@@ -362,9 +358,9 @@ export default function CategoriesPage() {
               <>
                 <ul className="divide-y divide-border border border-border rounded-xl overflow-hidden shadow-sm">
                   {paginatedExpenses.map(cat => (
-                    <li key={cat.id} className="flex justify-between items-center px-4 py-2.5 bg-bg-card hover:bg-bg-secondary/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Tag className="w-4 h-4 text-text-muted" />
+                    <li key={cat.id} className="flex justify-between items-center px-3 py-1.5 bg-bg-card hover:bg-bg-secondary/50 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-3.5 h-3.5 text-text-muted" />
                         <span className="text-sm font-medium text-text-primary">{cat.name}</span>
                       </div>
                       <div className="flex items-center gap-1">
@@ -386,10 +382,10 @@ export default function CategoriesPage() {
 
         {/* Gelir Kategorileri */}
         <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <ArrowUpCircle className="w-5 h-5 text-emerald-400" />
+                <ArrowUpCircle className="w-4 h-4 text-emerald-400" />
                 <h2 className="text-lg font-bold text-text-primary">Gelir Kategorileri</h2>
               </div>
               <span className="text-xs bg-bg-secondary text-text-muted px-2 py-1 rounded-md font-medium">{incomes.length} adet</span>
@@ -402,9 +398,9 @@ export default function CategoriesPage() {
               <>
                 <ul className="divide-y divide-border border border-border rounded-xl overflow-hidden shadow-sm">
                   {paginatedIncomes.map(cat => (
-                    <li key={cat.id} className="flex justify-between items-center px-4 py-2.5 bg-bg-card hover:bg-bg-secondary/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Tag className="w-4 h-4 text-text-muted" />
+                    <li key={cat.id} className="flex justify-between items-center px-3 py-1.5 bg-bg-card hover:bg-bg-secondary/50 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-3.5 h-3.5 text-text-muted" />
                         <span className="text-sm font-medium text-text-primary">{cat.name}</span>
                       </div>
                       <div className="flex items-center gap-1">

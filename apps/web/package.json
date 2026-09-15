@@ -11,6 +11,7 @@
   "dependencies": {
     "@family-app/types": "workspace:*",
     "clsx": "^2.1.0",
+    "date-fns": "^4.4.0",
     "exceljs": "^4.4.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",

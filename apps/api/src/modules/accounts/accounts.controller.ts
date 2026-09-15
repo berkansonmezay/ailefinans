@@ -31,6 +31,11 @@ export class AccountsController {
     return success(await this.service.findOne(id, tenantId));
   }
 
+  @Get(":id/transactions")
+  async getTransactions(@Param("id") id: string, @ActiveTenant() tenantId: string) {
+    return success(await this.service.getTransactions(id, tenantId));
+  }
+
   @Post()
   async create(
     @ActiveTenant() tenantId: string,

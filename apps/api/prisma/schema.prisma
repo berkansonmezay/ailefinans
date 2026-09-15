@@ -111,6 +111,7 @@ model Account {
   id             String      @id @default(uuid())
   tenantId       String
   name           String
+  ownerName      String?
   type           AccountType
   institution    String?
   currency       String      @default("TRY")
@@ -748,4 +749,103 @@ model ExchangeRate {
 
   @@unique([baseCurrency, targetCurrency, date])
   @@index([baseCurrency, targetCurrency])
+}
+
+// ========================
+// STOCKS & PORTFOLIO
+// ========================
+
+model StockAsset {
+  id          String   @id @default(uuid())
+  tenantId    String
+  symbol      String   // e.g. THYAO.IS
+  quantity    Float    @default(0)
+  averageCost Float    @default(0)
+  currency    String   @default("TRY")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  transactions StockTransaction[]
+
+  @@unique([tenantId, symbol])
+  @@index([tenantId])
+}
+
+model StockTransaction {
+  id          String   @id @default(uuid())
+  tenantId    String
+  stockId     String
+  type        StockTransactionType
+  quantity    Float
+  price       Float
+  date        DateTime
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  asset       StockAsset @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([stockId])
+}
+
+enum StockTransactionType {
+  BUY
+  SELL
+}
+
+// ========================
+// SAVINGS & PRECIOUS METALS / CURRENCIES
+// ========================
+
+model SavingsAsset {
+  id          String   @id @default(uuid())
+  tenantId    String
+  code        String   // e.g. USD, EUR, gram-altin
+  type        SavingsAssetType
+  bank        String?  // e.g. "Ziraat Bankası", "Serbest Piyasa"
+  quantity    Float    @default(0)
+  averageCost Float    @default(0)
+  currency    String   @default("TRY")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  transactions SavingsAssetTransaction[]
+
+  @@unique([tenantId, code, bank])
+  @@index([tenantId])
+}
+
+model SavingsAssetTransaction {
+  id          String   @id @default(uuid())
+  tenantId    String
+  assetId     String
+  type        SavingsTransactionType
+  quantity    Float
+  price       Float
+  date        DateTime
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  asset       SavingsAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([assetId])
+}
+
+enum SavingsAssetType {
+  GOLD
+  CURRENCY
+  SILVER
+  FUND
+}
+
+enum SavingsTransactionType {
+  BUY
+  SELL
 }

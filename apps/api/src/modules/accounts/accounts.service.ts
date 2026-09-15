@@ -11,7 +11,7 @@ export class AccountsService {
 
     const where = { tenantId, deletedAt: null };
 
-    const [data, total] = await Promise.all([
+    const [accounts, total] = await Promise.all([
       this.prisma.account.findMany({
         where,
         skip,
@@ -20,6 +20,30 @@ export class AccountsService {
       }),
       this.prisma.account.count({ where }),
     ]);
+
+    const accountIds = accounts.map(a => a.id);
+    
+    const [incomes, expenses] = await Promise.all([
+      this.prisma.incomeTransaction.groupBy({
+        by: ['accountId'],
+        where: { tenantId, accountId: { in: accountIds } },
+        _sum: { amount: true }
+      }),
+      this.prisma.expenseTransaction.groupBy({
+        by: ['accountId'],
+        where: { tenantId, accountId: { in: accountIds } },
+        _sum: { amount: true }
+      })
+    ]);
+
+    const data = accounts.map(account => {
+      const inc = incomes.find(i => i.accountId === account.id)?._sum.amount || 0;
+      const exp = expenses.find(e => e.accountId === account.id)?._sum.amount || 0;
+      return {
+        ...account,
+        currentBalance: account.initialBalance + inc - exp
+      };
+    });
 
     return {
       data,
@@ -54,5 +78,31 @@ export class AccountsService {
       where: { id },
       data: { deletedAt: new Date() },
     });
+  }
+
+  async getTransactions(id: string, tenantId: string) {
+    await this.findOne(id, tenantId); // verify existence and tenant
+    
+    const [incomes, expenses] = await Promise.all([
+      this.prisma.incomeTransaction.findMany({
+        where: { tenantId, accountId: id },
+        orderBy: { transactionDate: 'desc' }
+      }),
+      this.prisma.expenseTransaction.findMany({
+        where: { tenantId, accountId: id },
+        orderBy: { transactionDate: 'desc' }
+      })
+    ]);
+
+    // Map to a common format
+    const transactions = [
+      ...incomes.map(i => ({ ...i, transactionType: 'INCOME' })),
+      ...expenses.map(e => ({ ...e, transactionType: 'EXPENSE' }))
+    ];
+
+    // Sort combined by date descending
+    transactions.sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime());
+
+    return transactions;
   }
 }
