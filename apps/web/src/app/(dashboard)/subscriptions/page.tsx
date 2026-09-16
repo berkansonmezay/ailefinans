@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { fetchApi } from '@/lib/api';
-import { Plus, Edit2, Trash2, Calendar, Repeat } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar, Repeat, BellRing, BellOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
@@ -98,6 +98,7 @@ export default function SubscriptionsPage() {
                       <th className="px-4 py-3 font-semibold text-text-secondary">Plan / Sıklık</th>
                       <th className="px-4 py-3 font-semibold text-text-secondary text-right">Tutar</th>
                       <th className="px-4 py-3 font-semibold text-text-secondary">Sonraki Ödeme</th>
+                      <th className="px-4 py-3 font-semibold text-text-secondary text-center">Hatırlatıcı</th>
                       <th className="px-4 py-3 font-semibold text-text-secondary text-right">İşlemler</th>
                     </tr>
                   </thead>
@@ -135,6 +136,21 @@ export default function SubscriptionsPage() {
                                 </span>
                               </div>
                             ) : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {sub.reminderEnabled ? (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                <BellRing className="w-3.5 h-3.5 text-emerald-500" />
+                                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                  {sub.remindBeforeDays || 3} gün önce
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-bg-secondary">
+                                <BellOff className="w-3.5 h-3.5 text-text-muted" />
+                                <span className="text-[11px] font-medium text-text-muted">Kapalı</span>
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

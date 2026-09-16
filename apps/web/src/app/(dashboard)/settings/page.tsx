@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
-import { Settings as SettingsIcon, Users, UserPlus, Trash2, Building, Plus, ArrowRight, Search } from 'lucide-react';
+import { Trash2, Edit2, Search, Plus, Tag, ArrowUpCircle, ArrowDownCircle, Users, Building, Settings as SettingsIcon, UserPlus, Cloud, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
 import { CategoriesTab } from '@/components/settings/CategoriesTab';
@@ -37,6 +37,8 @@ export default function SettingsPage() {
   const [newTenantName, setNewTenantName] = useState('');
   const [newTenantCurrency, setNewTenantCurrency] = useState('TRY');
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
+  
+  const [integrationInfoModalOpen, setIntegrationInfoModalOpen] = useState(false);
 
   const loadCurrentTenant = async () => {
     try {
@@ -78,8 +80,8 @@ export default function SettingsPage() {
     loadAll();
   }, [user]);
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateProfile = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     try {
       const res = await fetchApi<any>('/auth/me', {
         method: 'PUT',
@@ -104,8 +106,8 @@ export default function SettingsPage() {
     }
   };
 
-  const handleUpdateTenant = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateTenant = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!user?.activeTenantId) return;
     try {
       const res = await fetchApi<any>(`/tenants/${user.activeTenantId}`, {
@@ -127,8 +129,8 @@ export default function SettingsPage() {
     }
   };
 
-  const handleAddMember = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddMember = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!user?.activeTenantId) return;
     try {
       await fetchApi(`/tenants/${user.activeTenantId}/members`, {
@@ -261,152 +263,173 @@ export default function SettingsPage() {
       </div>
 
       {activeTab === 'CURRENT' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card className="lg:col-span-2">
-            <CardHeader className="py-3 px-4 border-b border-border/50" title={
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-400" />
-                Kişisel Profil Bilgileri
+        <div className="space-y-8 max-w-4xl">
+          {/* Profil Bilgileri */}
+          <section>
+            <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4 text-indigo-400" /> Kişisel Profil Bilgileri
+            </h3>
+            <div className="bg-bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2 sm:gap-4 hover:bg-bg-secondary/30 transition-colors">
+                <div className="sm:w-1/3"><p className="text-sm font-medium text-text-primary">Ad</p></div>
+                <div className="flex-1">
+                  <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                </div>
               </div>
-            } />
-            <CardContent className="p-4">
-              <form onSubmit={handleUpdateProfile} className="space-y-3 max-w-2xl">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Ad"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                  />
-                  <Input
-                    label="Soyad"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                  />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2 sm:gap-4 hover:bg-bg-secondary/30 transition-colors">
+                <div className="sm:w-1/3"><p className="text-sm font-medium text-text-primary">Soyad</p></div>
+                <div className="flex-1">
+                  <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Kullanıcı Adı"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="kullanici_adi"
-                  />
-                  <Input
-                    label="Yeni Şifre (İsteğe bağlı)"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Değiştirmek istemiyorsanız boş bırakın"
-                  />
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2 sm:gap-4 hover:bg-bg-secondary/30 transition-colors">
+                <div className="sm:w-1/3">
+                  <p className="text-sm font-medium text-text-primary">Kullanıcı Adı</p>
+                  <p className="text-xs text-text-muted mt-0.5">Sisteme giriş yaparken kullanabileceğiniz benzersiz ad</p>
                 </div>
-                <div className="pt-2">
-                  <Button type="submit">Profili Güncelle</Button>
+                <div className="flex-1">
+                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="kullanici_adi" className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
                 </div>
-              </form>
-            </CardContent>
-          </Card>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2 sm:gap-4 hover:bg-bg-secondary/30 transition-colors">
+                <div className="sm:w-1/3">
+                  <p className="text-sm font-medium text-text-primary">Yeni Şifre</p>
+                  <p className="text-xs text-text-muted mt-0.5">Değiştirmek istemiyorsanız boş bırakın</p>
+                </div>
+                <div className="flex-1">
+                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                </div>
+              </div>
+              <div className="p-4 bg-bg-secondary/20 flex justify-end">
+                <Button onClick={handleUpdateProfile}>Profili Güncelle</Button>
+              </div>
+            </div>
+          </section>
 
-          <Card>
-            <CardHeader className="py-3 px-4 border-b border-border/50" title={
-              <div className="flex items-center gap-2">
-                <Building className="w-5 h-5 text-indigo-400" />
-                Aktif Aile / Kurum Bilgileri
-              </div>
-            } />
-            <CardContent className="p-4">
-              <form onSubmit={handleUpdateTenant} className="space-y-3">
-                <Input
-                  label="Aile/Kurum Adı"
-                  value={tenantName}
-                  onChange={(e) => setTenantName(e.target.value)}
-                  required
-                />
-                <Select
-                  label="Varsayılan Para Birimi"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  options={[
-                    { value: 'TRY', label: 'Türk Lirası (₺)' },
-                    { value: 'USD', label: 'US Dollar ($)' },
-                    { value: 'EUR', label: 'Euro (€)' },
-                  ]}
-                />
-                <div className="pt-2">
-                  <Button type="submit">Güncelle</Button>
+          {/* Kurum Bilgileri */}
+          <section>
+            <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+              <Building className="w-4 h-4 text-emerald-400" /> Aktif Aile / Kurum Bilgileri
+            </h3>
+            <div className="bg-bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2 sm:gap-4 hover:bg-bg-secondary/30 transition-colors">
+                <div className="sm:w-1/3">
+                  <p className="text-sm font-medium text-text-primary">Aile/Kurum Adı</p>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
+                <div className="flex-1">
+                  <input type="text" value={tenantName} onChange={(e) => setTenantName(e.target.value)} required className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2 sm:gap-4 hover:bg-bg-secondary/30 transition-colors">
+                <div className="sm:w-1/3">
+                  <p className="text-sm font-medium text-text-primary">Varsayılan Para Birimi</p>
+                  <p className="text-xs text-text-muted mt-0.5">Tüm raporlarda baz alınacak kur</p>
+                </div>
+                <div className="flex-1">
+                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none">
+                    <option value="TRY">Türk Lirası (₺)</option>
+                    <option value="USD">US Dollar ($)</option>
+                    <option value="EUR">Euro (€)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="p-4 bg-bg-secondary/20 flex justify-end">
+                <Button onClick={handleUpdateTenant}>Kurumu Güncelle</Button>
+              </div>
+            </div>
+          </section>
 
-          <Card>
-            <CardHeader className="py-3 px-4 border-b border-border/50" title={
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-emerald-400" />
-                  Aile Üyeleri
-                </div>
-                <span className="text-xs bg-bg-secondary text-text-secondary px-2 py-1 rounded-full">
-                  {tenant?.members?.length || 0} Üye
-                </span>
-              </div>
-            } />
-            <CardContent className="p-4">
-              <div className="space-y-2">
-                {tenant?.members?.map((m: any) => (
-                  <div key={m.id} className="flex justify-between items-center p-2.5 bg-bg-card rounded-xl border border-border">
+          {/* Aile Üyeleri */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                <Users className="w-4 h-4 text-cyan-400" /> Aile Üyeleri
+              </h3>
+              <span className="text-xs bg-bg-secondary text-text-secondary px-2.5 py-1 rounded-full font-medium">
+                {tenant?.members?.length || 0} Üye
+              </span>
+            </div>
+            
+            <div className="bg-bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
+              {tenant?.members?.map((m: any) => (
+                <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 hover:bg-bg-secondary/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-bg-secondary flex items-center justify-center text-text-muted font-bold text-xs uppercase">
+                      {m.firstName?.[0]}{m.lastName?.[0]}
+                    </div>
                     <div>
                       <p className="text-sm font-medium text-text-primary">{m.firstName} {m.lastName}</p>
                       <p className="text-xs text-text-muted">{m.email}</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-md ${
-                        m.role === 'OWNER' ? 'bg-amber-500/20 text-amber-400' : 'bg-bg-secondary text-text-secondary'
-                      }`}>
-                        {m.role === 'OWNER' ? 'Yönetici' : 'Üye'}
-                      </span>
-                      {user?.role === 'OWNER' && m.userId !== user.id && (
-                        <button 
-                          onClick={() => handleRemoveMember(m.userId)}
-                          className="text-text-muted hover:text-red-400 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
                   </div>
-                ))}
-              </div>
-
+                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                      m.role === 'OWNER' ? 'bg-amber-500/15 text-amber-500' : 'bg-bg-secondary text-text-secondary'
+                    }`}>
+                      {m.role === 'OWNER' ? 'Yönetici' : 'Üye'}
+                    </span>
+                    {user?.role === 'OWNER' && m.userId !== user.id && (
+                      <button onClick={() => handleRemoveMember(m.userId)} className="text-text-muted hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10" title="Üyeyi Çıkar">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
               {user?.role === 'OWNER' && (
-                <div className="mt-8 border-t border-border pt-6">
-                  <h4 className="text-sm font-medium text-text-primary mb-4 flex items-center gap-2">
-                    <UserPlus className="w-4 h-4 text-text-muted" />
-                    Yeni Üye Davet Et
-                  </h4>
-                  <form onSubmit={handleAddMember} className="space-y-4">
-                    <Input
-                      label="E-posta Adresi (Sisteme Kayıtlı Olmalı)"
-                      type="email"
-                      value={newMemberEmail}
-                      onChange={(e) => setNewMemberEmail(e.target.value)}
-                      required
-                    />
-                    <Select
-                      label="Rol"
-                      value={newMemberRole}
-                      onChange={(e) => setNewMemberRole(e.target.value)}
-                      options={[
-                        { value: 'MEMBER', label: 'Standart Üye' },
-                        { value: 'OWNER', label: 'Yönetici' },
-                      ]}
-                    />
-                    <Button type="submit" className="w-full">Davet Et</Button>
-                  </form>
+                <div className="p-4 bg-bg-secondary/10 flex flex-col sm:flex-row items-end sm:items-center gap-3 border-t border-border/50 mt-2">
+                  <div className="flex-1 w-full">
+                    <input type="email" value={newMemberEmail} onChange={(e) => setNewMemberEmail(e.target.value)} placeholder="Davet edilecek E-posta" className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
+                  </div>
+                  <div className="w-full sm:w-auto">
+                    <select value={newMemberRole} onChange={(e) => setNewMemberRole(e.target.value)} className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none min-w-[130px]">
+                      <option value="MEMBER">Standart Üye</option>
+                      <option value="OWNER">Yönetici</option>
+                    </select>
+                  </div>
+                  <Button onClick={handleAddMember} className="w-full sm:w-auto whitespace-nowrap"><UserPlus className="w-4 h-4 mr-2"/>Davet Et</Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
+
+          {/* Entegrasyonlar */}
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                <Cloud className="w-4 h-4 text-blue-400" /> Entegrasyonlar
+              </h3>
+              <button onClick={() => setIntegrationInfoModalOpen(true)} className="text-text-muted hover:text-blue-500 transition-colors" title="Nasıl Yapılır?">
+                <Info className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="bg-bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2 sm:gap-4 hover:bg-bg-secondary/30 transition-colors">
+                <div className="sm:w-1/2">
+                  <p className="text-sm font-medium text-text-primary">Google Drive Bağlantısı</p>
+                  <p className="text-xs text-text-muted mt-0.5">Garanti ve fatura belgeleriniz kendi Google Drive hesabınızda güvenle saklansın.</p>
+                </div>
+                <div className="flex-1 flex justify-end">
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetchApi<any>('/integrations/google-drive/auth');
+                        if (res && res.url) {
+                          window.location.href = res.url;
+                        }
+                      } catch (error: any) {
+                        toast.error(error.message || 'Drive bağlantısı başlatılamadı');
+                      }
+                    }} 
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    <Cloud className="w-4 h-4" /> Drive'ı Bağla
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
@@ -506,6 +529,43 @@ export default function SettingsPage() {
           </div>
         </form>
       </Modal>
+
+      <Modal isOpen={integrationInfoModalOpen} onClose={() => setIntegrationInfoModalOpen(false)} title="Google Drive Entegrasyon Rehberi">
+        <div className="space-y-4 text-sm text-text-secondary pb-4">
+          <p>
+            Google Drive entegrasyonu sayesinde garanti belgelerinizi ve fatura görsellerinizi uygulamanın sunucusu yerine
+            doğrudan <strong>kendi Google Drive alanınızda</strong> saklayabilirsiniz.
+          </p>
+          
+          <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
+            <h4 className="font-semibold text-blue-600 mb-2 flex items-center gap-2">
+              <Info className="w-4 h-4" /> Sistem Yöneticisi İçin Kurulum Adımları
+            </h4>
+            <ul className="list-decimal list-inside space-y-2">
+              <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Google Cloud Console</a>'a giriş yapın.</li>
+              <li>Yeni bir proje oluşturun ve <strong>Google Drive API</strong>'yi aktif hale getirin.</li>
+              <li><strong>OAuth Consent Screen</strong> ayarlarını yapılandırın.</li>
+              <li>Credentials bölümünden <strong>OAuth Client ID</strong> (Web Application) oluşturun.</li>
+              <li>
+                Yönlendirme (Redirect URI) adresi olarak şu anki sunucunuzun callback adresini girin: <br />
+                <code className="bg-bg-secondary px-2 py-1 rounded text-xs break-all mt-1 inline-block text-text-primary">
+                  {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/integrations/google-drive/callback
+                </code>
+              </li>
+              <li>Oluşan <strong>Client ID</strong> ve <strong>Client Secret</strong> değerlerini backend uygulamanızın `.env` dosyasına kaydedip sunucuyu yeniden başlatın.</li>
+            </ul>
+          </div>
+          
+          <p>
+            Yukarıdaki adımlar tamamlandıktan sonra <strong>"Drive'ı Bağla"</strong> butonunu kullanarak yetkilendirme işlemini gerçekleştirebilirsiniz.
+          </p>
+
+          <div className="pt-4 flex justify-end">
+            <Button onClick={() => setIntegrationInfoModalOpen(false)}>Anladım</Button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }

@@ -14,7 +14,7 @@ import {
   Calendar,
   CalendarDays,
   BarChart3,
-  PiggyBank,
+  Coins,
   ShieldCheck,
   Repeat,
   Settings,
@@ -24,7 +24,8 @@ import {
   FileText,
   Shield,
   BellRing,
-  TrendingUp
+  TrendingUp,
+  Bitcoin
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -34,15 +35,14 @@ const menuItems = [
   { name: 'Taksitli Borçlar', href: '/debts', icon: CreditCard },
   { name: 'Taksitli Alacaklar', href: '/receivables', icon: Wallet },
   { name: 'Hisselerim', href: '/stocks', icon: TrendingUp },
-  { name: 'Tasarruf (Altın/Döviz)', href: '/savings', icon: PiggyBank },
+  { name: 'Kripto Varlıklar', href: '/crypto', icon: Bitcoin },
+  { name: 'Altın & Döviz', href: '/savings', icon: Coins },
   { name: 'Hesaplar', href: '/accounts', icon: Banknote },
   { name: 'Abonelikler', href: '/subscriptions', icon: Repeat },
   { name: 'Hatırlatıcılar', href: '/reminders', icon: BellRing },
   { name: 'Takvim', href: '/calendar', icon: Calendar },
   { name: 'Raporlar', href: '/reports', icon: BarChart3 },
-  { name: 'Bütçeler', href: '/budgets', icon: PieChart },
   { name: 'Garanti & Fatura', href: '/warranties', icon: ShieldCheck },
-  { name: 'Belgeler', href: '/documents', icon: FileText },
   { name: 'Ayarlar', href: '/settings', icon: Settings },
   { name: 'Yardım', href: '/guide', icon: HelpCircle },
 ];

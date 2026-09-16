@@ -89,7 +89,7 @@ export default function SavingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-text-primary tracking-tight flex items-center gap-2">
             <Coins className="w-6 h-6 text-text-muted" />
-            Tasarruf (Altın & Döviz)
+            Altın & Döviz
           </h1>
           <p className="text-sm text-text-muted mt-1">Döviz ve altın birikimlerinizi serbest piyasa ve banka kurlarıyla takip edin.</p>
         </div>

@@ -78,6 +78,7 @@ model Tenant {
   budgets       Budget[]
   reminders     Reminder[]
   auditLogs     AuditLog[]
+  integrations  TenantIntegration[]
 }
 
 model TenantMember {
@@ -465,6 +466,8 @@ model Subscription {
   autoRenewal     Boolean            @default(true)
   accountId       String?
   status          SubscriptionStatus @default(ACTIVE)
+  reminderEnabled  Boolean            @default(true)
+  remindBeforeDays Int                @default(3)
   notes           String?
   attachmentId    String?
   createdBy       String
@@ -516,7 +519,8 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  warranties Warranty[]
 
   @@index([tenantId])
   @@index([tenantId, dueDate])
@@ -534,31 +538,137 @@ enum InvoiceStatus {
 // WARRANTIES
 // ========================
 
+enum WarrantyStatus {
+  ACTIVE
+  EXPIRING
+  EXPIRED
+  CLAIMED
+  EXTENDED
+}
+
+enum WarrantyType {
+  MANUFACTURER
+  EXTENDED
+  SELLER
+  INSURANCE
+}
+
+enum ClaimStatus {
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  IN_REPAIR
+  RESOLVED
+  REJECTED
+}
+
 model Warranty {
-  id                String    @id @default(uuid())
+  id                String         @id @default(uuid())
   tenantId          String
   productName       String
   brand             String?
   model             String?
   serialNumber      String?
+  category          String?
+  tags              String[]
   purchaseDate      DateTime
+  purchasePrice     Float?
   warrantyStartDate DateTime
   warrantyEndDate   DateTime
+  warrantyType      WarrantyType   @default(MANUFACTURER)
+  status            WarrantyStatus @default(ACTIVE)
   purchasePlace     String?
+  merchantId        String?
   invoiceId         String?
+  coverageDetails   String?
+  termsUrl          String?
+  reminderEnabled   Boolean        @default(true)
+  remindBeforeDays  Int            @default(30)
   attachmentId      String?
-  amount            Float?  
-  currency          String    @default("TRY")
+  amount            Float?
+  currency          String         @default("TRY")
   notes             String?
   createdBy         String
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   deletedAt         DateTime?
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  invoice    Invoice?            @relation(fields: [invoiceId], references: [id])
+  extensions WarrantyExtension[]
+  claims     WarrantyClaim[]
+  services   ServiceRecord[]
 
   @@index([tenantId])
   @@index([tenantId, warrantyEndDate])
+  @@index([tenantId, status])
+  @@index([tenantId, category])
+}
+
+model WarrantyExtension {
+  id              String       @id @default(uuid())
+  warrantyId      String
+  provider        String
+  extensionType   WarrantyType @default(EXTENDED)
+  startDate       DateTime
+  endDate         DateTime
+  cost            Float?
+  currency        String       @default("TRY")
+  policyNumber    String?
+  coverageDetails String?
+  attachmentId    String?
+  notes           String?
+  createdBy       String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  warranty Warranty @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
+
+  @@index([warrantyId])
+}
+
+model WarrantyClaim {
+  id               String      @id @default(uuid())
+  warrantyId       String
+  claimDate        DateTime    @default(now())
+  issueDescription String
+  status           ClaimStatus @default(SUBMITTED)
+  resolution       String?
+  resolvedDate     DateTime?
+  repairCost       Float?      @default(0)
+  currency         String      @default("TRY")
+  rmaNumber        String?
+  attachmentId     String?
+  notes            String?
+  createdBy        String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  warranty Warranty @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
+
+  @@index([warrantyId])
+  @@index([status])
+}
+
+model ServiceRecord {
+  id              String   @id @default(uuid())
+  warrantyId      String
+  serviceDate     DateTime
+  serviceProvider String
+  description     String
+  partsReplaced   String?
+  cost            Float?   @default(0)
+  currency        String   @default("TRY")
+  nextServiceDate DateTime?
+  attachmentId    String?
+  notes           String?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  warranty Warranty @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
+
+  @@index([warrantyId])
 }
 
 // ========================
@@ -572,6 +682,7 @@ model Document {
   fileType   String
   fileSize   Int
   storageKey String
+  provider   String    @default("LOCAL")
   entityType String?
   entityId   String?
   uploadedBy String
@@ -582,6 +693,28 @@ model Document {
 
   @@index([tenantId])
   @@index([tenantId, entityType, entityId])
+}
+
+// ========================
+// INTEGRATIONS
+// ========================
+
+model TenantIntegration {
+  id           String    @id @default(uuid())
+  tenantId     String
+  provider     String    // e.g., "GOOGLE_DRIVE"
+  accessToken  String?   @db.Text
+  refreshToken String?   @db.Text
+  tokenExpires DateTime?
+  isActive     Boolean   @default(true)
+  metadata     Json?     // e.g., { email: "user@gmail.com", rootFolderId: "..." }
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, provider])
+  @@index([tenantId])
 }
 
 // ========================
@@ -677,6 +810,9 @@ enum NotificationType {
   SUBSCRIPTION_RENEWAL
   INVOICE_DUE
   WARRANTY_EXPIRING
+  WARRANTY_CLAIM_UPDATE
+  WARRANTY_EXTENDED
+  SERVICE_REMINDER
   EVENT_REMINDER
   SAVINGS_REMINDER
   PAYMENT_REMINDER
@@ -846,6 +982,51 @@ enum SavingsAssetType {
 }
 
 enum SavingsTransactionType {
+  BUY
+  SELL
+}
+
+// ========================
+// CRYPTO PORTFOLIO
+// ========================
+
+model CryptoAsset {
+  id          String   @id @default(uuid())
+  tenantId    String
+  symbol      String   // e.g. BTC-USD, ETH-USD
+  quantity    Float    @default(0)
+  averageCost Float    @default(0)
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  transactions CryptoTransaction[]
+
+  @@unique([tenantId, symbol])
+  @@index([tenantId])
+}
+
+model CryptoTransaction {
+  id          String   @id @default(uuid())
+  tenantId    String
+  cryptoId    String
+  type        CryptoTransactionType
+  quantity    Float
+  price       Float
+  date        DateTime
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  asset       CryptoAsset @relation(fields: [cryptoId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([cryptoId])
+}
+
+enum CryptoTransactionType {
   BUY
   SELL
 }

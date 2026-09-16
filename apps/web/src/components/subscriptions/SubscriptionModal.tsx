@@ -7,6 +7,7 @@ import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { fetchApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { BellRing, BellOff } from 'lucide-react';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess, subscription }: 
     nextPaymentDate: new Date().toISOString().split('T')[0],
     autoRenewal: 'true',
     status: 'ACTIVE',
+    reminderEnabled: true,
+    remindBeforeDays: '3',
   });
 
   useEffect(() => {
@@ -41,6 +44,8 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess, subscription }: 
         nextPaymentDate: subscription.nextPaymentDate ? new Date(subscription.nextPaymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         autoRenewal: subscription.autoRenewal ? 'true' : 'false',
         status: subscription.status || 'ACTIVE',
+        reminderEnabled: subscription.reminderEnabled ?? true,
+        remindBeforeDays: subscription.remindBeforeDays?.toString() || '3',
       });
     } else {
       setFormData({
@@ -53,6 +58,8 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess, subscription }: 
         nextPaymentDate: new Date().toISOString().split('T')[0],
         autoRenewal: 'true',
         status: 'ACTIVE',
+        reminderEnabled: true,
+        remindBeforeDays: '3',
       });
     }
   }, [subscription, isOpen]);
@@ -65,6 +72,8 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess, subscription }: 
         ...formData,
         amount: parseFloat(formData.amount),
         autoRenewal: formData.autoRenewal === 'true',
+        reminderEnabled: formData.reminderEnabled,
+        remindBeforeDays: parseInt(formData.remindBeforeDays),
       };
 
       if (subscription) {
@@ -172,6 +181,55 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess, subscription }: 
             { value: 'false', label: 'Kapalı (Manuel Ödenir)' },
           ]}
         />
+
+        {/* Hatırlatıcı Bölümü */}
+        <div className="rounded-xl border border-border bg-bg-sidebar/30 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              {formData.reminderEnabled ? (
+                <BellRing className="w-4.5 h-4.5 text-emerald-500" />
+              ) : (
+                <BellOff className="w-4.5 h-4.5 text-text-muted" />
+              )}
+              <span className="text-sm font-semibold text-text-primary">Ödeme Hatırlatıcısı</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, reminderEnabled: !formData.reminderEnabled })}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                formData.reminderEnabled ? 'bg-emerald-500' : 'bg-bg-secondary'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                  formData.reminderEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {formData.reminderEnabled && (
+            <div className="animate-in slide-in-from-top-2 duration-200">
+              <Select
+                label="Kaç Gün Önce Hatırlat"
+                value={formData.remindBeforeDays}
+                onChange={(e) => setFormData({ ...formData, remindBeforeDays: e.target.value })}
+                options={[
+                  { value: '1', label: '1 gün önce' },
+                  { value: '2', label: '2 gün önce' },
+                  { value: '3', label: '3 gün önce (Önerilen)' },
+                  { value: '5', label: '5 gün önce' },
+                  { value: '7', label: '1 hafta önce' },
+                  { value: '14', label: '2 hafta önce' },
+                  { value: '30', label: '1 ay önce' },
+                ]}
+              />
+              <p className="text-[11px] text-text-muted mt-1.5">
+                Ödeme tarihinden önce bildirim alacaksınız.
+              </p>
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-border">
           <Button type="button" variant="ghost" onClick={onClose}>

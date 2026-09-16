@@ -339,10 +339,9 @@ export function CategoriesTab() {
           </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gider Kategorileri */}
-        <Card>
-          <CardContent className="p-4">
+        <section className="space-y-3">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <ArrowDownCircle className="w-5 h-5 text-red-400" />
@@ -377,12 +376,10 @@ export function CategoriesTab() {
                 {renderPagination(expensePage, expenses.length, setExpensePage)}
               </>
             )}
-          </CardContent>
-        </Card>
+        </section>
 
         {/* Gelir Kategorileri */}
-        <Card>
-          <CardContent className="p-4">
+        <section className="space-y-3">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <ArrowUpCircle className="w-4 h-4 text-emerald-400" />
@@ -417,8 +414,7 @@ export function CategoriesTab() {
                 {renderPagination(incomePage, incomes.length, setIncomePage)}
               </>
             )}
-          </CardContent>
-        </Card>
+        </section>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Kategori Düzenle" : "Yeni Kategori Ekle"}>

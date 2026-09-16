@@ -28,6 +28,8 @@ import { CalendarModule } from './modules/calendar/calendar.module';
 import { StocksModule } from './modules/stocks/stocks.module';
 import { MarketModule } from './modules/market/market.module';
 import { SavingsAssetsModule } from './modules/savings-assets/savings-assets.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { CryptoModule } from './modules/crypto/crypto.module';
 
 @Module({
   imports: [
@@ -64,6 +66,8 @@ import { SavingsAssetsModule } from './modules/savings-assets/savings-assets.mod
     StocksModule,
     MarketModule,
     SavingsAssetsModule,
+    IntegrationsModule,
+    CryptoModule,
   ],
   providers: [
     {

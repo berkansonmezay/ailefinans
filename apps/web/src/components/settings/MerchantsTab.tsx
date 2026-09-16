@@ -312,7 +312,7 @@ export function MerchantsTab() {
           <p className="text-text-muted">Alışveriş yaptığınız yerleri kaydederek giderlerinizi daha detaylı analiz edebilirsiniz.</p>
         </div>
       ) : (
-        <Card className="overflow-hidden border border-border bg-bg-card backdrop-blur-xl">
+        <div className="overflow-hidden border border-border bg-bg-card rounded-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-bg-sidebar/50 border-b border-border">
@@ -347,7 +347,7 @@ export function MerchantsTab() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       )}
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Harcama Yeri Düzenle" : "Yeni Harcama Yeri Ekle"}>

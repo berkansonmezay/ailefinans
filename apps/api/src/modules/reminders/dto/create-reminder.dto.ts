@@ -32,4 +32,12 @@ export class CreateReminderDto {
   @IsString()
   @IsOptional()
   categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  referenceId?: string;
+
+  @IsString()
+  @IsOptional()
+  referenceType?: string;
 }
