@@ -43,6 +43,7 @@ const menuItems = [
   { name: 'Takvim', href: '/calendar', icon: Calendar },
   { name: 'Raporlar', href: '/reports', icon: BarChart3 },
   { name: 'Garanti & Fatura', href: '/warranties', icon: ShieldCheck },
+  { name: 'Fatura Tarama (AI)', href: '/fatura', icon: FileText },
   { name: 'Ayarlar', href: '/settings', icon: Settings },
   { name: 'Yardım', href: '/guide', icon: HelpCircle },
 ];

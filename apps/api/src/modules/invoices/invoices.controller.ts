@@ -8,7 +8,10 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { AuthGuard } from "@nestjs/passport";
 import { InvoicesService } from "./invoices.service";
 import { CurrentUser, ActiveTenant } from "../../common/decorators";
@@ -53,5 +56,19 @@ export class InvoicesController {
   @Delete(":id")
   async remove(@Param("id") id: string, @ActiveTenant() tenantId: string) {
     return success(await this.service.remove(id, tenantId), "Fatura silindi.");
+  }
+
+  @Post("extract")
+  @UseInterceptors(FileInterceptor("file"))
+  async extractData(
+    @ActiveTenant() tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body("documentType") documentType: string,
+  ) {
+    if (!file) {
+      return success(null, "No file uploaded");
+    }
+    const extractedData = await this.service.extractData(file, documentType);
+    return success(extractedData, "Fatura verileri çıkarıldı.");
   }
 }
