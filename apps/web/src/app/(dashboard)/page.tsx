@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { fetchApi } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { 
   ArrowUpRight, 
@@ -11,7 +12,11 @@ import {
   TrendingUp, 
   CalendarDays,
   FileText,
-  Filter
+  Filter,
+  Banknote,
+  Bitcoin,
+  Coins,
+  ChevronRight
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -33,6 +38,13 @@ export default function DashboardPage() {
   const [monthlyChart, setMonthlyChart] = useState<any[]>([]);
   const [categoryBreakdown, setCategoryBreakdown] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Varlık durumları
+  const [stocksSummary, setStocksSummary] = useState<any>(null);
+  const [cryptoSummary, setCryptoSummary] = useState<any>(null);
+  const [savingsAssets, setSavingsAssets] = useState<any[]>([]);
+  const [marketRates, setMarketRates] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
@@ -58,7 +70,7 @@ export default function DashboardPage() {
 
         const [kpiData, chartData, catData] = await Promise.all([
           fetchApi(`/dashboard/kpis?startDate=${startDate}&endDate=${endDate}`),
-          fetchApi('/dashboard/monthly-chart'), // Monthly chart is usually generic, no date range needed here for now
+          fetchApi('/dashboard/monthly-chart'),
           fetchApi(`/dashboard/category-breakdown?startDate=${startDate}&endDate=${endDate}`),
         ]);
         setKpis(kpiData);
@@ -73,9 +85,67 @@ export default function DashboardPage() {
     loadDashboardData();
   }, [selectedMonth, selectedYear]);
 
+  useEffect(() => {
+    async function loadAssetData() {
+      try {
+        const [stocksRes, cryptoRes, savingsRes, ratesRes, accountsRes] = await Promise.allSettled([
+          fetchApi('/stocks/summary'),
+          fetchApi('/crypto/summary'),
+          fetchApi('/savings-assets'),
+          fetchApi('/market/rates'),
+          fetchApi('/accounts?pageSize=100'),
+        ]);
+
+        if (stocksRes.status === 'fulfilled') setStocksSummary(stocksRes.value);
+        if (cryptoRes.status === 'fulfilled') setCryptoSummary(cryptoRes.value);
+        if (savingsRes.status === 'fulfilled' && Array.isArray(savingsRes.value)) setSavingsAssets(savingsRes.value);
+        if (ratesRes.status === 'fulfilled' && (ratesRes.value as any)?.rates) setMarketRates((ratesRes.value as any).rates);
+        if (accountsRes.status === 'fulfilled') {
+          const accVal: any = accountsRes.value;
+          setAccounts(Array.isArray(accVal) ? accVal : (accVal?.data || []));
+        }
+      } catch (error) {
+        console.error('Failed to load asset data', error);
+      }
+    }
+    loadAssetData();
+  }, []);
+
   if (isLoading && !kpis) {
     return <div className="flex h-full items-center justify-center">Yükleniyor...</div>;
   }
+
+  // Varlık Portföy Hesaplamaları
+  const accountsTotal = Array.isArray(accounts)
+    ? accounts.reduce((sum, acc) => sum + (Number(acc.currentBalance) || 0), 0)
+    : 0;
+  const accountsCount = Array.isArray(accounts) ? accounts.length : 0;
+
+  const stocksTotal = Number(stocksSummary?.totalValue) || 0;
+  const stocksPnL = Number(stocksSummary?.totalPnL) || 0;
+  const stocksPnLPercentage = stocksSummary?.totalPnLPercentage != null ? Number(stocksSummary.totalPnLPercentage) : null;
+
+  const cryptoTotal = Number(cryptoSummary?.totalValue) || 0;
+  const cryptoPnL = Number(cryptoSummary?.totalPnL) || 0;
+  const cryptoPnLPercentage = cryptoSummary?.totalPnLPercentage != null ? Number(cryptoSummary.totalPnLPercentage) : null;
+
+  let savingsTotalInvestment = 0;
+  let savingsTotalValue = 0;
+  if (Array.isArray(savingsAssets)) {
+    savingsAssets.forEach((asset) => {
+      const qty = Number(asset.quantity) || 0;
+      const avg = Number(asset.averageCost) || 0;
+      savingsTotalInvestment += qty * avg;
+      const rate = marketRates.find((r: any) => r.code === asset.code);
+      const price = rate?.buying != null ? Number(rate.buying) : avg;
+      savingsTotalValue += qty * price;
+    });
+  }
+  const savingsPnL = savingsTotalValue - savingsTotalInvestment;
+  const savingsPnLPercentage = savingsTotalInvestment > 0 ? (savingsPnL / savingsTotalInvestment) * 100 : 0;
+  const savingsCount = Array.isArray(savingsAssets) ? savingsAssets.length : 0;
+
+  const grandTotalAssets = accountsTotal + stocksTotal + cryptoTotal + savingsTotalValue;
 
   return (
     <div className="space-y-6">
@@ -122,7 +192,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* Gelir / Gider KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard 
           title="Toplam Gelir" 
@@ -147,6 +217,98 @@ export default function DashboardPage() {
           value={kpis?.totalDebt || '0'} 
           icon={<CreditCard size={20} className="text-warning" />} 
         />
+      </div>
+
+      {/* Varlık Portföyü Bölümü */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-text-primary">Varlık & Portföy Özeti</h2>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium border border-accent/20">
+              Canlı Takip
+            </span>
+          </div>
+          <div className="text-xs text-text-muted flex items-center gap-1.5">
+            <span>Toplam Portföy Değeri:</span>
+            <span className="font-bold text-sm text-text-primary">
+              {formatCurrency(grandTotalAssets)}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <AssetPortfolioCard
+            title="Hesaplarım"
+            value={formatCurrency(accountsTotal)}
+            subtext={`${accountsCount} aktif hesap`}
+            icon={<Banknote size={20} className="text-emerald-500" />}
+            iconBg="bg-emerald-500/10 border-emerald-500/20"
+            href="/accounts"
+          />
+
+          <AssetPortfolioCard
+            title="Hisse Senetlerim"
+            value={formatCurrency(stocksTotal)}
+            subtext={
+              stocksTotal > 0 && stocksPnLPercentage != null
+                ? `K/Z: ${stocksPnL >= 0 ? '+' : ''}${formatCurrency(stocksPnL)}`
+                : 'Portföy boş'
+            }
+            badge={
+              stocksTotal > 0 && stocksPnLPercentage != null
+                ? {
+                    text: `${stocksPnLPercentage >= 0 ? '+' : ''}${stocksPnLPercentage.toFixed(2)}%`,
+                    isPositive: stocksPnLPercentage >= 0,
+                  }
+                : undefined
+            }
+            icon={<TrendingUp size={20} className="text-blue-500" />}
+            iconBg="bg-blue-500/10 border-blue-500/20"
+            href="/stocks"
+          />
+
+          <AssetPortfolioCard
+            title="Kripto Varlıklar"
+            value={formatCurrency(cryptoTotal)}
+            subtext={
+              cryptoTotal > 0 && cryptoPnLPercentage != null
+                ? `K/Z: ${cryptoPnL >= 0 ? '+' : ''}${formatCurrency(cryptoPnL)}`
+                : 'Portföy boş'
+            }
+            badge={
+              cryptoTotal > 0 && cryptoPnLPercentage != null
+                ? {
+                    text: `${cryptoPnLPercentage >= 0 ? '+' : ''}${cryptoPnLPercentage.toFixed(2)}%`,
+                    isPositive: cryptoPnLPercentage >= 0,
+                  }
+                : undefined
+            }
+            icon={<Bitcoin size={20} className="text-amber-500" />}
+            iconBg="bg-amber-500/10 border-amber-500/20"
+            href="/crypto"
+          />
+
+          <AssetPortfolioCard
+            title="Altın & Döviz"
+            value={formatCurrency(savingsTotalValue)}
+            subtext={
+              savingsCount > 0
+                ? `${savingsCount} varlık ${savingsTotalInvestment > 0 ? `(K/Z: ${savingsPnL >= 0 ? '+' : ''}${formatCurrency(savingsPnL)})` : ''}`
+                : 'Kayıtlı varlık yok'
+            }
+            badge={
+              savingsCount > 0 && savingsTotalInvestment > 0
+                ? {
+                    text: `${savingsPnLPercentage >= 0 ? '+' : ''}${savingsPnLPercentage.toFixed(2)}%`,
+                    isPositive: savingsPnLPercentage >= 0,
+                  }
+                : undefined
+            }
+            icon={<Coins size={20} className="text-yellow-500" />}
+            iconBg="bg-yellow-500/10 border-yellow-500/20"
+            href="/savings"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -264,6 +426,68 @@ function KpiCard({ title, value, icon, trend }: any) {
   );
 }
 
+interface AssetPortfolioCardProps {
+  title: string;
+  value: string;
+  subtext: string;
+  badge?: {
+    text: string;
+    isPositive: boolean;
+  };
+  icon: React.ReactNode;
+  iconBg: string;
+  href: string;
+}
+
+function AssetPortfolioCard({
+  title,
+  value,
+  subtext,
+  badge,
+  icon,
+  iconBg,
+  href,
+}: AssetPortfolioCardProps) {
+  return (
+    <Link
+      href={href}
+      className="group relative bg-bg-card border border-border rounded-xl p-4 shadow-sm hover:border-accent/50 hover:bg-bg-card-hover transition-all duration-200 flex flex-col justify-between"
+    >
+      <div>
+        <div className="flex justify-between items-start mb-3">
+          <div className={`p-2.5 rounded-lg border ${iconBg} transition-transform group-hover:scale-105`}>
+            {icon}
+          </div>
+          {badge && (
+            <span
+              className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                badge.isPositive
+                  ? 'bg-success-bg text-success border border-success/20'
+                  : 'bg-danger-bg text-danger border border-danger/20'
+              }`}
+            >
+              {badge.text}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-text-muted text-xs font-semibold uppercase tracking-wider">
+            {title}
+          </h3>
+          <ChevronRight
+            size={14}
+            className="text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
+          />
+        </div>
+        <p className="text-xl font-bold text-text-primary tracking-tight">{value}</p>
+      </div>
+      <div className="mt-3 pt-2.5 border-t border-border/40 text-xs text-text-secondary truncate">
+        {subtext}
+      </div>
+    </Link>
+  );
+}
+
 function AlertCard({ title, value, icon, href }: any) {
   return (
     <a href={href} className="flex items-center gap-4 p-4 bg-bg-card border border-border rounded-xl hover:bg-bg-card-hover transition-colors">
@@ -277,3 +501,4 @@ function AlertCard({ title, value, icon, href }: any) {
     </a>
   );
 }
+
