@@ -67,19 +67,45 @@ export class WarrantiesService {
   }
 
   async create(tenantId: string, userId: string, dto: any) {
-    const status = this.calculateStatus(new Date(dto.warrantyEndDate));
+    const pDate = dto.purchaseDate ? new Date(dto.purchaseDate) : new Date();
+    const wStart = dto.warrantyStartDate ? new Date(dto.warrantyStartDate) : pDate;
+    const wEnd = dto.warrantyEndDate
+      ? new Date(dto.warrantyEndDate)
+      : new Date(pDate.getTime() + 2 * 365 * 24 * 3600 * 1000);
+
+    const validWarrantyTypes = ["MANUFACTURER", "EXTENDED", "SELLER", "INSURANCE"];
+    const warrantyType = validWarrantyTypes.includes(dto.warrantyType)
+      ? dto.warrantyType
+      : "MANUFACTURER";
+
+    const parsedWEnd = isNaN(wEnd.getTime()) ? new Date() : wEnd;
+    const status = this.calculateStatus(parsedWEnd);
+
     return this.prisma.warranty.create({
       data: {
-        ...dto,
         tenantId,
         createdBy: userId,
+        productName: dto.productName || "Elektronik Ürün",
+        brand: dto.brand || dto.vendorName || null,
+        model: dto.model || null,
+        serialNumber: dto.serialNumber || null,
+        category: dto.category || null,
+        tags: Array.isArray(dto.tags) ? dto.tags : [],
+        purchaseDate: isNaN(pDate.getTime()) ? new Date() : pDate,
+        warrantyStartDate: isNaN(wStart.getTime()) ? new Date() : wStart,
+        warrantyEndDate: parsedWEnd,
+        warrantyType,
         status,
-        purchaseDate: new Date(dto.purchaseDate),
-        warrantyStartDate: new Date(dto.warrantyStartDate),
-        warrantyEndDate: new Date(dto.warrantyEndDate),
-        purchasePrice: dto.purchasePrice ? Number(dto.purchasePrice) : null,
-        amount: dto.amount ? Number(dto.amount) : null,
-        tags: dto.tags || [],
+        purchasePrice: dto.purchasePrice ? parseFloat(dto.purchasePrice) : (dto.totalAmount ? parseFloat(dto.totalAmount) : null),
+        purchasePlace: dto.purchasePlace || dto.vendorName || null,
+        merchantId: dto.merchantId || null,
+        invoiceId: dto.invoiceId || null,
+        coverageDetails: dto.coverageDetails || null,
+        termsUrl: dto.termsUrl || null,
+        reminderEnabled: dto.reminderEnabled !== undefined ? !!dto.reminderEnabled : true,
+        remindBeforeDays: dto.remindBeforeDays ? parseInt(dto.remindBeforeDays) : 30,
+        notes: dto.notes || null,
+        attachmentId: dto.attachmentId || null,
       },
     });
   }

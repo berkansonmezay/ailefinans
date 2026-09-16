@@ -31,13 +31,24 @@ export class InvoicesService {
   }
 
   async create(tenantId: string, userId: string, dto: any) {
+    const invDate = dto.invoiceDate ? new Date(dto.invoiceDate) : new Date();
+    const dDate = dto.dueDate ? new Date(dto.dueDate) : null;
+
     return this.prisma.invoice.create({
       data: {
-        ...dto,
         tenantId,
         createdBy: userId,
-        invoiceDate: new Date(dto.invoiceDate),
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+        provider: dto.provider || dto.vendorName || "Bilinmiyor",
+        invoiceNumber: dto.invoiceNumber || null,
+        amount: parseFloat(dto.amount || dto.totalAmount) || 0,
+        currency: dto.currency || "TRY",
+        status: dto.status || "PAID",
+        notes: dto.notes || null,
+        categoryId: dto.categoryId || null,
+        accountId: dto.accountId || null,
+        attachmentId: dto.attachmentId || null,
+        invoiceDate: isNaN(invDate.getTime()) ? new Date() : invDate,
+        dueDate: dDate && !isNaN(dDate.getTime()) ? dDate : null,
       },
     });
   }

@@ -46,21 +46,48 @@ export class ExpensesService {
   }
 
   async create(tenantId: string, userId: string, dto: any) {
+    const tDate = dto.transactionDate || dto.date || new Date();
+    const parsedDate = new Date(tDate);
+
     return this.prisma.expenseTransaction.create({
       data: {
-        ...dto,
         tenantId,
         createdBy: userId,
-        transactionDate: new Date(dto.transactionDate),
+        amount: parseFloat(dto.amount) || 0,
+        currency: dto.currency || "TRY",
+        description: dto.description || dto.title || "Gider Harcaması",
+        notes: dto.notes || null,
+        categoryId: dto.categoryId || null,
+        subcategoryId: dto.subcategoryId || null,
+        merchantId: dto.merchantId || null,
+        accountId: dto.accountId || null,
+        paymentMethod: dto.paymentMethod || null,
+        installmentPlanId: dto.installmentPlanId || null,
+        attachmentId: dto.attachmentId || null,
+        isRecurring: !!dto.isRecurring,
+        recurrenceRule: dto.recurrenceRule || null,
+        transactionDate: isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
       },
     });
   }
 
   async update(id: string, tenantId: string, dto: any) {
     await this.findOne(id, tenantId);
-    if (dto.transactionDate)
-      dto.transactionDate = new Date(dto.transactionDate);
-    return this.prisma.expenseTransaction.update({ where: { id }, data: dto });
+    const updateData: any = {};
+    if (dto.amount !== undefined) updateData.amount = parseFloat(dto.amount) || 0;
+    if (dto.currency !== undefined) updateData.currency = dto.currency;
+    if (dto.description !== undefined || dto.title !== undefined)
+      updateData.description = dto.description || dto.title;
+    if (dto.notes !== undefined) updateData.notes = dto.notes;
+    if (dto.categoryId !== undefined) updateData.categoryId = dto.categoryId;
+    if (dto.merchantId !== undefined) updateData.merchantId = dto.merchantId;
+    if (dto.accountId !== undefined) updateData.accountId = dto.accountId;
+    if (dto.paymentMethod !== undefined) updateData.paymentMethod = dto.paymentMethod;
+    if (dto.transactionDate || dto.date) {
+      const pDate = new Date(dto.transactionDate || dto.date);
+      if (!isNaN(pDate.getTime())) updateData.transactionDate = pDate;
+    }
+    return this.prisma.expenseTransaction.update({ where: { id }, data: updateData });
   }
 
   async remove(id: string, tenantId: string) {

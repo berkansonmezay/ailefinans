@@ -96,13 +96,11 @@ export default function FaturaUploadPage() {
       const token = localStorage.getItem("access_token") || "";
 
       if (documentType === "invoice") {
-        // Save as Expense / Invoice
+        // Save as Expense
         const expensePayload = {
-          title: `${formData.vendorName || "Fatura"} Harcaması`,
+          description: `${formData.vendorName || "Fatura"} Harcaması`,
           amount: parseFloat(formData.totalAmount) || 0,
-          date: formData.invoiceDate || new Date().toISOString(),
-          category: "Fatura & Gider",
-          merchant: formData.vendorName || "",
+          transactionDate: formData.invoiceDate ? new Date(formData.invoiceDate).toISOString() : new Date().toISOString(),
           notes: formData.invoiceNumber ? `Fatura No: ${formData.invoiceNumber}` : "",
         };
 
@@ -115,7 +113,10 @@ export default function FaturaUploadPage() {
           body: JSON.stringify(expensePayload),
         });
 
-        if (!res.ok) throw new Error("Gider kaydedilemedi.");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || "Gider kaydedilemedi.");
+        }
 
         toast.success("Fatura ve gider kaydı başarıyla oluşturuldu!");
       } else {
@@ -132,9 +133,8 @@ export default function FaturaUploadPage() {
           warrantyStartDate: pDate,
           warrantyEndDate: wEnd,
           purchasePrice: parseFloat(formData.purchasePrice || formData.totalAmount) || null,
-          currency: "TRY",
           purchasePlace: formData.vendorName || formData.brand || "Mağaza",
-          warrantyType: "STANDARD",
+          warrantyType: "MANUFACTURER",
         };
 
         const res = await fetch("http://localhost:4000/api/v1/warranties", {
@@ -146,7 +146,10 @@ export default function FaturaUploadPage() {
           body: JSON.stringify(warrantyPayload),
         });
 
-        if (!res.ok) throw new Error("Garanti kaydı oluşturulamadı.");
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || "Garanti kaydı oluşturulamadı.");
+        }
 
         toast.success("Garanti belgesi kaydı başarıyla oluşturuldu!");
       }
