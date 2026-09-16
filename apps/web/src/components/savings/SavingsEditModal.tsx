@@ -116,7 +116,7 @@ export function SavingsEditModal({ isOpen, onClose, onSuccess, asset }: SavingsE
         <div className="flex justify-between items-center pt-4 border-t border-border/50">
           <Button 
             type="button" 
-            variant="outline"
+            variant="secondary"
             className="text-rose-500 border-rose-500 hover:bg-rose-500/10"
             onClick={handleDelete}
             disabled={loading}
@@ -124,7 +124,7 @@ export function SavingsEditModal({ isOpen, onClose, onSuccess, asset }: SavingsE
             Varlığı Sil
           </Button>
           <div className="flex space-x-3">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
               İptal
             </Button>
             <Button type="submit" disabled={loading}>

@@ -54,7 +54,7 @@ export function SavingsBuyModal({ isOpen, onClose, onSuccess, initialAsset }: Sa
   const loadMarketRates = async () => {
     try {
       const res = await fetchApi('/market/rates');
-      setMarketRates(res?.rates || []);
+      setMarketRates((res as any)?.rates || []);
     } catch (error) {
       console.error(error);
     }

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Plus, Search, HelpCircle, Bitcoin, Sparkles, AlertTriangle } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
@@ -17,8 +17,11 @@ import { CryptoEditModal } from '@/components/crypto/CryptoEditModal';
 export default function CryptosPage() {
   const { confirm } = useConfirm();
   const [cryptos, setCryptos] = useState<CryptoItem[]>([]);
-  const [summary, setSummary] = useState(null);
+  const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showInfoGuide, setShowInfoGuide] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PROFIT' | 'LOSS'>('ALL');
 
   // Modals state
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
@@ -109,25 +112,146 @@ export default function CryptosPage() {
     }
   };
 
+  const filteredCryptos = useMemo(() => {
+    return cryptos.filter(crypto => {
+      const matchesSearch = 
+        crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (crypto.name && crypto.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const isProfit = crypto.pnlAmount >= 0;
+      const matchesStatus = 
+        statusFilter === 'ALL' ? true :
+        statusFilter === 'PROFIT' ? isProfit :
+        !isProfit;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [cryptos, searchQuery, statusFilter]);
+
+  const isOverallPositive = (summary?.totalPnL || 0) >= 0;
+
   return (
-    <div className="space-y-4">
-      {/* Page Header */}
+    <div className="space-y-6 pb-12">
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Kriptolerim</h1>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2.5">
+            Kripto Varlıklar
+            <button
+              onClick={() => setShowInfoGuide(!showInfoGuide)}
+              className="text-text-muted hover:text-emerald-400 transition-colors p-1 rounded-lg"
+              title="Bilgilendirme ve Açıklamalar"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+          </h1>
           <p className="text-text-muted mt-1">
-            Piyasa İstanbul portföyünüzü canlı fiyatlarla takip edin.
+            Bitcoin, Ethereum ve altcoin varlıklarınızı anlık küresel piyasa fiyatlarıyla takip edin.
           </p>
         </div>
-        <Button onClick={() => handleOpenBuy()} className="gap-2">
+        <Button onClick={() => handleOpenBuy()} className="px-4 py-2 text-sm shadow-sm gap-2">
           <Plus className="w-4 h-4" /> Yeni Kripto Ekle
         </Button>
       </div>
 
-      <CryptoSummaryBar summary={summary} loading={loading} />
+      {/* 4 Reference KPI Cards */}
+      <CryptoSummaryBar summary={summary} loading={loading} cryptoCount={cryptos.length} />
+
+      {/* Bilgilendirme & Durum Banner'ı */}
+      <div className={`rounded-2xl p-4 border transition-all ${
+        isOverallPositive 
+          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' 
+          : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+      }`}>
+        <div className="flex items-start gap-3">
+          <div className={`p-2 rounded-xl flex-shrink-0 ${
+            isOverallPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+          }`}>
+            {isOverallPositive ? <Sparkles className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          </div>
+          <div className="flex-1">
+            <h4 className={`text-sm font-bold ${isOverallPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {isOverallPositive ? 'Kripto Portföyü Kârda' : 'Kripto Portföyü Zararda'}
+            </h4>
+            <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+              {isOverallPositive ? (
+                <>
+                  Tebrikler! Kripto varlık portföyünüz toplamda <strong>%{summary?.totalPnLPercentage?.toFixed(2) || '0'}</strong> kâr durumundadır. Anlık piyasa fiyatlarıyla gerçekleşmemiş kâr/zarar tutarınız güncellenmektedir.
+                </>
+              ) : (
+                <>
+                  Kripto portföyünüz şu anda alış maliyetinin altındadır (<strong>%{Math.abs(summary?.totalPnLPercentage || 0).toFixed(2)}</strong> zarar). Kademeli alım veya ortalama maliyet stratejilerinizi inceleyebilirsiniz.
+                </>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowInfoGuide(!showInfoGuide)}
+            className="text-xs font-semibold underline text-text-muted hover:text-text-primary transition-colors flex-shrink-0 pt-0.5"
+          >
+            {showInfoGuide ? 'Rehberi Gizle' : 'Nasıl Hesaplanır?'}
+          </button>
+        </div>
+
+        {/* Rehber Açıklama Kutuları */}
+        {showInfoGuide && (
+          <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs text-text-secondary">
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-blue-400 block mb-1">1. Portföy Değeri</span>
+              Sahip olduğunuz kripto adet miktarı ile anlık canlı piyasa kurunun çarpımıdır.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-amber-400 block mb-1">2. Toplam Maliyet</span>
+              Geçmişteki tüm kripto alımlarınızın TL bazlı toplam yatırım maliyetidir.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-emerald-400 block mb-1">3. Kâr / Zarar</span>
+              Güncel piyasa değeri ile toplam yatırım maliyeti arasındaki net tutardır.
+            </div>
+            <div className="bg-bg-card/70 p-3 rounded-xl border border-border">
+              <span className="font-bold text-purple-400 block mb-1">4. Getiri Oranı</span>
+              Portföyünüzün toplam alış maliyetine göre getirdiği yüzde kâr veya zarar oranıdır.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Arama ve Filtre Toolbar'ı */}
+      <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+          <input 
+            type="text" 
+            placeholder="Kripto para sembolü (örn. BTC) veya adı ara..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-bg-secondary border border-border rounded-xl pl-10 pr-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-emerald-500/50 transition-colors"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {[
+            { id: 'ALL', label: 'Tümü' },
+            { id: 'PROFIT', label: 'Kârda Olanlar' },
+            { id: 'LOSS', label: 'Zararda Olanlar' },
+          ].map(f => (
+            <button
+              key={f.id}
+              onClick={() => setStatusFilter(f.id as any)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border ${
+                statusFilter === f.id
+                  ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                  : 'bg-bg-secondary border-border text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <CryptoTable
-        cryptos={cryptos}
+        cryptos={filteredCryptos}
         loading={loading}
         onBuy={handleOpenBuy}
         onSell={handleOpenSell}
@@ -165,7 +289,6 @@ export default function CryptosPage() {
 
       {isEditModalOpen && selectedCryptoForEdit && (
         <CryptoEditModal
-          isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           symbol={selectedCryptoForEdit.symbol}
           initialQuantity={selectedCryptoForEdit.quantity}

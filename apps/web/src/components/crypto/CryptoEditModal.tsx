@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import toast from 'react-hot-toast';
 
 interface CryptoEditModalProps {
+  isOpen?: boolean;
   symbol: string;
   initialQuantity: number;
   initialAverageCost: number;

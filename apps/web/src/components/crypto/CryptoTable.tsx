@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { History, ArrowRightLeft, TrendingUp, TrendingDown, Edit2, Trash2 } from 'lucide-react';
+import { History, ArrowRightLeft, TrendingUp, TrendingDown, Edit2, Trash2, ArrowUpRight, ArrowDownRight, Bitcoin } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 export interface CryptoItem {
@@ -32,133 +32,158 @@ function formatCurrency(val: number) {
   return new Intl.NumberFormat('tr-TR', {
     style: 'currency',
     currency: 'TRY',
-  }).format(val);
+    maximumFractionDigits: 2,
+  }).format(val || 0);
 }
 
-export function CryptoTable({ cryptos, loading, onBuy, onSell, onHistory }: CryptoTableProps) {
+export function CryptoTable({ 
+  cryptos, 
+  loading, 
+  onBuy, 
+  onSell, 
+  onHistory,
+  onEdit,
+  onDelete
+}: CryptoTableProps) {
   if (loading) {
     return (
-      <div className="bg-bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="p-6 text-center text-text-muted animate-pulse">
-          Portföy yükleniyor...
-        </div>
+      <div className="bg-bg-card border border-border rounded-2xl overflow-hidden shadow-sm p-12 text-center text-text-muted">
+        <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full mx-auto mb-3" />
+        Kripto portföyü yükleniyor...
       </div>
     );
   }
 
   if (cryptos.length === 0) {
     return (
-      <div className="bg-bg-card border border-border rounded-2xl overflow-hidden text-center py-12 px-4">
-        <div className="w-16 h-16 rounded-2xl bg-bg-secondary flex items-center justify-center mx-auto mb-4">
-          <TrendingUp className="w-8 h-8 text-text-muted" />
+      <div className="bg-bg-card border border-border rounded-2xl overflow-hidden shadow-sm text-center py-16 px-4">
+        <div className="w-16 h-16 rounded-2xl bg-bg-secondary flex items-center justify-center mx-auto mb-4 text-text-muted">
+          <Bitcoin className="w-8 h-8" />
         </div>
-        <h3 className="text-lg font-bold text-text-primary mb-2">Henüz Kripto Senediniz Yok</h3>
-        <p className="text-text-muted mb-6 max-w-sm mx-auto">
-          Portföyünüze Piyasa İstanbul'dan kripto senedi ekleyerek yatırımlarınızı takip etmeye başlayın.
+        <h3 className="text-lg font-bold text-text-primary mb-2">Henüz Kripto Varlığınız Yok</h3>
+        <p className="text-text-muted mb-6 max-w-sm mx-auto text-sm">
+          Portföyünüze Bitcoin, Ethereum veya diğer kripto paraları ekleyerek varlıklarınızı canlı takip edin.
         </p>
-        <Button onClick={() => onBuy()}>İlk Kriptonizi Ekleyin</Button>
+        <Button onClick={() => onBuy()} className="shadow-sm">
+          İlk Kripto Varlığınızı Ekleyin
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="bg-bg-card border border-border rounded-2xl overflow-hidden">
+    <div className="bg-bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[800px]">
+        <table className="w-full text-left text-sm whitespace-nowrap">
           <thead>
-            <tr className="border-b border-border bg-bg-secondary/30">
-              <th className="py-2.5 px-5 text-xs font-semibold text-text-muted uppercase tracking-wider">Kripto</th>
-              <th className="py-2.5 px-5 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Miktar (Lot)</th>
-              <th className="py-2.5 px-5 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Ort. Maliyet</th>
-              <th className="py-2.5 px-5 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Güncel Fiyat</th>
-              <th className="py-2.5 px-5 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Kâr/Zarar</th>
-              <th className="py-2.5 px-5 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Toplam Değer</th>
-              <th className="py-2.5 px-5 text-xs font-semibold text-text-muted uppercase tracking-wider text-center">İşlem</th>
+            <tr className="bg-bg-sidebar border-b border-border text-text-secondary">
+              <th className="px-5 py-3 font-semibold">Kripto Varlık</th>
+              <th className="px-5 py-3 font-semibold text-right">Miktar (Adet)</th>
+              <th className="px-5 py-3 font-semibold text-right">Ort. Maliyet</th>
+              <th className="px-5 py-3 font-semibold text-right">Güncel Fiyat</th>
+              <th className="px-5 py-3 font-semibold text-right">Kâr / Zarar</th>
+              <th className="px-5 py-3 font-semibold text-right">Toplam Değer</th>
+              <th className="px-5 py-3 font-semibold text-center">İşlemler</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {cryptos.map((crypto) => {
-              const cleanSymbol = crypto.symbol;
+              const cleanSymbol = crypto.symbol.replace('-USD', '');
               const isPositive = crypto.pnlAmount >= 0;
               const dailyChangePositive = (crypto.regularMarketChangePercent || 0) >= 0;
               
               return (
-                <tr key={crypto.id} className="hover:bg-bg-card-hover transition-colors group">
-                  <td className="py-2 px-5">
+                <tr key={crypto.id} className="hover:bg-bg-sidebar/50 transition-colors group">
+                  <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-bg-secondary flex items-center justify-center font-bold text-text-primary shrink-0 text-sm">
-                        {cleanSymbol.substring(0, 2)}
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xs shrink-0 border border-amber-500/20">
+                        {cleanSymbol.substring(0, 3)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-text-primary flex items-center gap-2">
-                          {cleanSymbol}
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-text-primary text-sm">{cleanSymbol}</span>
                           {crypto.regularMarketChangePercent !== undefined && (
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${dailyChangePositive ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'}`}>
-                              {dailyChangePositive ? '+' : ''}{crypto.regularMarketChangePercent.toFixed(2)}%
+                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                              dailyChangePositive 
+                                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                                : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                            }`}>
+                              {dailyChangePositive ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                              %{Math.abs(crypto.regularMarketChangePercent).toFixed(2)}
                             </span>
                           )}
+                        </div>
+                        <p className="text-xs text-text-muted truncate max-w-[180px]" title={crypto.name}>
+                          {crypto.name}
                         </p>
-                        <p className="text-xs text-text-muted truncate max-w-[150px]" title={crypto.name}>{crypto.name}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-2 px-5 text-right font-medium text-text-primary">
-                    {crypto.quantity}
+                  <td className="px-5 py-3.5 text-right font-medium text-text-primary">
+                    {crypto.quantity.toLocaleString('tr-TR', { maximumFractionDigits: 8 })}
                   </td>
-                  <td className="py-2 px-5 text-right font-medium text-text-primary">
+                  <td className="px-5 py-3.5 text-right font-medium text-text-secondary">
                     {formatCurrency(crypto.averageCost)}
                   </td>
-                  <td className="py-2 px-5 text-right font-bold text-text-primary">
+                  <td className="px-5 py-3.5 text-right font-bold text-text-primary">
                     {formatCurrency(crypto.currentPrice)}
                   </td>
-                  <td className="py-2 px-5 text-right">
-                    <p className={`text-sm font-bold ${isPositive ? 'text-success' : 'text-danger'}`}>
+                  <td className="px-5 py-3.5 text-right">
+                    <div className={`font-bold ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                       {isPositive ? '+' : ''}{formatCurrency(crypto.pnlAmount)}
-                    </p>
-                    <p className={`text-xs font-semibold ${isPositive ? 'text-success' : 'text-danger'} opacity-80`}>
-                      {isPositive ? '+' : ''}{crypto.pnlPercentage.toFixed(2)}%
-                    </p>
+                    </div>
+                    <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-0.5 ${
+                      isPositive 
+                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                        : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                    }`}>
+                      {isPositive ? '+' : ''}%{crypto.pnlPercentage.toFixed(2)}
+                    </span>
                   </td>
-                  <td className="py-2 px-5 text-right font-bold text-text-primary">
+                  <td className="px-5 py-3.5 text-right font-black text-text-primary text-base">
                     {formatCurrency(crypto.totalValue)}
                   </td>
-                  <td className="py-2 px-5">
-                    <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center justify-center gap-1.5">
                       <button 
                         onClick={() => onBuy(cleanSymbol)}
-                        className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
-                        title="Alış Ekle"
+                        className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-500/20"
+                        title="Kripto Alış Ekle"
                       >
-                        <ArrowRightLeft className="w-4 h-4" />
+                        <ArrowRightLeft className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={() => onSell(crypto.symbol, crypto.quantity)}
-                        className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors"
-                        title="Satış Yap"
+                        className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors border border-amber-500/20"
+                        title="Kripto Satış Yap"
                       >
-                        <ArrowRightLeft className="w-4 h-4" />
+                        <ArrowRightLeft className="w-3.5 h-3.5 rotate-180" />
                       </button>
                       <button 
                         onClick={() => onHistory(crypto.symbol)}
-                        className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-text-primary transition-colors"
+                        className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-text-primary transition-colors border border-border"
                         title="İşlem Geçmişi"
                       >
-                        <History className="w-4 h-4" />
+                        <History className="w-3.5 h-3.5" />
                       </button>
-                      <button 
-                        onClick={() => onEdit?.(crypto)}
-                        className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors"
-                        title="Düzenle"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => onDelete?.(crypto.symbol)}
-                        className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors"
-                        title="Sil"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {onEdit && (
+                        <button 
+                          onClick={() => onEdit(crypto)}
+                          className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border"
+                          title="Düzenle"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button 
+                          onClick={() => onDelete(crypto.symbol)}
+                          className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

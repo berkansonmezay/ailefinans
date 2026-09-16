@@ -165,7 +165,7 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
           <div className="grid grid-cols-2 gap-4">
             <Button
               type="button"
-              variant={formData.type === 'INCOME' ? 'primary' : 'outline'}
+              variant={formData.type === 'INCOME' ? 'primary' : 'secondary'}
               className={formData.type === 'INCOME' ? 'bg-success hover:bg-success/90' : ''}
               onClick={() => setFormData({ ...formData, type: 'INCOME' })}
             >
@@ -174,7 +174,7 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
             </Button>
             <Button
               type="button"
-              variant={formData.type === 'EXPENSE' ? 'primary' : 'outline'}
+              variant={formData.type === 'EXPENSE' ? 'primary' : 'secondary'}
               className={formData.type === 'EXPENSE' ? 'bg-danger hover:bg-danger/90' : ''}
               onClick={() => setFormData({ ...formData, type: 'EXPENSE' })}
             >
