@@ -227,6 +227,41 @@ export default function WarrantiesAndInvoicesPage() {
     loadInvoices();
     loadAllServices();
     loadAllClaims();
+
+    // Check for transferred warranty from scanner
+    try {
+      const stored = sessionStorage.getItem('transferred_warranty');
+      if (stored) {
+        const data = JSON.parse(stored);
+        sessionStorage.removeItem('transferred_warranty');
+        setEditingWarrantyId(null);
+        setWarrantyForm({
+          productName: data.productName || '',
+          brand: data.brand || data.vendorName || '',
+          model: data.model || '',
+          serialNumber: data.serialNumber || '',
+          category: data.category || '',
+          purchaseDate: data.purchaseDate || new Date().toISOString().split('T')[0],
+          purchasePrice: data.purchasePrice?.toString() || data.totalAmount?.toString() || '',
+          warrantyStartDate: data.warrantyStartDate || data.purchaseDate || new Date().toISOString().split('T')[0],
+          warrantyEndDate: data.warrantyEndDate || '',
+          warrantyType: data.warrantyType || 'MANUFACTURER',
+          purchasePlace: data.purchasePlace || data.vendorName || data.brand || '',
+          coverageDetails: data.coverageDetails || '',
+          reminderEnabled: true,
+          remindBeforeDays: '30',
+          notes: data.notes || '',
+        });
+        setSelectedFile(null);
+        setWarrantyModalOpen(true);
+        toast('Garanti belgesi verileri aktarıldı. Lütfen kontrollerinizi yapıp kaydediniz.', {
+          icon: '🛡️',
+          duration: 5000,
+        });
+      }
+    } catch (e) {
+      console.error('Error reading transferred warranty', e);
+    }
   }, [loadStats, loadWarranties, loadInvoices, loadAllServices, loadAllClaims]);
 
   // ========================

@@ -208,6 +208,33 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     loadData();
+
+    // Check for transferred expense from Fatura / Fiş Scanner
+    try {
+      const stored = sessionStorage.getItem('transferred_expense');
+      if (stored) {
+        const data = JSON.parse(stored);
+        sessionStorage.removeItem('transferred_expense');
+        setEditingTx({
+          type: 'EXPENSE',
+          amount: data.amount || data.totalAmount || '',
+          transactionDate: data.transactionDate || data.invoiceDate || new Date().toISOString(),
+          description:
+            data.description ||
+            (data.vendorName
+              ? `${data.vendorName}${data.invoiceNumber ? ` (Fatura No: ${data.invoiceNumber})` : ''}`
+              : 'Fatura Harcaması'),
+          vendorName: data.vendorName || '',
+        });
+        setIsModalOpen(true);
+        toast('Fatura verileri aktarıldı. Lütfen harcama yeri ve kategori seçiniz.', {
+          icon: '🧾',
+          duration: 5000,
+        });
+      }
+    } catch (e) {
+      console.error('Error reading transferred expense', e);
+    }
   }, []);
 
   // handleSubmit is now handled by QuickAddModal

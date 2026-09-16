@@ -58,7 +58,7 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
           setDate(new Date(editData.transactionDate || editData.date).toISOString().split('T')[0]);
         }
         setDescription(editData.description || '');
-        setActiveTab(editData.type === 'EXPENSE' ? 'expense' : 'income');
+        setActiveTab(editData.type === 'INCOME' ? 'income' : 'expense');
         setIsInstallment(false);
         setInstallmentCount('2');
         setFirstInstallmentDate(new Date(editData.transactionDate || editData.date || new Date()).toISOString().split('T')[0]);
@@ -88,6 +88,17 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
       setCategories(cats);
       setMerchants(mers);
       setAccounts(accs);
+
+      // Auto-match merchant if vendorName is passed from invoice scanner
+      if (editData?.vendorName && !editData?.merchantId) {
+        const vendorClean = editData.vendorName.trim().toLowerCase();
+        const matched = mers.find((m: any) =>
+          m.name.toLowerCase().includes(vendorClean) || vendorClean.includes(m.name.toLowerCase())
+        );
+        if (matched) {
+          setMerchantId(matched.id);
+        }
+      }
     } catch (error) {
       console.error('Failed to load options', error);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   UploadCloud,
   FileText,
@@ -15,10 +16,13 @@ import {
   Hash,
   Clock,
   Laptop,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function FaturaUploadPage() {
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState<"invoice" | "warranty">("invoice");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -69,6 +73,39 @@ export default function FaturaUploadPage() {
       toast.error("Dosya işlenirken hata oluştu.");
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleTransferToModule = () => {
+    if (!formData) return;
+
+    if (documentType === "invoice") {
+      const payload = {
+        amount: parseFloat(formData.totalAmount) || 0,
+        transactionDate: formData.invoiceDate || new Date().toISOString().split("T")[0],
+        vendorName: formData.vendorName || "",
+        invoiceNumber: formData.invoiceNumber || "",
+        description: `${formData.vendorName || "Fatura"} Harcaması`,
+      };
+      sessionStorage.setItem("transferred_expense", JSON.stringify(payload));
+      toast.success("Veriler gider ekleme sayfasına aktarılıyor...");
+      router.push("/transactions");
+    } else {
+      const payload = {
+        productName: formData.productName || "Elektronik Ürün",
+        brand: formData.brand || formData.vendorName || "",
+        model: formData.model || "",
+        serialNumber: formData.serialNumber || "",
+        purchaseDate: formData.purchaseDate || formData.invoiceDate || new Date().toISOString().split("T")[0],
+        purchasePrice: parseFloat(formData.purchasePrice || formData.totalAmount) || null,
+        warrantyStartDate: formData.purchaseDate || formData.invoiceDate || new Date().toISOString().split("T")[0],
+        warrantyEndDate: formData.warrantyEndDate || "",
+        purchasePlace: formData.vendorName || formData.brand || "",
+        warrantyType: "MANUFACTURER",
+      };
+      sessionStorage.setItem("transferred_warranty", JSON.stringify(payload));
+      toast.success("Veriler garanti kayıt sayfasına aktarılıyor...");
+      router.push("/warranties");
     }
   };
 
@@ -170,8 +207,55 @@ export default function FaturaUploadPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Akıllı Belge Tarama</h1>
           <p className="text-muted-foreground mt-1">
-            Fatura, fiş veya garanti belgesi yükleyin; sistem belgenin türüne göre bilgileri otomatik çıkarsın.
+            Fatura, fiş veya garanti belgesi yükleyin; sistem belgenin türüne göre bilgileri otomatik çıkarsın ve ilgili ekleme ekranına aktarsın.
           </p>
+        </div>
+      </div>
+
+      {/* 2 Aşamalı İşlem Adımları */}
+      <div className="grid grid-cols-2 gap-4">
+        <div
+          className={`p-3.5 rounded-xl border flex items-center space-x-3 transition-all ${
+            !formData
+              ? "bg-primary/10 border-primary text-primary shadow-sm"
+              : "bg-muted/40 border-border text-muted-foreground"
+          }`}
+        >
+          <div
+            className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+              !formData ? "bg-primary text-primary-foreground" : "bg-green-600 text-white"
+            }`}
+          >
+            {!formData ? "1" : "✓"}
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider">1. Aşama</p>
+            <p className="text-sm font-medium">Belge Yükleme & Ayrıştırma</p>
+          </div>
+        </div>
+
+        <div
+          className={`p-3.5 rounded-xl border flex items-center space-x-3 transition-all ${
+            formData
+              ? "bg-primary/10 border-primary text-primary shadow-sm"
+              : "bg-muted/20 border-border text-muted-foreground opacity-60"
+          }`}
+        >
+          <div
+            className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+              formData ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            2
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider">2. Aşama</p>
+            <p className="text-sm font-medium">
+              {documentType === "invoice"
+                ? "Gider Ekleme Sayfasına Aktar"
+                : "Garanti Kayıt Sayfasına Aktar"}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -255,7 +339,7 @@ export default function FaturaUploadPage() {
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
               <h2 className="text-lg font-semibold">
-                {documentType === "invoice" ? "Fatura Verileri" : "Garanti Belgesi Verileri"}
+                {documentType === "invoice" ? "1. Aşama: Çıkarılan Fatura Verileri" : "1. Aşama: Çıkarılan Garanti Verileri"}
               </h2>
             </div>
             <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
@@ -432,38 +516,48 @@ export default function FaturaUploadPage() {
             <AlertCircle className="h-5 w-5 shrink-0 mt-0.5 text-primary" />
             <div className="text-sm">
               <p className="font-medium">
-                {documentType === "invoice" ? "Gider Kaydı Oluşturma" : "Garanti Takibi Oluşturma"}
+                {documentType === "invoice" ? "2. Aşama: Gider Ekleme & Kategori Seçimi" : "2. Aşama: Garanti Kaydı & Son Kontroller"}
               </p>
               <p className="mt-1 text-muted-foreground">
                 {documentType === "invoice"
-                  ? "Bilgileri onayladığınızda harcamalar ve faturalar listenize yeni bir kayıt eklenecektir."
-                  : "Bilgileri onayladığınızda bu ürün için otomatik garanti takibi ve bildirim hatırlatması oluşturulacaktır."}
+                  ? "Taranan tutar ve tarih bilgileriyle Gider Ekleme sayfasına aktarabilir; harcama yeri ve kategori seçerek kaydı tamamlayabilirsiniz."
+                  : "Taranan ürün, marka, model ve seri no bilgileriyle Garanti sayfasına aktarabilir; son kontrollerinizi yaparak kaydı tamamlayabilirsiniz."}
               </p>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
             <button
               onClick={() => setFormData(null)}
-              className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted font-medium transition-colors"
+              className="w-full sm:w-auto px-4 py-2.5 text-sm border border-border rounded-lg hover:bg-muted font-medium transition-colors"
             >
               İptal
             </button>
-            <button
-              onClick={handleApprove}
-              disabled={isSaving}
-              className="px-5 py-2 text-sm bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50"
-            >
-              {isSaving
-                ? "Kaydediliyor..."
-                : documentType === "invoice"
-                ? "Onayla ve Gidere Kaydet"
-                : "Onayla ve Garantiye Kaydet"}
-            </button>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+              <button
+                onClick={handleApprove}
+                disabled={isSaving}
+                className="w-full sm:w-auto px-4 py-2.5 text-sm border border-border bg-background rounded-lg hover:bg-muted font-medium transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isSaving ? "Kaydediliyor..." : "Bu Sayfada Hızlı Kaydet"}
+              </button>
+
+              <button
+                onClick={handleTransferToModule}
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 px-5 py-2.5 text-sm bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+              >
+                <span>
+                  {documentType === "invoice"
+                    ? "Gider Sayfasına Aktar (Kategori & Harcama Yeri Seç)"
+                    : "Garanti Sayfasına Aktar (Son Kontrolleri Yap)"}
+                </span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
-
