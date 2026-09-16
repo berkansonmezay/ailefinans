@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   UploadCloud,
@@ -18,8 +18,11 @@ import {
   Laptop,
   ArrowRight,
   Sparkles,
+  FolderTree,
+  Store,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { fetchApi } from "@/lib/api";
 
 export default function FaturaUploadPage() {
   const router = useRouter();
@@ -28,6 +31,27 @@ export default function FaturaUploadPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [merchants, setMerchants] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadOptions();
+  }, []);
+
+  const loadOptions = async () => {
+    try {
+      const [catRes, merRes] = await Promise.all([
+        fetchApi<any>("/categories").catch(() => []),
+        fetchApi<any>("/merchants").catch(() => []),
+      ]);
+      const cats = Array.isArray(catRes) ? catRes : (catRes.items || catRes.data || []);
+      const mers = Array.isArray(merRes) ? merRes : (merRes.items || merRes.data || []);
+      setCategories(cats);
+      setMerchants(mers);
+    } catch (e) {
+      console.error("Option loading error", e);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -59,7 +83,17 @@ export default function FaturaUploadPage() {
 
       const json = await res.json();
       if (json.success) {
-        setFormData(json.data);
+        const extracted = json.data;
+        if (extracted.vendorName && merchants.length > 0) {
+          const vClean = extracted.vendorName.trim().toLowerCase();
+          const matched = merchants.find((m: any) =>
+            m.name.toLowerCase().includes(vClean) || vClean.includes(m.name.toLowerCase())
+          );
+          if (matched) {
+            extracted.merchantId = matched.id;
+          }
+        }
+        setFormData(extracted);
         toast.success(
           documentType === "invoice"
             ? "Fatura verileri başarıyla çıkarıldı!"
@@ -84,6 +118,8 @@ export default function FaturaUploadPage() {
         amount: parseFloat(formData.totalAmount) || 0,
         transactionDate: formData.invoiceDate || new Date().toISOString().split("T")[0],
         vendorName: formData.vendorName || "",
+        merchantId: formData.merchantId || "",
+        categoryId: formData.categoryId || "",
         invoiceNumber: formData.invoiceNumber || "",
         description: `${formData.vendorName || "Fatura"} Harcaması`,
       };
@@ -127,6 +163,16 @@ export default function FaturaUploadPage() {
 
   const handleApprove = async () => {
     if (!formData) return;
+
+    if (documentType === "invoice") {
+      if (!formData.merchantId) {
+        return toast.error("Lütfen Harcama Yeri (Mağaza/Kurum) seçiniz.");
+      }
+      if (!formData.categoryId) {
+        return toast.error("Lütfen bir Harcama Kategorisi seçiniz.");
+      }
+    }
+
     setIsSaving(true);
 
     try {
@@ -139,6 +185,8 @@ export default function FaturaUploadPage() {
           amount: parseFloat(formData.totalAmount) || 0,
           transactionDate: formData.invoiceDate ? new Date(formData.invoiceDate).toISOString() : new Date().toISOString(),
           notes: formData.invoiceNumber ? `Fatura No: ${formData.invoiceNumber}` : "",
+          merchantId: formData.merchantId || null,
+          categoryId: formData.categoryId || null,
         };
 
         const res = await fetch("http://localhost:4000/api/v1/expenses", {
@@ -352,7 +400,7 @@ export default function FaturaUploadPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium flex items-center gap-1.5 text-muted-foreground">
-                  <Building2 className="h-4 w-4" /> Satıcı / Kurum Adı
+                  <Building2 className="h-4 w-4" /> Satıcı / Kurum Metni (OCR)
                 </label>
                 <input
                   type="text"
@@ -360,6 +408,44 @@ export default function FaturaUploadPage() {
                   onChange={(e) => handleFormChange("vendorName", e.target.value)}
                   className="block w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium flex items-center gap-1.5 text-foreground font-semibold">
+                  <Store className="h-4 w-4 text-primary" /> Harcama Yeri / Mağaza <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.merchantId || ""}
+                  onChange={(e) => handleFormChange("merchantId", e.target.value)}
+                  className="block w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                >
+                  <option value="">-- Harcama Yeri Seçin --</option>
+                  {merchants.map((m: any) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium flex items-center gap-1.5 text-foreground font-semibold">
+                  <FolderTree className="h-4 w-4 text-primary" /> Harcama Kategorisi <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.categoryId || ""}
+                  onChange={(e) => handleFormChange("categoryId", e.target.value)}
+                  className="block w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:outline-none"
+                >
+                  <option value="">-- Kategori Seçin --</option>
+                  {categories
+                    .filter((c: any) => c.type === "EXPENSE")
+                    .map((c: any) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                </select>
               </div>
 
               <div className="space-y-1.5">

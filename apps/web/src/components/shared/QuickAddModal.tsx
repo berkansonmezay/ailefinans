@@ -115,6 +115,14 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
     if (!amount || parseFloat(amount) <= 0) {
       return toast.error('Lütfen geçerli bir tutar girin');
     }
+    if (isExpense) {
+      if (!merchantId) {
+        return toast.error('Lütfen harcama yeri veya hesap seçin');
+      }
+      if (!categoryId) {
+        return toast.error('Lütfen bir harcama kategorisi seçin');
+      }
+    }
     
     setLoading(true);
     try {
