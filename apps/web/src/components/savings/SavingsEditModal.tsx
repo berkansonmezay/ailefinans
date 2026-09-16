@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { toast } from 'react-hot-toast';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 
 interface SavingsEditModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface SavingsEditModalProps {
 }
 
 export function SavingsEditModal({ isOpen, onClose, onSuccess, asset }: SavingsEditModalProps) {
+  const { confirm } = useConfirm();
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [averageCost, setAverageCost] = useState('');
@@ -53,9 +55,14 @@ export function SavingsEditModal({ isOpen, onClose, onSuccess, asset }: SavingsE
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Bu varlığı silmek istediğinize emin misiniz?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Varlığı Sil',
+      message: 'Bu birikim varlığını silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     setLoading(true);
     try {

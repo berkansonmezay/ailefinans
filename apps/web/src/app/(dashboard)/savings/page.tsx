@@ -7,6 +7,7 @@ import { SavingsBuyModal } from '@/components/savings/SavingsBuyModal';
 import { SavingsSellModal } from '@/components/savings/SavingsSellModal';
 import { SavingsSummaryBar } from '@/components/savings/SavingsSummaryBar';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { SavingsEditModal } from '@/components/savings/SavingsEditModal';
 import { SavingsTransactionsModal } from '@/components/savings/SavingsTransactionsModal';
 import { Plus, TrendingUp, TrendingDown, Coins, ArrowRightLeft, Edit, Trash2, List } from 'lucide-react';
@@ -15,6 +16,7 @@ import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 
 export default function SavingsPage() {
+  const { confirm } = useConfirm();
   const [assets, setAssets] = useState<any[]>([]);
   const [marketRates, setMarketRates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,9 +67,14 @@ export default function SavingsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Bu varlığı tamamen silmek istediğinize emin misiniz?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Birikim Varlığını Sil',
+      message: 'Bu birikim varlığını tamamen silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await fetchApi(`/savings-assets/${id}`, {

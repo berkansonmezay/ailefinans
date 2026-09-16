@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { Plus, Target, PieChart, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -28,6 +29,7 @@ interface Budget {
 }
 
 export default function BudgetsPage() {
+  const { confirm } = useConfirm();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,14 @@ export default function BudgetsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu bütçe sınırını silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Bütçe Sınırını Sil',
+      message: 'Bu bütçe sınırını silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/budgets/${id}`, { method: 'DELETE' });
       toast.success('Bütçe sınırı silindi');

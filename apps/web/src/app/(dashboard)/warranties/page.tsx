@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import {
   Plus, Shield, ShieldAlert, ShieldCheck, ShieldX, Edit2, Trash2, Calendar,
   FileText, CheckCircle, AlertCircle, Search, Filter, Wrench, ClipboardList,
@@ -97,6 +98,7 @@ const CLAIM_STATUSES = [
 // ========================
 
 export default function WarrantiesAndInvoicesPage() {
+  const { confirm } = useConfirm();
   const [activeTab, setActiveTab] = useState<'warranties' | 'invoices' | 'services' | 'claims'>('warranties');
   const [stats, setStats] = useState<Stats>({ total: 0, active: 0, expiring: 0, expired: 0, openClaims: 0, totalValue: 0 });
 
@@ -337,7 +339,14 @@ export default function WarrantiesAndInvoicesPage() {
   };
 
   const deleteWarranty = async (id: string) => {
-    if (!confirm('Bu garanti kaydını silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Garanti Kaydını Sil',
+      message: 'Bu garanti kaydını silmek istediğinize emin misiniz? Bağlı belge ve geçmiş kayıtlar silinecektir.',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/warranties/${id}`, { method: 'DELETE' });
       toast.success('Kayıt silindi');
@@ -581,7 +590,14 @@ export default function WarrantiesAndInvoicesPage() {
   };
 
   const deleteInvoice = async (id: string) => {
-    if (!confirm('Bu faturayı silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Faturayı Sil',
+      message: 'Bu faturayı ve ilişkili dosya kayıtlarını silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/invoices/${id}`, { method: 'DELETE' });
       toast.success('Fatura silindi');

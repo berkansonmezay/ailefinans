@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { Plus, Wallet, Building2, CreditCard, Edit2, Trash2, User, List } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AccountTransactionsModal } from '@/components/accounts/AccountTransactionsModal';
@@ -31,6 +32,7 @@ const ACCOUNT_TYPES = {
 };
 
 export default function AccountsPage() {
+  const { confirm } = useConfirm();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,7 +84,14 @@ export default function AccountsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu hesabı silmek istediğinize emin misiniz? (İşlemler silinmeyebilir)')) return;
+    const ok = await confirm({
+      title: 'Hesabı Sil',
+      message: 'Bu hesabı silmek istediğinize emin misiniz? Hesaba bağlı geçmiş işlemler korunacaktır.',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/accounts/${id}`, { method: 'DELETE' });
       toast.success('Hesap silindi');

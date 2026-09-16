@@ -7,6 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select as CustomSelect } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { Search, Filter, Upload, FileSpreadsheet, FileText, MapPin, Edit, Trash2, Plus, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { QuickAddModal } from '@/components/shared/QuickAddModal';
@@ -15,6 +16,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function TransactionsPage() {
+  const { confirm } = useConfirm();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -245,7 +247,14 @@ export default function TransactionsPage() {
   };
 
   const handleDelete = async (id: string, type: string) => {
-    if (!confirm('Bu işlemi silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'İşlemi Sil',
+      message: 'Bu harcama/gelir kaydını silmek istediğinize emin misiniz? Bütçe ve hesap bakiyeniz güncellenecektir.',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       const endpoint = type === 'EXPENSE' ? `/expenses/${id}` : `/incomes/${id}`;
       await fetchApi(endpoint, { method: 'DELETE' });

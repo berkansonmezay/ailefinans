@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { FileText, UploadCloud, Trash2, File, Image as ImageIcon, FileArchive, ArrowDownToLine } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -17,6 +18,7 @@ interface Document {
 }
 
 export default function DocumentsPage() {
+  const { confirm } = useConfirm();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -82,7 +84,14 @@ export default function DocumentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu belgeyi silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Belgeyi Sil',
+      message: 'Bu belgeyi silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/documents/${id}`, { method: 'DELETE' });
       toast.success('Belge silindi');

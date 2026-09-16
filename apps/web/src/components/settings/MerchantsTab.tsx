@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { Plus, Store, Edit2, Trash2, Phone, Globe, Upload, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ExcelJS from 'exceljs';
@@ -24,6 +25,7 @@ interface Merchant {
 }
 
 export function MerchantsTab() {
+  const { confirm } = useConfirm();
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,7 +80,14 @@ export function MerchantsTab() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu kurumu silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Kurumu Sil',
+      message: 'Bu kurumu silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/merchants/${id}`, { method: 'DELETE' });
       toast.success('Kurum silindi');

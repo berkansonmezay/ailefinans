@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 
@@ -14,6 +15,7 @@ import { CryptoTransactionsModal } from '@/components/crypto/CryptoTransactionsM
 import { CryptoEditModal } from '@/components/crypto/CryptoEditModal';
 
 export default function CryptosPage() {
+  const { confirm } = useConfirm();
   const [cryptos, setCryptos] = useState<CryptoItem[]>([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,16 +90,22 @@ export default function CryptosPage() {
   };
 
   const handleDelete = async (symbol: string) => {
-    if (window.confirm(`${symbol} kriptosini portföyden silmek istediğinize emin misiniz? (Geçmiş işlemleri de silinecektir)`)) {
-      try {
-        await fetchApi(`/crypto/${symbol}`, {
-          method: 'DELETE',
-        });
-        toast.success('Kripto başarıyla silindi.');
-        loadData();
-      } catch (error: any) {
-        toast.error(error.message || 'Kripto silinirken bir hata oluştu.');
-      }
+    const ok = await confirm({
+      title: 'Kripto Varlığını Sil',
+      message: `${symbol} kripto varlığını portföyden silmek istediğinize emin misiniz? Geçmiş alım/satım işlemleri de silinecektir.`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await fetchApi(`/crypto/${symbol}`, {
+        method: 'DELETE',
+      });
+      toast.success('Kripto başarıyla silindi.');
+      loadData();
+    } catch (error: any) {
+      toast.error(error.message || 'Kripto silinirken bir hata oluştu.');
     }
   };
 

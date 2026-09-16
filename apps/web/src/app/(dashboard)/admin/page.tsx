@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
@@ -21,6 +22,7 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const { confirm } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,7 +67,14 @@ export default function AdminUsersPage() {
   };
 
   const deleteUser = async (userId: string) => {
-    if (!confirm('Bu kullanıcıyı ve tüm verilerini kalıcı olarak silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Kullanıcıyı Sil',
+      message: 'Bu kullanıcıyı ve tüm verilerini kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     
     try {
       await fetchApi(`/admin/users/${userId}`, { method: 'DELETE' });
@@ -77,7 +86,14 @@ export default function AdminUsersPage() {
   };
 
   const handleImpersonate = async (userId: string, userName: string) => {
-    if (!confirm(`${userName} adlı kullanıcının hesabına geçiş yapmak istediğinize emin misiniz?`)) return;
+    const ok = await confirm({
+      title: 'Hesaba Geçiş Yap (Impersonate)',
+      message: `${userName} adlı kullanıcının hesabına geçiş yapmak istediğinize emin misiniz?`,
+      confirmText: 'Hesaba Geç',
+      cancelText: 'Vazgeç',
+      variant: 'warning',
+    });
+    if (!ok) return;
     try {
       const res = await fetchApi<any>(`/admin/users/${userId}/impersonate`, { method: 'POST' });
       startImpersonation({

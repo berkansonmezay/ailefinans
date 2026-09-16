@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
 
 interface Reminder {
@@ -30,6 +31,7 @@ interface Reminder {
 }
 
 export default function RemindersPage() {
+  const { confirm } = useConfirm();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -154,7 +156,14 @@ export default function RemindersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Bu hatırlatıcıyı silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Hatırlatıcıyı Sil',
+      message: 'Bu hatırlatıcıyı silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/reminders/${id}`, { method: 'DELETE' });
       toast.success('Hatırlatıcı silindi');

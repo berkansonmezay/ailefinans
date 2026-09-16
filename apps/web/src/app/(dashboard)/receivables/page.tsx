@@ -35,9 +35,11 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { QuickAddModal } from '@/components/shared/QuickAddModal';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
 
 export default function ReceivablesPage() {
+  const { confirm } = useConfirm();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -129,9 +131,14 @@ export default function ReceivablesPage() {
   };
 
   const handleDeletePlan = async (item: any) => {
-    if (!confirm(`"${item.description || item.debtorName}" taksitli alacak kaydını ve tüm taksitlerini silmek istediğinize emin misiniz?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Alacak Kaydını Sil',
+      message: `"${item.description || item.debtorName}" taksitli alacak kaydını ve tüm taksitlerini silmek istediğinize emin misiniz?`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/receivables/${item.id}`, { method: 'DELETE' });
       toast.success('Taksitli alacak kaydı başarıyla silindi');
@@ -142,9 +149,15 @@ export default function ReceivablesPage() {
   };
 
   const handleDeleteInstallment = async (installment: any) => {
-    if (!confirm(`${installment.number || installment.installmentNumber || ''}. taksiti silmek istediğinize emin misiniz?`)) {
-      return;
-    }
+    const num = installment.number || installment.installmentNumber || '';
+    const ok = await confirm({
+      title: 'Taksiti Sil',
+      message: `${num}. taksiti silmek istediğinize emin misiniz?`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/incomes/${installment.id}`, { method: 'DELETE' });
       toast.success('Taksit başarıyla silindi');

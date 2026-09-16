@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { Plus, Tag, ArrowUpCircle, ArrowDownCircle, Trash2, Edit2, Search, Upload, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ExcelJS from 'exceljs';
@@ -22,6 +23,7 @@ interface Category {
 }
 
 export function CategoriesTab() {
+  const { confirm } = useConfirm();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,7 +94,14 @@ export function CategoriesTab() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Kategoriyi Sil',
+      message: 'Bu kategoriyi silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/categories/${id}`, { method: 'DELETE' });
       toast.success('Kategori silindi');

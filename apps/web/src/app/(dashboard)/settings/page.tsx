@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { Trash2, Edit2, Search, Plus, Tag, ArrowUpCircle, ArrowDownCircle, Users, Building, Settings as SettingsIcon, UserPlus, Cloud, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
@@ -14,6 +15,7 @@ import { CategoriesTab } from '@/components/settings/CategoriesTab';
 import { MerchantsTab } from '@/components/settings/MerchantsTab';
 
 export default function SettingsPage() {
+  const { confirm } = useConfirm();
   const { user, login } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'CURRENT' | 'TENANTS' | 'CATEGORIES' | 'MERCHANTS'>('CURRENT');
@@ -147,7 +149,14 @@ export default function SettingsPage() {
 
   const handleRemoveMember = async (memberUserId: string) => {
     if (!user?.activeTenantId) return;
-    if (!confirm('Bu üyeyi çıkarmak istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Üyeyi Çıkar',
+      message: 'Bu üyeyi kurumdan çıkarmak istediğinize emin misiniz?',
+      confirmText: 'Evet, Çıkar',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/tenants/${user.activeTenantId}/members/${memberUserId}`, {
         method: 'DELETE',
@@ -199,7 +208,14 @@ export default function SettingsPage() {
       toast.error('Aktif olduğunuz kurumu silemezsiniz. Lütfen önce başka bir kuruma geçiş yapın.');
       return;
     }
-    if (!confirm('Bu kurumu ve içindeki tüm verileri SİLMEK istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+    const ok = await confirm({
+      title: 'Kurumu Sil',
+      message: 'Bu kurumu ve içindeki tüm verileri SİLMEK istediğinize emin misiniz? Bu işlem geri alınamaz!',
+      confirmText: 'Kurumu Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     
     try {
       await fetchApi(`/tenants/${tenantId}`, {

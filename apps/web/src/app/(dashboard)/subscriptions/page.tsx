@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { Plus, Edit2, Trash2, Calendar, Repeat, BellRing, BellOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '@/lib/utils';
@@ -13,6 +14,7 @@ import { SubscriptionSummaryBar } from '@/components/subscriptions/SubscriptionS
 import { SubscriptionModal } from '@/components/subscriptions/SubscriptionModal';
 
 export default function SubscriptionsPage() {
+  const { confirm } = useConfirm();
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,7 +37,14 @@ export default function SubscriptionsPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Bu aboneliği silmek istediğinize emin misiniz?')) return;
+    const ok = await confirm({
+      title: 'Aboneliği Sil',
+      message: 'Bu abonelik kaydını silmek istediğinize emin misiniz?',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await fetchApi(`/subscriptions/${id}`, { method: 'DELETE' });
       toast.success('Abonelik silindi');

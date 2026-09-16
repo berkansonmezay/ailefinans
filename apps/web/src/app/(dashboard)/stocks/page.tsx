@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 
@@ -14,6 +15,7 @@ import { StockTransactionsModal } from '@/components/stocks/StockTransactionsMod
 import { StockEditModal } from '@/components/stocks/StockEditModal';
 
 export default function StocksPage() {
+  const { confirm } = useConfirm();
   const [stocks, setStocks] = useState<StockItem[]>([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,16 +90,23 @@ export default function StocksPage() {
   };
 
   const handleDelete = async (symbol: string) => {
-    if (window.confirm(`${symbol.replace('.IS', '')} hissesini portföyden silmek istediğinize emin misiniz? (Geçmiş işlemleri de silinecektir)`)) {
-      try {
-        await fetchApi(`/stocks/${symbol.replace('.IS', '')}`, {
-          method: 'DELETE',
-        });
-        toast.success('Hisse başarıyla silindi.');
-        loadData();
-      } catch (error: any) {
-        toast.error(error.message || 'Hisse silinirken bir hata oluştu.');
-      }
+    const ticker = symbol.replace('.IS', '');
+    const ok = await confirm({
+      title: 'Hisse Senedini Sil',
+      message: `${ticker} hissesini portföyden silmek istediğinize emin misiniz? Geçmiş alım/satım işlemleri de silinecektir.`,
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await fetchApi(`/stocks/${ticker}`, {
+        method: 'DELETE',
+      });
+      toast.success('Hisse başarıyla silindi.');
+      loadData();
+    } catch (error: any) {
+      toast.error(error.message || 'Hisse silinirken bir hata oluştu.');
     }
   };
 
