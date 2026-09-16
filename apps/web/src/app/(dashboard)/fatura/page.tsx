@@ -21,6 +21,12 @@ import {
   Store,
   X,
   FileCode,
+  Shield,
+  Package,
+  Wrench,
+  ClipboardList,
+  Clock,
+  TrendingUp,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { fetchApi } from "@/lib/api";
@@ -270,114 +276,141 @@ export default function FaturaUploadPage() {
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-10">
-      {/* Header Card */}
-      <div className="bg-bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-            <Sparkles className="h-6 w-6" />
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      {/* Header (Exact styling from Garanti & Fatura page) */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Akıllı Belge Tarama (AI OCR)</h1>
+          <p className="text-text-muted mt-1">
+            Fatura, fiş veya garanti belgenizi yükleyin; sistem bilgileri otomatik çıkarsın ve ilgili ekleme ekranına aktarsın.
+          </p>
+        </div>
+      </div>
+
+      {/* Stats Cards (Exact styling from Garanti & Fatura page) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10">
+            <Sparkles className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-text-primary tracking-tight">Akıllı Belge Tarama (AI OCR)</h1>
-            <p className="text-xs text-text-muted mt-0.5">
-              Fatura, fiş veya garanti belgesi yükleyin; verileri otomatik çıkarıp ekleme ekranlarına aktarın.
+            <p className="text-xs text-text-muted font-medium">Akıllı Ayrıştırma</p>
+            <p className="text-sm font-bold text-text-primary">PDF, Görsel ve Excel OCR</p>
+          </div>
+        </div>
+
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-blue-500/10">
+            <Receipt className="w-5 h-5 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-xs text-text-muted font-medium">Aktarım Modu</p>
+            <p className="text-sm font-bold text-text-primary">
+              {documentType === "invoice" ? "Gider Sayfası Aktarımı" : "Garanti Kayıt Aktarımı"}
             </p>
           </div>
         </div>
 
-        {/* Document Type Switcher & Stages Header */}
-        <div className="flex items-center gap-2 bg-bg-secondary p-1 rounded-xl border border-border">
-          <button
-            type="button"
-            onClick={() => {
-              setDocumentType("invoice");
-              setFormData(null);
-            }}
-            className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              documentType === "invoice"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-text-muted hover:text-text-primary"
-            }`}
-          >
-            <Receipt className="h-3.5 w-3.5" />
-            <span>Fatura / Fiş</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setDocumentType("warranty");
-              setFormData(null);
-            }}
-            className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              documentType === "warranty"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-text-muted hover:text-text-primary"
-            }`}
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Garanti Belgesi</span>
-          </button>
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-violet-500/10">
+            <ShieldCheck className="w-5 h-5 text-violet-400" />
+          </div>
+          <div>
+            <p className="text-xs text-text-muted font-medium">Otomatik Eşleşme</p>
+            <p className="text-sm font-bold text-text-primary">Kurum & Kategori Algılama</p>
+          </div>
         </div>
       </div>
 
-      {/* Stage Stepper Banner */}
+      {/* Tab Navigation (Exact styling from Garanti & Fatura page tabs) */}
+      <div className="bg-bg-card border border-border rounded-2xl p-1.5 flex gap-1">
+        <button
+          type="button"
+          onClick={() => {
+            setDocumentType("invoice");
+            setFormData(null);
+          }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex-1 justify-center ${
+            documentType === "invoice"
+              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 shadow-sm"
+              : "text-text-muted hover:text-text-primary hover:bg-bg-secondary"
+          }`}
+        >
+          <Receipt className="w-4 h-4" />
+          <span>Fatura / Fiş Modu</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setDocumentType("warranty");
+            setFormData(null);
+          }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex-1 justify-center ${
+            documentType === "warranty"
+              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 shadow-sm"
+              : "text-text-muted hover:text-text-primary hover:bg-bg-secondary"
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>Garanti Belgesi Modu</span>
+        </button>
+      </div>
+
+      {/* Stage Stepper Banner (Matching Garanti & Fatura rounded-2xl cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div
-          className={`p-3 rounded-xl border flex items-center space-x-3 transition-all ${
-            !formData
-              ? "bg-primary/10 border-primary text-primary shadow-sm"
-              : "bg-bg-card border-border text-text-muted"
+          className={`bg-bg-card border rounded-2xl p-4 flex items-center gap-3 transition-all ${
+            !formData ? "border-emerald-500/40 bg-emerald-500/10" : "border-border"
           }`}
         >
           <div
-            className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-              !formData ? "bg-primary text-primary-foreground" : "bg-emerald-600 text-white"
+            className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs ${
+              !formData ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-600 text-white"
             }`}
           >
             {!formData ? "1" : "✓"}
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">1. AŞAMA</p>
-            <p className="text-xs font-semibold text-text-primary">Belge Yükleme & OCR Ayrıştırma</p>
+            <p className="text-xs text-text-muted font-medium">1. AŞAMA</p>
+            <p className="text-sm font-bold text-text-primary">Belge Yükleme & OCR Ayrıştırma</p>
           </div>
         </div>
 
         <div
-          className={`p-3 rounded-xl border flex items-center space-x-3 transition-all ${
-            formData
-              ? "bg-primary/10 border-primary text-primary shadow-sm"
-              : "bg-bg-card border-border text-text-muted opacity-70"
+          className={`bg-bg-card border rounded-2xl p-4 flex items-center gap-3 transition-all ${
+            formData ? "border-blue-500/40 bg-blue-500/10" : "border-border opacity-70"
           }`}
         >
           <div
-            className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-              formData ? "bg-primary text-primary-foreground" : "bg-bg-secondary text-text-muted"
+            className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs ${
+              formData ? "bg-blue-500/20 text-blue-400" : "bg-bg-secondary text-text-muted"
             }`}
           >
             2
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">2. AŞAMA</p>
-            <p className="text-xs font-semibold text-text-primary">
+            <p className="text-xs text-text-muted font-medium">2. AŞAMA</p>
+            <p className="text-sm font-bold text-text-primary">
               {documentType === "invoice"
-                ? "Gider Sayfasına Aktar (Seçim Yap)"
+                ? "Gider Sayfasına Aktar (Kategori & Harcama Yeri Seç)"
                 : "Garanti Sayfasına Aktar (Son Kontrol)"}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Upload Dropzone Card */}
-      <div className="bg-bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm space-y-4">
+      {/* Upload Dropzone Card (Matching Garanti & Fatura style) */}
+      <div className="bg-bg-card border border-border rounded-2xl p-6 sm:p-8 space-y-4">
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+          className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
             isDragging
-              ? "border-primary bg-primary/10 scale-[0.99]"
-              : "border-border hover:border-primary/50 bg-bg-secondary/40 hover:bg-bg-secondary/70"
+              ? "border-emerald-500 bg-emerald-500/10 scale-[0.99]"
+              : "border-border hover:border-emerald-500/50 bg-bg-secondary/40 hover:bg-bg-secondary"
           }`}
         >
           <input
@@ -387,27 +420,27 @@ export default function FaturaUploadPage() {
             accept=".pdf,.png,.jpg,.jpeg,.xlsx,.csv"
             onChange={handleFileChange}
           />
-          <div className="p-3 rounded-full bg-primary/10 text-primary mb-2">
-            <UploadCloud className="h-7 w-7" />
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-400 mb-3">
+            <UploadCloud className="h-8 w-8" />
           </div>
-          <p className="text-sm font-semibold text-text-primary">
+          <p className="text-base font-bold text-text-primary">
             {documentType === "invoice"
               ? "Fatura veya Fiş Dosyası Sürükleyin ya da Seçin"
               : "Garanti Belgesi Sürükleyin ya da Seçin"}
           </p>
           <p className="text-xs text-text-muted mt-1">
-            PDF, PNG, JPG, JPEG veya Excel (.xlsx, .csv) dosyaları desteklenir
+            PDF, PNG, JPG, JPEG veya Excel (.xlsx, .csv) formatları desteklenmektedir.
           </p>
         </div>
 
         {/* Selected File & Action Bar */}
         {file && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-bg-secondary rounded-lg border border-border animate-in fade-in">
-            <div className="flex items-center space-x-2.5 min-w-0">
-              <FileText className="h-5 w-5 text-primary flex-shrink-0" />
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-bg-secondary rounded-xl border border-border animate-in fade-in">
+            <div className="flex items-center space-x-3 min-w-0">
+              <FileText className="h-6 w-6 text-emerald-400 flex-shrink-0" />
               <div className="truncate">
-                <p className="text-xs font-semibold text-text-primary truncate">{file.name}</p>
-                <p className="text-[10px] text-text-muted">{(file.size / 1024).toFixed(1)} KB</p>
+                <p className="text-sm font-semibold text-text-primary truncate">{file.name}</p>
+                <p className="text-xs text-text-muted">{(file.size / 1024).toFixed(1)} KB</p>
               </div>
             </div>
 
@@ -418,25 +451,25 @@ export default function FaturaUploadPage() {
                   setFile(null);
                   setFormData(null);
                 }}
-                className="p-1.5 text-text-muted hover:text-rose-500 rounded-lg hover:bg-bg-card transition-colors"
+                className="p-2 text-text-muted hover:text-rose-400 rounded-xl hover:bg-bg-card transition-colors"
                 title="Dosyayı Kaldır"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
               <button
                 type="button"
                 onClick={handleUpload}
                 disabled={isProcessing}
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-xs font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 shadow-sm flex items-center space-x-1.5"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 text-xs disabled:opacity-50"
               >
                 {isProcessing ? (
                   <>
-                    <span className="animate-spin text-xs">🌀</span>
+                    <span className="animate-spin">🌀</span>
                     <span>Analiz Ediliyor...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Sparkles className="h-4 w-4" />
                     <span>Verileri Otomatik Çıkar</span>
                   </>
                 )}
@@ -448,42 +481,42 @@ export default function FaturaUploadPage() {
 
       {/* Extracted Data Form (Stage 1 Completed) */}
       {formData && (
-        <div className="bg-bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm space-y-4 animate-in fade-in slide-in-from-bottom-2">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-emerald-500" />
-              <h2 className="text-sm font-bold text-text-primary">
+        <div className="bg-bg-card border border-border rounded-2xl p-6 space-y-6 animate-in fade-in slide-in-from-bottom-3">
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <div className="flex items-center space-x-2.5">
+              <CheckCircle className="h-6 w-6 text-emerald-400" />
+              <h2 className="text-base font-bold text-text-primary">
                 {documentType === "invoice" ? "1. Aşama: Çıkarılan Fatura Verileri" : "1. Aşama: Çıkarılan Garanti Verileri"}
               </h2>
             </div>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-              {documentType === "invoice" ? "Fatura / Fiş Modu" : "Garanti Modu"}
+            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium border border-emerald-500/20">
+              {documentType === "invoice" ? "Fatura / Fiş Modu" : "Garanti Belgesi Modu"}
             </span>
           </div>
 
           {/* Invoice / Receipt Form Fields */}
           {documentType === "invoice" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Building2 className="h-3.5 w-3.5" /> Satıcı / Kurum Adı (OCR)
+                  <Building2 className="h-4 w-4" /> Satıcı / Kurum Adı (OCR)
                 </label>
                 <input
                   type="text"
                   value={formData.vendorName || ""}
                   onChange={(e) => handleFormChange("vendorName", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-primary">
-                  <Store className="h-3.5 w-3.5 text-primary" /> Harcama Yeri / Mağaza <span className="text-rose-500">*</span>
+                  <Store className="h-4 w-4 text-emerald-400" /> Harcama Yeri / Mağaza <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={formData.merchantId || ""}
                   onChange={(e) => handleFormChange("merchantId", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 >
                   <option value="">-- Harcama Yeri Seçin --</option>
                   {merchants.map((m: any) => (
@@ -494,14 +527,14 @@ export default function FaturaUploadPage() {
                 </select>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-primary">
-                  <FolderTree className="h-3.5 w-3.5 text-primary" /> Harcama Kategorisi <span className="text-rose-500">*</span>
+                  <FolderTree className="h-4 w-4 text-emerald-400" /> Harcama Kategorisi <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={formData.categoryId || ""}
                   onChange={(e) => handleFormChange("categoryId", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 >
                   <option value="">-- Kategori Seçin --</option>
                   {categories
@@ -514,41 +547,41 @@ export default function FaturaUploadPage() {
                 </select>
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Hash className="h-3.5 w-3.5" /> Fatura / Fiş No
+                  <Hash className="h-4 w-4" /> Fatura / Fiş No
                 </label>
                 <input
                   type="text"
                   placeholder="Örn: GBL2026000004589"
                   value={formData.invoiceNumber || ""}
                   onChange={(e) => handleFormChange("invoiceNumber", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Calendar className="h-3.5 w-3.5" /> Fatura Tarihi
+                  <Calendar className="h-4 w-4" /> Fatura Tarihi
                 </label>
                 <input
                   type="date"
                   value={formData.invoiceDate || ""}
                   onChange={(e) => handleFormChange("invoiceDate", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <CreditCard className="h-3.5 w-3.5" /> Toplam Ödenecek Tutar (₺)
+                  <CreditCard className="h-4 w-4" /> Toplam Ödenecek Tutar (₺)
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.totalAmount ?? ""}
                   onChange={(e) => handleFormChange("totalAmount", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs font-bold text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-emerald-400 font-bold rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
             </div>
@@ -556,23 +589,23 @@ export default function FaturaUploadPage() {
 
           {/* Warranty Document Form Fields */}
           {documentType === "warranty" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Laptop className="h-3.5 w-3.5" /> Ürün / Cihaz Adı
+                  <Laptop className="h-4 w-4" /> Ürün / Cihaz Adı
                 </label>
                 <input
                   type="text"
                   placeholder="Örn: MacBook Pro M3 veya Buzdolabı"
                   value={formData.productName || ""}
                   onChange={(e) => handleFormChange("productName", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Building2 className="h-3.5 w-3.5" /> Marka / Satıcı
+                  <Building2 className="h-4 w-4" /> Marka / Satıcı
                 </label>
                 <input
                   type="text"
@@ -581,82 +614,82 @@ export default function FaturaUploadPage() {
                     handleFormChange("brand", e.target.value);
                     handleFormChange("vendorName", e.target.value);
                   }}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Tag className="h-3.5 w-3.5" /> Model No
+                  <Tag className="h-4 w-4" /> Model No
                 </label>
                 <input
                   type="text"
                   placeholder="Örn: A2992 veya SKU-123"
                   value={formData.model || ""}
                   onChange={(e) => handleFormChange("model", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Hash className="h-3.5 w-3.5" /> Seri Numarası / IMEI
+                  <Hash className="h-4 w-4" /> Seri Numarası / IMEI
                 </label>
                 <input
                   type="text"
                   placeholder="Örn: C02XL198J123"
                   value={formData.serialNumber || ""}
                   onChange={(e) => handleFormChange("serialNumber", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Calendar className="h-3.5 w-3.5" /> Satın Alma Tarihi
+                  <Calendar className="h-4 w-4" /> Satın Alma Tarihi
                 </label>
                 <input
                   type="date"
                   value={formData.purchaseDate || formData.invoiceDate || ""}
                   onChange={(e) => handleFormChange("purchaseDate", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Clock className="h-3.5 w-3.5" /> Garanti Süresi (Ay)
+                  <Clock className="h-4 w-4" /> Garanti Süresi (Ay)
                 </label>
                 <input
                   type="number"
                   value={formData.warrantyMonths || 24}
                   onChange={(e) => handleFormChange("warrantyMonths", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <Calendar className="h-3.5 w-3.5" /> Garanti Bitiş Tarihi
+                  <Calendar className="h-4 w-4" /> Garanti Bitiş Tarihi
                 </label>
                 <input
                   type="date"
                   value={formData.warrantyEndDate || ""}
                   onChange={(e) => handleFormChange("warrantyEndDate", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs font-semibold text-emerald-500 focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-emerald-400 font-semibold rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-muted">
-                  <CreditCard className="h-3.5 w-3.5" /> Satın Alma Tutarı (₺)
+                  <CreditCard className="h-4 w-4" /> Satın Alma Tutarı (₺)
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.purchasePrice || formData.totalAmount || ""}
                   onChange={(e) => handleFormChange("purchasePrice", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs font-bold text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-bg-secondary border border-border text-emerald-400 font-bold rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
                 />
               </div>
             </div>
@@ -665,16 +698,16 @@ export default function FaturaUploadPage() {
           {/* Transfer & Action Footer Bar */}
           <div className="pt-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="text-xs text-text-muted flex items-center gap-1.5">
-              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertCircle className="h-4 w-4 text-amber-400" />
               <span>Verileri kontrol ettikten sonra 2. aşama ekleme sayfasına aktarabilirsiniz.</span>
             </div>
 
-            <div className="flex items-center space-x-2.5 w-full sm:w-auto justify-end">
+            <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
               <button
                 type="button"
                 onClick={handleApprove}
                 disabled={isSaving}
-                className="px-3.5 py-2 text-xs border border-border bg-bg-card text-text-primary rounded-lg hover:bg-bg-secondary font-medium transition-colors disabled:opacity-50"
+                className="bg-bg-secondary hover:bg-bg-secondary/80 text-text-primary font-medium px-4 py-2.5 rounded-xl border border-border transition-all text-xs disabled:opacity-50"
               >
                 {isSaving ? "Kaydediliyor..." : "Bu Sayfada Hızlı Kaydet"}
               </button>
@@ -682,14 +715,14 @@ export default function FaturaUploadPage() {
               <button
                 type="button"
                 onClick={handleTransferToModule}
-                className="flex items-center space-x-1.5 px-4 py-2 text-xs bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all shadow-sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 text-xs"
               >
                 <span>
                   {documentType === "invoice"
                     ? "Gider Sayfasına Aktar (Kategori & Harcama Yeri Seç)"
                     : "Garanti Sayfasına Aktar (Son Kontrolleri Yap)"}
                 </span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>
