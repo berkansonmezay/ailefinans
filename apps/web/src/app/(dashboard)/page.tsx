@@ -20,7 +20,9 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Sparkles
+  Sparkles,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -54,6 +56,26 @@ export default function DashboardPage() {
   const currentYear = new Date().getFullYear();
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const [hideAmounts, setHideAmounts] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHideAmounts(localStorage.getItem('hide_amounts') === 'true');
+    }
+  }, []);
+
+  const toggleHideAmounts = () => {
+    setHideAmounts((prev) => {
+      const next = !prev;
+      localStorage.setItem('hide_amounts', String(next));
+      return next;
+    });
+  };
+
+  const displayAmount = (val: number | string, fallback: string = '₺*****') => {
+    if (hideAmounts) return fallback;
+    return typeof val === 'number' ? formatCurrency(val) : val;
+  };
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -281,10 +303,27 @@ export default function DashboardPage() {
             </select>
           </div>
 
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Canlı Takip
-          </div>
+          <button
+            onClick={toggleHideAmounts}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 cursor-pointer shadow-sm ${
+              hideAmounts
+                ? 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25'
+                : 'bg-bg-secondary/70 border-border text-text-secondary hover:text-text-primary hover:bg-bg-secondary'
+            }`}
+            title={hideAmounts ? 'Tutarları Göster' : 'Tutarları Gizle (Gizlilik Modu)'}
+          >
+            {hideAmounts ? (
+              <>
+                <EyeOff className="w-3.5 h-3.5 text-amber-500" />
+                <span>Tutarları Göster</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-3.5 h-3.5 text-text-muted" />
+                <span>Tutarları Gizle</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -300,7 +339,7 @@ export default function DashboardPage() {
               TOPLAM GELİR
             </span>
             <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono leading-tight truncate">
-              {formatCurrency(totalIncomeVal)}
+              {displayAmount(totalIncomeVal)}
             </div>
             <div className="text-xs text-text-muted mt-0.5 flex items-center gap-1">
               <span className="font-semibold text-emerald-500">↑ Aktif Dönem</span>
@@ -318,7 +357,7 @@ export default function DashboardPage() {
               TOPLAM GİDER
             </span>
             <div className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight font-mono leading-tight truncate">
-              {formatCurrency(totalExpenseVal)}
+              {displayAmount(totalExpenseVal)}
             </div>
             <div className="text-xs text-text-muted mt-0.5 flex items-center gap-1">
               <span className="font-semibold text-rose-500">↓ Harcamalar</span>
@@ -338,7 +377,7 @@ export default function DashboardPage() {
             <div className={`text-xl sm:text-2xl font-black tracking-tight font-mono leading-tight truncate ${
               netCashFlowVal >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-500'
             }`}>
-              {formatCurrency(netCashFlowVal)}
+              {displayAmount(netCashFlowVal)}
             </div>
             <div className="text-xs text-text-muted mt-0.5 flex items-center gap-1">
               <span className={`font-semibold ${netCashFlowVal >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -358,7 +397,7 @@ export default function DashboardPage() {
               TOPLAM BORÇ
             </span>
             <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono leading-tight truncate">
-              {formatCurrency(totalDebtVal)}
+              {displayAmount(totalDebtVal)}
             </div>
             <div className="text-xs text-text-muted mt-0.5">
               <span>Taksit ve borç bakiyesi</span>
@@ -380,7 +419,7 @@ export default function DashboardPage() {
           <div className="text-xs text-text-muted flex items-center gap-2">
             <span>Toplam Portföy Büyüklüğü:</span>
             <span className="font-black text-sm font-mono text-text-primary">
-              {formatCurrency(grandTotalAssets)}
+              {displayAmount(grandTotalAssets)}
             </span>
           </div>
         </div>
@@ -406,7 +445,7 @@ export default function DashboardPage() {
                 </h3>
                 <ChevronRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
               </div>
-              <p className="text-xl font-black text-text-primary font-mono tracking-tight">{formatCurrency(accountsTotal)}</p>
+              <p className="text-xl font-black text-text-primary font-mono tracking-tight">{displayAmount(accountsTotal)}</p>
             </div>
             <div className="mt-3 pt-2.5 border-t border-border/50 text-xs text-text-secondary flex items-center justify-between">
               <span>Banka & Nakit Varlıklar</span>
@@ -440,12 +479,12 @@ export default function DashboardPage() {
                 </h3>
                 <ChevronRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
               </div>
-              <p className="text-xl font-black text-text-primary font-mono tracking-tight">{formatCurrency(stocksTotal)}</p>
+              <p className="text-xl font-black text-text-primary font-mono tracking-tight">{displayAmount(stocksTotal)}</p>
             </div>
             <div className="mt-3 pt-2.5 border-t border-border/50 text-xs text-text-secondary flex items-center justify-between">
               <span>
                 {stocksTotal > 0 && stocksPnLPercentage != null
-                  ? `K/Z: ${stocksPnL >= 0 ? '+' : ''}${formatCurrency(stocksPnL)}`
+                  ? `K/Z: ${hideAmounts ? '*****' : `${stocksPnL >= 0 ? '+' : ''}${formatCurrency(stocksPnL)}`}`
                   : 'Portföy boş'}
               </span>
               <span className="text-blue-500 font-semibold group-hover:underline">Borsa →</span>
@@ -478,12 +517,12 @@ export default function DashboardPage() {
                 </h3>
                 <ChevronRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
               </div>
-              <p className="text-xl font-black text-text-primary font-mono tracking-tight">{formatCurrency(cryptoTotal)}</p>
+              <p className="text-xl font-black text-text-primary font-mono tracking-tight">{displayAmount(cryptoTotal)}</p>
             </div>
             <div className="mt-3 pt-2.5 border-t border-border/50 text-xs text-text-secondary flex items-center justify-between">
               <span>
                 {cryptoTotal > 0 && cryptoPnLPercentage != null
-                  ? `K/Z: ${cryptoPnL >= 0 ? '+' : ''}${formatCurrency(cryptoPnL)}`
+                  ? `K/Z: ${hideAmounts ? '*****' : `${cryptoPnL >= 0 ? '+' : ''}${formatCurrency(cryptoPnL)}`}`
                   : 'Portföy boş'}
               </span>
               <span className="text-purple-500 font-semibold group-hover:underline">Kripto →</span>
@@ -516,12 +555,12 @@ export default function DashboardPage() {
                 </h3>
                 <ChevronRight className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
               </div>
-              <p className="text-xl font-black text-text-primary font-mono tracking-tight">{formatCurrency(savingsTotalValue)}</p>
+              <p className="text-xl font-black text-text-primary font-mono tracking-tight">{displayAmount(savingsTotalValue)}</p>
             </div>
             <div className="mt-3 pt-2.5 border-t border-border/50 text-xs text-text-secondary flex items-center justify-between">
               <span>
                 {savingsCount > 0
-                  ? `${savingsCount} varlık (K/Z: ${savingsPnL >= 0 ? '+' : ''}${formatCurrency(savingsPnL)})`
+                  ? `${savingsCount} varlık (K/Z: ${hideAmounts ? '*****' : `${savingsPnL >= 0 ? '+' : ''}${formatCurrency(savingsPnL)}`})`
                   : 'Kayıtlı varlık yok'}
               </span>
               <span className="text-amber-500 font-semibold group-hover:underline">Emtia →</span>
@@ -628,7 +667,7 @@ export default function DashboardPage() {
                   <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></span>
                   <span className="text-text-secondary truncate">{item.label}</span>
                 </div>
-                <span className="font-mono font-bold text-text-primary ml-2">₺{Number(item.value).toLocaleString('tr-TR')}</span>
+                <span className="font-mono font-bold text-text-primary ml-2">{hideAmounts ? '*****' : `₺${Number(item.value).toLocaleString('tr-TR')}`}</span>
               </div>
             ))}
           </div>
@@ -695,7 +734,7 @@ export default function DashboardPage() {
                 AYLIK ABONELİK
               </span>
               <div className="text-xl font-black font-mono text-text-primary">
-                ₺{kpis?.monthlySubscriptionCost || '0'}
+                {displayAmount(parseNum(kpis?.monthlySubscriptionCost))}
               </div>
               <span className="text-xs text-purple-500 font-medium">Düzenli Ödemeler</span>
             </div>

@@ -24,6 +24,7 @@ export default function TransactionsPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [editingTx, setEditingTx] = useState<any>(null);
+  const [initialTxData, setInitialTxData] = useState<any>(null);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -217,7 +218,7 @@ export default function TransactionsPage() {
       if (stored) {
         const data = JSON.parse(stored);
         sessionStorage.removeItem('transferred_expense');
-        setEditingTx({
+        setInitialTxData({
           type: 'EXPENSE',
           amount: data.amount || data.totalAmount || '',
           transactionDate: data.transactionDate || data.invoiceDate || new Date().toISOString(),
@@ -227,9 +228,13 @@ export default function TransactionsPage() {
               ? `${data.vendorName}${data.invoiceNumber ? ` (Fatura No: ${data.invoiceNumber})` : ''}`
               : 'Fatura Harcaması'),
           vendorName: data.vendorName || '',
+          merchantId: data.merchantId || '',
+          categoryId: data.categoryId || '',
+          fromInvoice: true,
         });
+        setEditingTx(null);
         setIsModalOpen(true);
-        toast('Fatura verileri aktarıldı. Lütfen harcama yeri ve kategori seçiniz.', {
+        toast('Fatura verileri aktarıldı. Bilgileri kontrol edip kaydedebilirsiniz.', {
           icon: '🧾',
           duration: 5000,
         });
@@ -242,6 +247,7 @@ export default function TransactionsPage() {
   // handleSubmit is now handled by QuickAddModal
 
   const handleEdit = (tx: any) => {
+    setInitialTxData(null);
     setEditingTx(tx);
     setIsModalOpen(true);
   };
@@ -758,6 +764,7 @@ export default function TransactionsPage() {
           <Button 
             onClick={() => {
               setEditingTx(null);
+              setInitialTxData(null);
               setIsModalOpen(true);
             }} 
             className="px-3 bg-indigo-500 hover:bg-indigo-600 text-white h-9"
@@ -984,9 +991,11 @@ export default function TransactionsPage() {
         onClose={() => {
           setIsModalOpen(false);
           setEditingTx(null);
+          setInitialTxData(null);
         }}
         onSuccess={loadData}
         editData={editingTx}
+        initialData={initialTxData}
       />
 
       {/* Import Modal */}

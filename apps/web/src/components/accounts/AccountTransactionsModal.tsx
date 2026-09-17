@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { fetchApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
-import { ArrowDownRight, ArrowUpRight, Plus, Search } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Plus, Search, Trash2 } from 'lucide-react';
+import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -31,6 +32,7 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
   accountName,
   onUpdate,
 }) => {
+  const { confirm } = useConfirm();
   const [activeTab, setActiveTab] = useState<'history' | 'add'>('history');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,6 +60,27 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
       toast.error('İşlem geçmişi yüklenemedi');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteTransaction = async (txId: string, type: 'INCOME' | 'EXPENSE') => {
+    const ok = await confirm({
+      title: 'İşlemi Sil',
+      message: 'Bu işlemi silmek istediğinize emin misiniz? Hesap bakiyeniz ve işlemler geçmişiniz güncellenecektir.',
+      confirmText: 'Evet, Sil',
+      cancelText: 'Vazgeç',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    try {
+      const endpoint = type === 'INCOME' ? `/incomes/${txId}` : `/expenses/${txId}`;
+      await fetchApi(endpoint, { method: 'DELETE' });
+      toast.success('İşlem silindi');
+      loadTransactions();
+      onUpdate();
+    } catch (error: any) {
+      toast.error(error.message || 'İşlem silinirken hata oluştu');
     }
   };
 
@@ -135,13 +158,13 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
           ) : (
             <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
               {transactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between p-3 bg-bg-secondary rounded-xl border border-border">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${tx.transactionType === 'INCOME' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                <div key={tx.id} className="flex items-center justify-between p-3 bg-bg-secondary rounded-xl border border-border group hover:border-border/80 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`p-2 rounded-lg flex-shrink-0 ${tx.transactionType === 'INCOME' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
                       {tx.transactionType === 'INCOME' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                     </div>
-                    <div>
-                      <div className="text-sm font-medium text-text-primary">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-text-primary truncate">
                         {tx.description || (tx.transactionType === 'INCOME' ? 'Para Girişi' : 'Para Çıkışı')}
                       </div>
                       <div className="text-xs text-text-muted">
@@ -149,9 +172,19 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
                       </div>
                     </div>
                   </div>
-                  <div className={`text-base font-bold ${tx.transactionType === 'INCOME' ? 'text-success' : 'text-danger'}`}>
-                    {tx.transactionType === 'INCOME' ? '+' : '-'}
-                    {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(tx.amount)}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className={`text-base font-bold font-mono ${tx.transactionType === 'INCOME' ? 'text-success' : 'text-danger'}`}>
+                      {tx.transactionType === 'INCOME' ? '+' : '-'}
+                      {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(tx.amount)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTransaction(tx.id, tx.transactionType)}
+                      className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors opacity-70 group-hover:opacity-100"
+                      title="İşlemi Sil"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}

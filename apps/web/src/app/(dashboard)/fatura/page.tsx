@@ -154,8 +154,15 @@ export default function FaturaUploadPage() {
         return toast.error("Kayıt tamamlanamaz: Lütfen bir Harcama Kategorisi seçiniz.");
       }
 
+      const parseAmount = (val: any) => {
+        if (val === undefined || val === null || val === '') return 0;
+        if (typeof val === 'number') return val;
+        const num = parseFloat(String(val).replace(/\s/g, '').replace(',', '.'));
+        return isNaN(num) ? 0 : num;
+      };
+
       const payload = {
-        amount: parseFloat(formData.totalAmount) || 0,
+        amount: parseAmount(formData.totalAmount),
         transactionDate: formData.invoiceDate || new Date().toISOString().split("T")[0],
         vendorName: formData.vendorName || "",
         merchantId: formData.merchantId,
@@ -167,13 +174,20 @@ export default function FaturaUploadPage() {
       toast.success("Veriler gider ekleme sayfasına aktarılıyor...");
       router.push("/transactions");
     } else {
+      const parseAmount = (val: any) => {
+        if (val === undefined || val === null || val === '') return null;
+        if (typeof val === 'number') return val;
+        const num = parseFloat(String(val).replace(/\s/g, '').replace(',', '.'));
+        return isNaN(num) ? null : num;
+      };
+
       const payload = {
         productName: formData.productName || "Elektronik Ürün",
         brand: formData.brand || formData.vendorName || "",
         model: formData.model || "",
         serialNumber: formData.serialNumber || "",
         purchaseDate: formData.purchaseDate || formData.invoiceDate || new Date().toISOString().split("T")[0],
-        purchasePrice: parseFloat(formData.purchasePrice || formData.totalAmount) || null,
+        purchasePrice: parseAmount(formData.purchasePrice || formData.totalAmount),
         warrantyStartDate: formData.purchaseDate || formData.invoiceDate || new Date().toISOString().split("T")[0],
         warrantyEndDate: formData.warrantyEndDate || "",
         purchasePlace: formData.vendorName || formData.brand || "",
@@ -218,9 +232,16 @@ export default function FaturaUploadPage() {
       const token = localStorage.getItem("access_token") || "";
 
       if (documentType === "invoice") {
+        const parseAmount = (val: any) => {
+          if (val === undefined || val === null || val === '') return 0;
+          if (typeof val === 'number') return val;
+          const num = parseFloat(String(val).replace(/\s/g, '').replace(',', '.'));
+          return isNaN(num) ? 0 : num;
+        };
+
         const expensePayload = {
           description: `${formData.vendorName || "Fatura"} Harcaması`,
-          amount: parseFloat(formData.totalAmount) || 0,
+          amount: parseAmount(formData.totalAmount),
           transactionDate: formData.invoiceDate ? new Date(formData.invoiceDate).toISOString() : new Date().toISOString(),
           notes: formData.invoiceNumber ? `Fatura No: ${formData.invoiceNumber}` : "",
           merchantId: formData.merchantId || null,
@@ -243,6 +264,13 @@ export default function FaturaUploadPage() {
 
         toast.success("Fatura ve gider kaydı başarıyla oluşturuldu!");
       } else {
+        const parseAmount = (val: any) => {
+          if (val === undefined || val === null || val === '') return null;
+          if (typeof val === 'number') return val;
+          const num = parseFloat(String(val).replace(/\s/g, '').replace(',', '.'));
+          return isNaN(num) ? null : num;
+        };
+
         const pDate = formData.purchaseDate || new Date().toISOString().split("T")[0];
         const wEnd = formData.warrantyEndDate || pDate;
 
@@ -254,7 +282,7 @@ export default function FaturaUploadPage() {
           purchaseDate: pDate,
           warrantyStartDate: pDate,
           warrantyEndDate: wEnd,
-          purchasePrice: parseFloat(formData.purchasePrice || formData.totalAmount) || null,
+          purchasePrice: parseAmount(formData.purchasePrice || formData.totalAmount),
           purchasePlace: formData.vendorName || formData.brand || "Mağaza",
           warrantyType: "MANUFACTURER",
         };

@@ -17,6 +17,9 @@ export class DashboardService {
       warranties,
       events,
       installments,
+      expenseInstallmentsDebt,
+      incomeInstallmentsReceivable,
+      expenseInstallmentsCount,
     ] = await Promise.all([
       this.prisma.incomeTransaction.aggregate({
         where: {
@@ -106,6 +109,36 @@ export class DashboardService {
           dueDate: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
         },
       }),
+      // Unpaid installment plans from ExpenseTransaction
+      this.prisma.expenseTransaction.aggregate({
+        where: {
+          tenantId,
+          deletedAt: null,
+          installmentPlanId: { not: null },
+          OR: [{ notes: null }, { notes: { not: "PAID" } }],
+        },
+        _sum: { amount: true },
+      }),
+      // Uncollected installment plans from IncomeTransaction
+      this.prisma.incomeTransaction.aggregate({
+        where: {
+          tenantId,
+          deletedAt: null,
+          parentId: { not: null },
+          OR: [{ recurrenceRule: null }, { recurrenceRule: { not: "COLLECTED" } }],
+        },
+        _sum: { amount: true },
+      }),
+      // Upcoming expense installments count in next 30 days
+      this.prisma.expenseTransaction.count({
+        where: {
+          tenantId,
+          deletedAt: null,
+          installmentPlanId: { not: null },
+          OR: [{ notes: null }, { notes: { not: "PAID" } }],
+          transactionDate: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        },
+      }),
     ]);
 
     const totalIncome = incomes._sum.amount?.toString() || "0";
@@ -114,13 +147,25 @@ export class DashboardService {
       parseFloat(totalIncome) - parseFloat(totalExpense)
     ).toFixed(2);
 
+    const totalDebt = (
+      (debts._sum.remainingAmount || 0) +
+      (expenseInstallmentsDebt._sum.amount || 0)
+    ).toFixed(2);
+
+    const totalReceivable = (
+      (receivables._sum.remainingAmount || 0) +
+      (incomeInstallmentsReceivable._sum.amount || 0)
+    ).toFixed(2);
+
+    const upcomingInstallments = (installments || 0) + (expenseInstallmentsCount || 0);
+
     return {
       totalIncome,
       totalExpense,
       netCashFlow,
-      totalDebt: debts._sum.remainingAmount?.toString() || "0",
-      upcomingInstallments: installments,
-      totalReceivable: receivables._sum.remainingAmount?.toString() || "0",
+      totalDebt,
+      upcomingInstallments,
+      totalReceivable,
       monthlySavings: parseFloat(netCashFlow) > 0 ? netCashFlow : "0",
       totalSavings: savingsGoals._sum.currentAmount?.toString() || "0",
       monthlySubscriptionCost: subscriptions._sum.amount?.toString() || "0",
