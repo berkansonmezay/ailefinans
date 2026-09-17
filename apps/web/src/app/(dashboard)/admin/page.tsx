@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import toast from 'react-hot-toast';
@@ -38,7 +38,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (!currentUser) return;
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(currentUser.systemRole)) {
+    if (!currentUser.systemRole || !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.systemRole)) {
       router.push('/');
       return;
     }
@@ -151,90 +151,146 @@ export default function AdminUsersPage() {
 
   if (isLoading) return <div className="p-8 text-center text-text-muted">Yükleniyor...</div>;
 
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.isActive).length;
+  const pendingUsers = users.filter(u => !u.isActive).length;
+  const adminUsers = users.filter(u => ['ADMIN', 'SUPER_ADMIN'].includes(u.systemRole)).length;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-            <Shield className="w-8 h-8 text-red-500" />
-            Sistem Yönetimi
-          </h1>
-          <p className="text-text-secondary mt-1">Sisteme kayıt olan yeni kullanıcıları onaylayın veya yönetin.</p>
-        </div>
-        
-        {/* Search Bar */}
-        <div className="relative w-full sm:w-72">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-text-muted" />
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-text-primary tracking-tight">Sistem Yönetimi</h1>
+        <p className="text-text-muted mt-1 text-sm">Sisteme kayıt olan yeni kullanıcıları onaylayın veya yönetin.</p>
+      </div>
+
+      {/* KPI Cards - border-l-[5px] stili */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Toplam Kullanıcı - Blue */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 shrink-0">
+            <Users className="w-6 h-6" />
           </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Kullanıcı</p>
+            <p className="text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5">{totalUsers}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">Kayıtlı hesap</p>
+          </div>
+        </div>
+
+        {/* Onaylı Hesaplar - Emerald */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+            <UserCheck className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Onaylı Hesaplar</p>
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono mt-0.5">{activeUsers}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">Aktif oturum izni</p>
+          </div>
+        </div>
+
+        {/* Onay Bekleyenler - Amber */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 shrink-0">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Onay Bekleyenler</p>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono mt-0.5">{pendingUsers}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">Onay gerektiren hesap</p>
+          </div>
+        </div>
+
+        {/* Yöneticiler - Purple */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 shrink-0">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Yöneticiler</p>
+            <p className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight font-mono mt-0.5">{adminUsers}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">Admin & Kurucu</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Search Toolbar */}
+      <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
           <input
             type="text"
             placeholder="İsim veya E-posta ara..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-border rounded-xl bg-bg-card text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent sm:text-sm transition-colors"
+            className="block w-full pl-10 pr-4 py-2 border border-border rounded-xl bg-bg-secondary/60 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-colors"
           />
         </div>
+        <p className="text-xs text-text-muted font-medium">
+          {filteredUsers.length} / {totalUsers} kullanıcı gösteriliyor
+        </p>
       </div>
 
-      <Card>
+      {/* User Table */}
+      <div className="bg-bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-bg-sidebar border-b border-border">
               <tr>
-                <th className="px-4 py-2.5 font-semibold text-text-secondary">Kullanıcı</th>
-                <th className="px-4 py-2.5 font-semibold text-text-secondary">Kurum (Aile)</th>
-                <th className="px-4 py-2.5 font-semibold text-text-secondary">Kayıt Tarihi</th>
-                <th className="px-4 py-2.5 font-semibold text-text-secondary">Yetki</th>
-                <th className="px-4 py-2.5 font-semibold text-text-secondary">Durum</th>
-                <th className="px-4 py-2.5 font-semibold text-text-secondary text-right">İşlemler</th>
+                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı</th>
+                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kurum (Aile)</th>
+                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kayıt Tarihi</th>
+                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Yetki</th>
+                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Durum</th>
+                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider text-right">İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filteredUsers.map((u) => (
-                <tr key={u.id} className="hover:bg-bg-sidebar/50 transition-colors">
-                  <td className="px-4 py-2.5">
-                    <div className="font-medium text-text-primary">{u.firstName} {u.lastName}</div>
+                <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
+                  <td className="px-5 py-3.5">
+                    <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
                     <div className="text-text-muted text-xs">{u.email}</div>
                   </td>
-                  <td className="px-4 py-2.5 text-text-secondary">
+                  <td className="px-5 py-3.5 text-text-secondary text-sm">
                     {u.tenantName}
                   </td>
-                  <td className="px-4 py-2.5 text-text-secondary">
+                  <td className="px-5 py-3.5 text-text-secondary text-sm">
                     {new Date(u.createdAt).toLocaleDateString('tr-TR')}
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-5 py-3.5">
                     {u.systemRole === 'SUPER_ADMIN' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
                         Kurucu
                       </span>
                     ) : u.systemRole === 'ADMIN' ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                         Yönetici
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-bg-secondary text-text-muted border border-border">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-bg-secondary text-text-muted border border-border">
                         Kullanıcı
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-5 py-3.5">
                     {u.isActive ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-500">
-                        <CheckCircle size={14} /> Onaylı
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500">
+                        <CheckCircle size={12} /> Onaylı
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-500">
-                        <ShieldAlert size={14} /> Bekliyor
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500">
+                        <ShieldAlert size={12} /> Bekliyor
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-5 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {!u.isActive && (
                         <button
                           onClick={() => approveUser(u.id)}
-                          className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 text-xs font-medium rounded-lg hover:text-text-primary transition-colors"
+                          className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 text-xs font-semibold rounded-lg hover:text-white transition-colors"
                         >
                           Onayla
                         </button>
@@ -273,7 +329,7 @@ export default function AdminUsersPage() {
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-text-muted">
+                  <td colSpan={6} className="px-6 py-12 text-center text-text-muted">
                     Kullanıcı bulunamadı.
                   </td>
                 </tr>
@@ -281,7 +337,7 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
 
       {/* Password Reset Modal */}
       {isPasswordModalOpen && selectedUser && (

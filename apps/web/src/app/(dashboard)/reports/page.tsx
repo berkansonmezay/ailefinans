@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { fetchApi } from '@/lib/api';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { PieChart as PieChartIcon, BarChart3, Download, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ArrowRightLeft } from 'lucide-react';
+import { PieChart as PieChartIcon, BarChart3, Download, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ArrowRightLeft, Info, ChevronDown, ChevronUp, Wallet, PiggyBank, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select as CustomSelect } from '@/components/ui/Select';
 import { toast } from 'react-hot-toast';
@@ -13,6 +13,7 @@ import clsx from 'clsx';
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'SUMMARY' | 'YEARLY' | 'MONTHLY' | 'COMPARISON'>('SUMMARY');
+  const [showGuide, setShowGuide] = useState(false);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [merchantData, setMerchantData] = useState<any[]>([]);
@@ -237,52 +238,126 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Compact Header */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-text-primary tracking-tight">Raporlar ve Analizler</h1>
-          <p className="text-xs text-text-muted mt-0.5">Harcama alışkanlıklarınızı ve finansal trendlerinizi inceleyin.</p>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Raporlar ve Analizler</h1>
+          <p className="text-text-muted mt-1 text-sm">Harcama alışkanlıklarınızı ve finansal trendlerinizi inceleyin.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => toast('PDF özelliği yakında eklenecek')} className="h-8 text-xs px-3">
+          <Button variant="secondary" onClick={() => toast('PDF özelliği yakında eklenecek')} className="h-9 text-xs px-3">
             <Download className="w-3.5 h-3.5 mr-1.5" />
             PDF
           </Button>
-          <Button variant="secondary" onClick={() => toast('Excel özelliği yakında eklenecek')} className="h-8 text-xs px-3">
+          <Button variant="secondary" onClick={() => toast('Excel özelliği yakında eklenecek')} className="h-9 text-xs px-3">
             <Download className="w-3.5 h-3.5 mr-1.5" />
             Excel
           </Button>
         </div>
       </div>
 
-      {/* 4-Metric Summary Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {[
-          { label: 'Toplam Gelir (12 Ay)', value: fmt(totalIncome12), color: 'text-emerald-500' },
-          { label: 'Toplam Gider (12 Ay)', value: fmt(totalExpense12), color: 'text-red-500' },
-          { label: 'Net Tasarruf', value: fmt(netSavings12), color: netSavings12 >= 0 ? 'text-indigo-400' : 'text-red-500' },
-          { label: 'Aylık Ort. Gider', value: fmt(avgMonthlyExpense), color: 'text-amber-500' },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-bg-card border border-border rounded-xl px-3 py-2.5 flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">{stat.label}</span>
-            <span className={`text-sm font-bold ${stat.color}`}>{stat.value}</span>
+      {/* KPI Cards - border-l-[5px] Taksitli Alacaklar stili */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Toplam Gelir - Emerald */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+            <TrendingUp className="w-6 h-6" />
           </div>
-        ))}
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Gelir (12 Ay)</p>
+            <p className="text-xl sm:text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5 truncate">{fmt(totalIncome12)}</p>
+          </div>
+        </div>
+
+        {/* Toplam Gider - Rose */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-rose-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 shrink-0">
+            <TrendingDown className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Gider (12 Ay)</p>
+            <p className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight font-mono mt-0.5 truncate">{fmt(totalExpense12)}</p>
+          </div>
+        </div>
+
+        {/* Net Tasarruf - Blue or Amber */}
+        <div className={`bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] transition-all hover:shadow-md ${netSavings12 >= 0 ? 'border-l-blue-600' : 'border-l-amber-500'}`}>
+          <div className={`p-3 rounded-xl shrink-0 ${netSavings12 >= 0 ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'}`}>
+            <PiggyBank className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Net Tasarruf</p>
+            <p className={`text-xl sm:text-2xl font-black tracking-tight font-mono mt-0.5 truncate ${netSavings12 >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>{fmt(netSavings12)}</p>
+          </div>
+        </div>
+
+        {/* Aylık Ort. Gider - Amber */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 shrink-0">
+            <CalendarDays className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Aylık Ort. Gider</p>
+            <p className="text-xl sm:text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5 truncate">{fmt(avgMonthlyExpense)}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Compact Tab Bar */}
-      <div className="flex gap-1 bg-bg-card p-1 rounded-xl border border-border overflow-x-auto">
+      {/* Guide Banner */}
+      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-500">
+              <Info className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-text-primary">Raporlama & Tasarruf Analiz Rehberi</h3>
+              <p className="text-xs text-text-muted mt-0.5">12 aylık verinizin detaylı analizi için sekmeler arasında geçiş yapın.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowGuide(!showGuide)}
+            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0 pt-1"
+          >
+            {showGuide ? "Gizle" : "Nasıl Kullanılır?"}
+            {showGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+        {showGuide && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-emerald-500/20 text-xs text-text-secondary">
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 block mb-1">📊 Özet Rapor</span>
+              Son 12 ayın gelir-gider trendini çizgi grafik, kategori dağılımını dilim grafik olarak gösterir.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-blue-600 dark:text-blue-400 block mb-1">📅 Yıllık Analiz</span>
+              Seçilen yıla ait tüm giderleri ay ay listeler; en yoğun harcama dönemlerinizi belirleyin.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">📆 Aylık Detay</span>
+              Tek bir ayı derinlemesine inceleyin; kategori ve mağaza bazlı kırılımları görün.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-purple-600 dark:text-purple-400 block mb-1">🔀 Karşılaştırma</span>
+              İki farklı ayı yan yana karşılaştırarak harcama değişimlerinizi kolayca ölçün.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Tab Bar */}
+      <div className="flex gap-1 bg-bg-card p-1.5 rounded-2xl border border-border overflow-x-auto shadow-sm">
         {[
           { id: 'SUMMARY', label: 'Özet Rapor' },
-          { id: 'YEARLY', label: 'Yıllık Gider Listesi' },
-          { id: 'MONTHLY', label: 'Aylık Gider Raporu' },
-          { id: 'COMPARISON', label: 'Karşılaştırmalı Analiz' }
+          { id: 'YEARLY', label: 'Yıllık Gider' },
+          { id: 'MONTHLY', label: 'Aylık Detay' },
+          { id: 'COMPARISON', label: 'Karşılaştırma' }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={clsx(
-              "px-3.5 py-2 text-xs font-semibold rounded-lg whitespace-nowrap transition-all",
+              "px-4 py-2 text-xs font-semibold rounded-xl whitespace-nowrap transition-all",
               activeTab === tab.id
                 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm"
                 : "text-text-secondary hover:text-text-primary hover:bg-bg-secondary"
@@ -318,6 +393,7 @@ export default function ReportsPage() {
 
           {/* Sütun Grafik (Bar) */}
           <Card className="border-border shadow-sm">
+
             <CardContent className="p-4">
               <h3 className="text-sm font-bold text-text-primary mb-3">Aylık Karşılaştırma</h3>
               <div className="h-64">

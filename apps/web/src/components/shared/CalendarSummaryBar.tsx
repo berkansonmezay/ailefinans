@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CreditCard, ArrowDownCircle, AlertTriangle, BellRing, TrendingDown, TrendingUp } from 'lucide-react';
+import { CreditCard, TrendingDown, TrendingUp, AlertTriangle, BellRing } from 'lucide-react';
 
 interface CalendarSummary {
   totalDebtAmount: number;
@@ -30,75 +30,93 @@ function formatCurrency(val: number, currency: string = 'TRY') {
 export function CalendarSummaryBar({ summary, loading }: CalendarSummaryBarProps) {
   if (loading || !summary) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => (
-          <div key={i} className="bg-bg-card border border-border rounded-2xl p-4 animate-pulse">
-            <div className="h-4 bg-bg-secondary rounded w-2/3 mb-2" />
-            <div className="h-6 bg-bg-secondary rounded w-1/2" />
+          <div key={i} className="bg-bg-card border border-border rounded-2xl p-4 animate-pulse flex items-center gap-3.5">
+            <div className="w-12 h-12 bg-bg-secondary rounded-xl" />
+            <div className="space-y-2 flex-1">
+              <div className="h-3 bg-bg-secondary rounded w-1/2" />
+              <div className="h-6 bg-bg-secondary rounded w-3/4" />
+            </div>
           </div>
         ))}
       </div>
     );
   }
 
-  const cards = [
-    {
-      label: 'Borç Taksitleri',
-      value: formatCurrency(summary.totalDebtAmount),
-      sublabel: `${summary.debtInstallmentCount} taksit`,
-      icon: TrendingDown,
-      iconColor: '#3b82f6',
-      iconBg: '#3b82f615',
-    },
-    {
-      label: 'Beklenen Alacak',
-      value: formatCurrency(summary.totalReceivableAmount),
-      sublabel: `${summary.receivableInstallmentCount} taksit`,
-      icon: TrendingUp,
-      iconColor: '#10b981',
-      iconBg: '#10b98115',
-    },
-    {
-      label: 'Vadesi Geçmiş',
-      value: String(summary.overdueCount),
-      sublabel: summary.dueTodayCount > 0 ? `+ ${summary.dueTodayCount} bugün vadeli` : 'Gecikmiş kalem',
-      icon: AlertTriangle,
-      iconColor: summary.overdueCount > 0 ? '#f43f5e' : '#64748b',
-      iconBg: summary.overdueCount > 0 ? '#f43f5e15' : '#64748b15',
-    },
-    {
-      label: 'Hatırlatmalar',
-      value: String(summary.activeReminderCount),
-      sublabel: 'Aktif hatırlatma',
-      icon: BellRing,
-      iconColor: '#8b5cf6',
-      iconBg: '#8b5cf615',
-    },
-  ];
-
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-      {cards.map((card, idx) => {
-        const Icon = card.icon;
-        return (
-          <div
-            key={idx}
-            className="bg-bg-card border border-border rounded-2xl p-3 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-medium text-text-muted">{card.label}</span>
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: card.iconBg, color: card.iconColor }}
-              >
-                <Icon className="w-3.5 h-3.5" />
-              </div>
-            </div>
-            <p className="text-lg font-bold text-text-primary">{card.value}</p>
-            <p className="text-xs text-text-muted mt-0.5">{card.sublabel}</p>
-          </div>
-        );
-      })}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 1. Borç Taksitleri - Blue */}
+      <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600 transition-all hover:shadow-md">
+        <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 shrink-0">
+          <TrendingDown className="w-6 h-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider truncate">
+            Borç Taksitleri
+          </p>
+          <p className="text-xl sm:text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5 truncate">
+            {formatCurrency(summary.totalDebtAmount)}
+          </p>
+          <p className="text-xs text-text-muted mt-0.5 font-medium">
+            {summary.debtInstallmentCount} taksit planlandı
+          </p>
+        </div>
+      </div>
+
+      {/* 2. Beklenen Alacak - Emerald */}
+      <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
+        <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+          <TrendingUp className="w-6 h-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider truncate">
+            Beklenen Alacak
+          </p>
+          <p className="text-xl sm:text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5 truncate">
+            {formatCurrency(summary.totalReceivableAmount)}
+          </p>
+          <p className="text-xs text-text-muted mt-0.5 font-medium">
+            {summary.receivableInstallmentCount} alacak taksiti
+          </p>
+        </div>
+      </div>
+
+      {/* 3. Vadesi Geçmiş - Rose */}
+      <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-rose-500 transition-all hover:shadow-md">
+        <div className="p-3 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 shrink-0">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider truncate">
+            Vadesi Geçmiş / Bugün
+          </p>
+          <p className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight font-mono mt-0.5 truncate">
+            {summary.overdueCount} <span className="text-xs font-normal text-text-muted">kalem</span>
+          </p>
+          <p className="text-xs text-text-muted mt-0.5 font-medium">
+            {summary.dueTodayCount > 0 ? `+ ${summary.dueTodayCount} bugün vadeli` : 'Kritik gecikme yok'}
+          </p>
+        </div>
+      </div>
+
+      {/* 4. Hatırlatmalar - Purple */}
+      <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500 transition-all hover:shadow-md">
+        <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 shrink-0">
+          <BellRing className="w-6 h-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider truncate">
+            Aktif Hatırlatmalar
+          </p>
+          <p className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight font-mono mt-0.5 truncate">
+            {summary.activeReminderCount} <span className="text-xs font-normal text-text-muted">adet</span>
+          </p>
+          <p className="text-xs text-text-muted mt-0.5 font-medium">
+            Zamanlanmış bildirim
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -58,38 +58,49 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           onClick={handleCancel}
         >
           <div
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            className={`bg-bg-card border border-border text-text-primary w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border-l-[5px] ${
+              variant === 'danger'
+                ? 'border-l-rose-500'
+                : variant === 'warning'
+                ? 'border-l-amber-500'
+                : 'border-l-emerald-500'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="p-6 pb-5 flex items-start space-x-4 border-b border-slate-100 dark:border-slate-800">
-              <div className={`p-3 rounded-xl flex-shrink-0 text-white shadow-md ${
+            <div className="p-6 pb-4 flex items-start space-x-4 border-b border-border">
+              <div className={`p-3 rounded-xl flex-shrink-0 shadow-sm ${
                 variant === 'danger'
-                  ? 'bg-rose-600 shadow-rose-600/30'
+                  ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                   : variant === 'warning'
-                  ? 'bg-amber-600 shadow-amber-600/30'
-                  : 'bg-emerald-600 shadow-emerald-600/30'
+                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                  : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
               }`}>
                 {variant === 'info' ? (
-                  <Info className="h-6 w-6 text-white" />
+                  <Info className="h-6 w-6" />
                 ) : (
-                  <AlertTriangle className="h-6 w-6 text-white" />
+                  <AlertTriangle className="h-6 w-6" />
                 )}
               </div>
 
               <div className="flex-1 min-w-0 pr-1">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                  {options.title || (variant === 'danger' ? 'Kayıt Silinecek' : 'İşlem Onayı')}
+                <h3 className="text-lg font-bold text-text-primary tracking-tight">
+                  {options.title || (variant === 'danger' ? 'İşlem Onayı Gerekli' : 'Bilgi ve Onay')}
                 </h3>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-200 mt-1.5 leading-relaxed">
+                <p className="text-sm font-medium text-text-secondary mt-2 leading-relaxed">
                   {options.message}
                 </p>
+                {variant === 'danger' && (
+                  <div className="mt-3 p-2.5 rounded-xl bg-rose-500/5 border border-rose-500/15 text-[12px] text-rose-600 dark:text-rose-400">
+                    ⚠️ Bu işlem geri alınamaz. İlgili kayıt ve bağlı tüm detaylar kalıcı olarak silinecektir.
+                  </div>
+                )}
               </div>
 
               <button
                 type="button"
                 onClick={handleCancel}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="text-text-muted hover:text-text-primary p-1.5 rounded-lg hover:bg-bg-secondary transition-colors"
                 title="Kapat"
               >
                 <X className="h-5 w-5" />
@@ -97,11 +108,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             </div>
 
             {/* Actions Footer */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-3">
+            <div className="p-4 bg-bg-secondary/40 border-t border-border flex items-center justify-end space-x-3">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-200/70 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl border border-slate-300/50 dark:border-slate-700 transition-all cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-text-secondary bg-bg-secondary hover:bg-bg-secondary/80 rounded-xl border border-border transition-all cursor-pointer"
               >
                 {options.cancelText || 'Vazgeç'}
               </button>
@@ -109,12 +120,12 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={handleConfirm}
-                className={`px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-lg transition-all cursor-pointer ${
+                className={`px-5 py-2 text-xs font-bold text-white rounded-xl shadow-md transition-all cursor-pointer ${
                   variant === 'danger'
-                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
+                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
                     : variant === 'warning'
-                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
-                    : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
+                    : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
                 }`}
               >
                 {options.confirmText || (variant === 'danger' ? 'Evet, Sil' : 'Onayla')}

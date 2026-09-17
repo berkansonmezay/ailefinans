@@ -23,27 +23,24 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div 
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" 
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity" 
         onClick={onClose} 
       />
       
-      <div className="relative bg-bg-card border border-border rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 ease-out">
-        {/* Subtle top glow */}
-        <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent opacity-50" />
-        
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-          <h3 className="text-xl font-bold text-text-primary tracking-tight">{title}</h3>
+      <div className="relative bg-bg-card border border-border text-text-primary rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 ease-out">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-bg-sidebar/50">
+          <h3 className="text-base sm:text-lg font-bold text-text-primary tracking-tight">{title}</h3>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-text-primary transition-colors p-2 rounded-xl hover:bg-bg-secondary"
+            className="text-text-muted hover:text-text-primary transition-colors p-1.5 rounded-xl hover:bg-bg-secondary"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="p-6">
+        <div className="p-6 max-h-[80vh] overflow-y-auto">
           {children}
         </div>
       </div>

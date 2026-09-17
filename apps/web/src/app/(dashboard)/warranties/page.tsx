@@ -12,7 +12,7 @@ import {
   Plus, Shield, ShieldAlert, ShieldCheck, ShieldX, Edit2, Trash2, Calendar,
   FileText, CheckCircle, AlertCircle, Search, Filter, Wrench, ClipboardList,
   Clock, ChevronRight, TrendingUp, Package, RefreshCw, ArrowUpRight,
-  ShieldPlus, Zap, History, BellRing
+  ShieldPlus, Zap, History, BellRing, Info, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -101,6 +101,7 @@ export default function WarrantiesAndInvoicesPage() {
   const { confirm } = useConfirm();
   const [activeTab, setActiveTab] = useState<'warranties' | 'invoices' | 'services' | 'claims'>('warranties');
   const [stats, setStats] = useState<Stats>({ total: 0, active: 0, expiring: 0, expired: 0, openClaims: 0, totalValue: 0 });
+  const [showGuide, setShowGuide] = useState(false);
 
   // Warranties
   const [warranties, setWarranties] = useState<Warranty[]>([]);
@@ -696,26 +697,97 @@ export default function WarrantiesAndInvoicesPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {[
-          { label: 'Toplam', value: stats.total, icon: Package, color: 'text-slate-400', bg: 'bg-slate-500/10' },
-          { label: 'Aktif', value: stats.active, icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-          { label: 'Dolmak Üzere', value: stats.expiring, icon: ShieldAlert, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-          { label: 'Süresi Dolmuş', value: stats.expired, icon: ShieldX, color: 'text-red-400', bg: 'bg-red-500/10' },
-          { label: 'Açık Talep', value: stats.openClaims, icon: ClipboardList, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { label: 'Toplam Değer', value: `${stats.totalValue.toLocaleString('tr-TR')} ₺`, icon: TrendingUp, color: 'text-violet-400', bg: 'bg-violet-500/10' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${stat.bg}`}>
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
+      {/* KPI Stats Cards - Taksitli Alacaklar border-l-[5px] stili */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Toplam Kayıt - Blue */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 shrink-0">
+            <Package className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Kayıt</p>
+            <p className="text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5">{stats.total}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">{stats.openClaims} açık talep</p>
+          </div>
+        </div>
+
+        {/* Aktif Garantiler - Emerald */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Aktif Garantiler</p>
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono mt-0.5">{stats.active}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">Geçerli garanti kapsamı</p>
+          </div>
+        </div>
+
+        {/* Yakında Bitecek - Amber */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 shrink-0">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Yakında Bitiyor</p>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono mt-0.5">{stats.expiring}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">90 gün içinde doluyor</p>
+          </div>
+        </div>
+
+        {/* Süresi Dolmuş - Rose */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-rose-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 shrink-0">
+            <ShieldX className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Süresi Dolmuş</p>
+            <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight font-mono mt-0.5">{stats.expired}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">{stats.totalValue.toLocaleString('tr-TR')} ₺ toplam değer</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Guide Banner */}
+      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-500">
+              <Info className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-text-muted font-medium">{stat.label}</p>
-              <p className="text-lg font-bold text-text-primary">{stat.value}</p>
+              <h3 className="text-base font-bold text-text-primary">Garanti & Belge Yönetimi Rehberi</h3>
+              <p className="text-xs text-text-muted mt-0.5">Ürün garantilerini, faturalarını ve servis geçmişlerini tek yerden yönetin.</p>
             </div>
           </div>
-        ))}
+          <button
+            onClick={() => setShowGuide(!showGuide)}
+            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0 pt-1"
+          >
+            {showGuide ? "Gizle" : "Nasıl Kullanılır?"}
+            {showGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+        {showGuide && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-emerald-500/20 text-xs text-text-secondary">
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-blue-600 dark:text-blue-400 block mb-1">🛡️ Garanti Ekleme</span>
+              Ürün bilgileri, satın alma tarihi ve garanti bitiş tarihini girerek garanti kaydı oluşturun.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 block mb-1">📄 Fatura Saklama</span>
+              Satın alma faturanızı sisteme yükleyerek garanti başvurularında kolayca erişin.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">🔔 Otomatik Uyarı</span>
+              Garanti bitiş tarihine 90, 30 ve 7 gün kala hatırlatıcı bildirim alın.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-purple-600 dark:text-purple-400 block mb-1">🔧 Servis & Talep</span>
+              Servis geçmişinizi kayıt altına alın; garanti kapsamında açtığınız talepleri takip edin.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tab Navigation */}
@@ -746,38 +818,40 @@ export default function WarrantiesAndInvoicesPage() {
       {/* ======================== */}
       {activeTab === 'warranties' && (
         <>
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+          {/* Filters Toolbar */}
+          <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-3 items-center justify-between shadow-sm">
+            <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 type="text"
                 placeholder="Ürün adı, marka veya model ara..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-bg-card border border-border rounded-xl pl-10 pr-4 py-2.5 text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                className="w-full bg-bg-secondary/60 border border-border rounded-xl pl-10 pr-4 py-2 text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
               />
             </div>
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-              className="bg-bg-card border border-border rounded-xl px-4 py-2.5 text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none min-w-[160px]"
-            >
-              <option value="">Tüm Durumlar</option>
-              <option value="ACTIVE">Aktif</option>
-              <option value="EXPIRING">Dolmak Üzere</option>
-              <option value="EXPIRED">Süresi Dolmuş</option>
-              <option value="CLAIMED">Talep Açık</option>
-              <option value="EXTENDED">Uzatılmış</option>
-            </select>
-            <select
-              value={categoryFilter}
-              onChange={e => setCategoryFilter(e.target.value)}
-              className="bg-bg-card border border-border rounded-xl px-4 py-2.5 text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none min-w-[160px]"
-            >
-              <option value="">Tüm Kategoriler</option>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <div className="flex gap-2 flex-wrap">
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="bg-bg-secondary/60 border border-border rounded-xl px-3 py-2 text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none"
+              >
+                <option value="">Tüm Durumlar</option>
+                <option value="ACTIVE">Aktif</option>
+                <option value="EXPIRING">Dolmak Üzere</option>
+                <option value="EXPIRED">Süresi Dolmuş</option>
+                <option value="CLAIMED">Talep Açık</option>
+                <option value="EXTENDED">Uzatılmış</option>
+              </select>
+              <select
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+                className="bg-bg-secondary/60 border border-border rounded-xl px-3 py-2 text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none"
+              >
+                <option value="">Tüm Kategoriler</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
 
           {/* Warranty List */}

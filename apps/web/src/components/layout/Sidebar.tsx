@@ -83,7 +83,7 @@ export function Sidebar() {
           );
         })}
         {/* Admin only menu */}
-        {['ADMIN', 'SUPER_ADMIN'].includes(user?.systemRole) && (
+        {!!user?.systemRole && ['ADMIN', 'SUPER_ADMIN'].includes(user.systemRole) && (
           <Link
             href="/admin"
             className={clsx(

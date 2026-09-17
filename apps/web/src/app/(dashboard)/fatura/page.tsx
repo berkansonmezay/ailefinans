@@ -27,6 +27,9 @@ import {
   ClipboardList,
   Clock,
   TrendingUp,
+  Info,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { fetchApi } from "@/lib/api";
@@ -41,6 +44,7 @@ export default function FaturaUploadPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   const [categories, setCategories] = useState<any[]>([]);
   const [merchants, setMerchants] = useState<any[]>([]);
@@ -143,12 +147,19 @@ export default function FaturaUploadPage() {
     if (!formData) return;
 
     if (documentType === "invoice") {
+      if (!formData.merchantId) {
+        return toast.error("Kayıt tamamlanamaz: Lütfen Harcama Yeri (Mağaza/Kurum) seçiniz.");
+      }
+      if (!formData.categoryId) {
+        return toast.error("Kayıt tamamlanamaz: Lütfen bir Harcama Kategorisi seçiniz.");
+      }
+
       const payload = {
         amount: parseFloat(formData.totalAmount) || 0,
         transactionDate: formData.invoiceDate || new Date().toISOString().split("T")[0],
         vendorName: formData.vendorName || "",
-        merchantId: formData.merchantId || "",
-        categoryId: formData.categoryId || "",
+        merchantId: formData.merchantId,
+        categoryId: formData.categoryId,
         invoiceNumber: formData.invoiceNumber || "",
         description: `${formData.vendorName || "Fatura"} Harcaması`,
       };
@@ -194,10 +205,10 @@ export default function FaturaUploadPage() {
 
     if (documentType === "invoice") {
       if (!formData.merchantId) {
-        return toast.error("Lütfen Harcama Yeri (Mağaza/Kurum) seçiniz.");
+        return toast.error("Kayıt tamamlanamaz: Lütfen Harcama Yeri (Mağaza/Kurum) seçiniz.");
       }
       if (!formData.categoryId) {
-        return toast.error("Lütfen bir Harcama Kategorisi seçiniz.");
+        return toast.error("Kayıt tamamlanamaz: Lütfen bir Harcama Kategorisi seçiniz.");
       }
     }
 
@@ -287,39 +298,87 @@ export default function FaturaUploadPage() {
         </div>
       </div>
 
-      {/* Stats Cards (Exact styling from Garanti & Fatura page) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-emerald-500/10">
-            <Sparkles className="w-5 h-5 text-emerald-400" />
+      {/* KPI Feature Cards - border-l-[5px] stili */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Akıllı OCR - Emerald */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+            <Sparkles className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-xs text-text-muted font-medium">Akıllı Ayrıştırma</p>
-            <p className="text-sm font-bold text-text-primary">PDF, Görsel ve Excel OCR</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Akıllı Ayrıştırma</p>
+            <p className="text-sm font-bold text-text-primary mt-0.5">PDF, Görsel ve Excel OCR</p>
+            <p className="text-xs text-text-muted">Yapay zeka destekli metin çıkarma</p>
           </div>
         </div>
 
-        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-blue-500/10">
-            <Receipt className="w-5 h-5 text-blue-400" />
+        {/* Aktarım Modu - Blue */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 shrink-0">
+            <Receipt className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-xs text-text-muted font-medium">Aktarım Modu</p>
-            <p className="text-sm font-bold text-text-primary">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Aktarım Modu</p>
+            <p className="text-sm font-bold text-text-primary mt-0.5">
               {documentType === "invoice" ? "Gider Sayfası Aktarımı" : "Garanti Kayıt Aktarımı"}
             </p>
+            <p className="text-xs text-text-muted">Uygun sayfaya otomatik yönlendirme</p>
           </div>
         </div>
 
-        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-violet-500/10">
-            <ShieldCheck className="w-5 h-5 text-violet-400" />
+        {/* Otomatik Eşleşme - Purple */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 shrink-0">
+            <ShieldCheck className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-xs text-text-muted font-medium">Otomatik Eşleşme</p>
-            <p className="text-sm font-bold text-text-primary">Kurum & Kategori Algılama</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Otomatik Eşleşme</p>
+            <p className="text-sm font-bold text-text-primary mt-0.5">Kurum & Kategori Algılama</p>
+            <p className="text-xs text-text-muted">Mevcut kayıtlarla eşleştirme</p>
           </div>
         </div>
+      </div>
+
+      {/* Guide Banner */}
+      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-500">
+              <Info className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-text-primary">AI Fatura & Belge Tarama Rehberi</h3>
+              <p className="text-xs text-text-muted mt-0.5">4 adımda belgenizi sisteme kaydedin; yapay zeka gerisini halleder.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowGuide(!showGuide)}
+            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0 pt-1"
+          >
+            {showGuide ? "Gizle" : "Nasıl Çalışır?"}
+            {showGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+        {showGuide && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-emerald-500/20 text-xs text-text-secondary">
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-blue-600 dark:text-blue-400 block mb-1">1. Belge Yükleme</span>
+              PDF, JPG veya PNG belgenizi sürükleyip bırakın ya da dosya seçiciyle yükleyin.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 block mb-1">2. OCR Analizi</span>
+              Yapay zeka belgeyi tarar; tutar, tarih, mağaza ve ürün bilgilerini otomatik çıkartır.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">3. Doğrulama</span>
+              Çıkarılan verileri gözden geçirin; kategori ve harcama yerini onaylayın veya düzeltin.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-purple-600 dark:text-purple-400 block mb-1">4. Kayıt</span>
+              Tek tıkla gider veya garanti kaydı oluşturun; belge otomatik olarak sisteme eklenir.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tab Navigation (Exact styling from Garanti & Fatura page tabs) */}
@@ -511,32 +570,39 @@ export default function FaturaUploadPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-primary">
-                  <Store className="h-4 w-4 text-emerald-400" /> Harcama Yeri / Mağaza <span className="text-rose-500">*</span>
+                  <Store className="h-4 w-4 text-emerald-400" /> Harcama Yeri / Mağaza <span className="text-rose-500 font-bold">* Zorunlu</span>
                 </label>
                 <select
                   value={formData.merchantId || ""}
                   onChange={(e) => handleFormChange("merchantId", e.target.value)}
-                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
+                  className={`w-full bg-bg-secondary border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all ${
+                    !formData.merchantId ? 'border-rose-500/40 bg-rose-500/[0.02]' : 'border-border'
+                  }`}
                 >
-                  <option value="">-- Harcama Yeri Seçin --</option>
+                  <option value="">-- Harcama Yeri Seçin (Zorunlu) --</option>
                   {merchants.map((m: any) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
                     </option>
                   ))}
                 </select>
+                {!formData.merchantId && (
+                  <p className="text-[11px] text-rose-500 font-medium">Kayıt için harcama yeri seçimi zorunludur.</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold flex items-center gap-1.5 text-text-primary">
-                  <FolderTree className="h-4 w-4 text-emerald-400" /> Harcama Kategorisi <span className="text-rose-500">*</span>
+                  <FolderTree className="h-4 w-4 text-emerald-400" /> Harcama Kategorisi <span className="text-rose-500 font-bold">* Zorunlu</span>
                 </label>
                 <select
                   value={formData.categoryId || ""}
                   onChange={(e) => handleFormChange("categoryId", e.target.value)}
-                  className="w-full bg-bg-secondary border border-border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all"
+                  className={`w-full bg-bg-secondary border text-text-primary rounded-xl px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all ${
+                    !formData.categoryId ? 'border-rose-500/40 bg-rose-500/[0.02]' : 'border-border'
+                  }`}
                 >
-                  <option value="">-- Kategori Seçin --</option>
+                  <option value="">-- Kategori Seçin (Zorunlu) --</option>
                   {categories
                     .filter((c: any) => c.type === "EXPENSE")
                     .map((c: any) => (
@@ -545,6 +611,9 @@ export default function FaturaUploadPage() {
                       </option>
                     ))}
                 </select>
+                {!formData.categoryId && (
+                  <p className="text-[11px] text-rose-500 font-medium">Kayıt için harcama kategorisi seçimi zorunludur.</p>
+                )}
               </div>
 
               <div className="space-y-1.5">

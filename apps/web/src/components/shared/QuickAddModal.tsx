@@ -117,10 +117,10 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
     }
     if (isExpense) {
       if (!merchantId) {
-        return toast.error('Lütfen harcama yeri veya hesap seçin');
+        return toast.error('Kayıt tamamlanamaz: Lütfen Harcama Yeri seçiniz.');
       }
       if (!categoryId) {
-        return toast.error('Lütfen bir harcama kategorisi seçin');
+        return toast.error('Kayıt tamamlanamaz: Lütfen bir Harcama Kategorisi seçiniz.');
       }
     }
     
@@ -339,14 +339,18 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
           {/* Row: Merchant & Category */}
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Harcama Yeri</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Harcama Yeri {isExpense && <span className="text-rose-500 font-bold text-[10px]">* Zorunlu</span>}
+              </label>
               <div className="relative">
                 <select 
-                  className="w-full appearance-none bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow"
+                  className={`w-full appearance-none bg-white border rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow ${
+                    isExpense && !merchantId ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
+                  }`}
                   value={merchantId}
                   onChange={(e) => setMerchantId(e.target.value)}
                 >
-                  <option value="">Seçiniz</option>
+                  <option value="">Seçiniz {isExpense ? '(Zorunlu)' : ''}</option>
                   {merchants.map(m => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
@@ -358,14 +362,18 @@ export function QuickAddModal({ isOpen, onClose, onSuccess, defaultTab = 'expens
             </div>
             
             <div className="flex-1">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Kategori</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Kategori <span className="text-rose-500 font-bold text-[10px]">* Zorunlu</span>
+              </label>
               <div className="relative">
                 <select 
-                  className="w-full appearance-none bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow"
+                  className={`w-full appearance-none bg-white border rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow ${
+                    !categoryId ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
+                  }`}
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                 >
-                  <option value="">Seçiniz</option>
+                  <option value="">Seçiniz (Zorunlu)</option>
                   {filteredCategories.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}

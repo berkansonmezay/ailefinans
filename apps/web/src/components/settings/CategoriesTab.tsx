@@ -337,7 +337,7 @@ export function CategoriesTab() {
               <FileText className="w-4 h-4 mr-2" />
               PDF
             </Button>
-            <Button variant="outline" onClick={() => setIsImportModalOpen(true)} disabled={isImporting} className="h-9">
+            <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} disabled={isImporting} className="h-9">
               <Upload className="w-4 h-4 mr-2" />
               İçe Aktar
             </Button>

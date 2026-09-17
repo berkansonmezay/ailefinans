@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
-import { Trash2, Edit2, Search, Plus, Tag, ArrowUpCircle, ArrowDownCircle, Users, Building, Settings as SettingsIcon, UserPlus, Cloud, Info } from 'lucide-react';
+import { Trash2, Edit2, Search, Plus, Tag, ArrowUpCircle, ArrowDownCircle, Users, Building, Settings as SettingsIcon, UserPlus, Cloud, Info, ChevronDown, ChevronUp, Wallet, Shield, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
 import { CategoriesTab } from '@/components/settings/CategoriesTab';
@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const { user, login } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'CURRENT' | 'TENANTS' | 'CATEGORIES' | 'MERCHANTS'>('CURRENT');
+  const [showGuide, setShowGuide] = useState(false);
   
   // Profile States
   const [username, setUsername] = useState('');
@@ -231,51 +232,103 @@ export default function SettingsPage() {
   if (loading) return <div className="text-text-muted">Yükleniyor...</div>;
   return (
     <div className="space-y-4 max-w-5xl">
-      <div className="flex justify-between items-center flex-col sm:flex-row gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-            <SettingsIcon className="w-7 h-7 text-text-muted" />
-            Ayarlar
-          </h1>
-          <p className="text-text-muted mt-1">Aile veya işletmenizin temel ayarlarını yönetin.</p>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-text-primary tracking-tight">Ayarlar</h1>
+        <p className="text-text-muted mt-1 text-sm">Aile veya işletmenizin temel ayarlarını yönetin.</p>
+      </div>
+
+      {/* KPI Cards - border-l-[5px] stili */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Aktif Kurum - Blue */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 shrink-0">
+            <Building className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Aktif Kurum</p>
+            <p className="text-base font-black text-text-primary tracking-tight mt-0.5 truncate">{tenant?.name || '—'}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">Para birimi: {tenant?.currency || '—'}</p>
+          </div>
         </div>
 
-        <div className="bg-bg-card p-1 rounded-xl border border-border flex flex-wrap gap-1">
-          <button
-            onClick={() => setActiveTab('CURRENT')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'CURRENT' ? 'bg-bg-secondary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
-            }`}
-          >
-            Profil & Kurum
-          </button>
-          <button
-            onClick={() => setActiveTab('CATEGORIES')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'CATEGORIES' ? 'bg-bg-secondary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
-            }`}
-          >
-            Kategoriler
-          </button>
-          <button
-            onClick={() => setActiveTab('MERCHANTS')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'MERCHANTS' ? 'bg-bg-secondary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
-            }`}
-          >
-            Harcama Yerleri
-          </button>
-          {user?.systemRole === 'ADMIN' && (
-            <button
-              onClick={() => setActiveTab('TENANTS')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'TENANTS' ? 'bg-bg-secondary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'
-              }`}
-            >
-              Kurumlarım
-            </button>
-          )}
+        {/* Kullanıcı Rolü - Purple */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 shrink-0">
+            <Shield className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı Rolü</p>
+            <p className="text-base font-black text-text-primary tracking-tight mt-0.5 truncate">
+              {user?.systemRole === 'SUPER_ADMIN' ? 'Kurucu' : user?.systemRole === 'ADMIN' ? 'Yönetici' : 'Üye'}
+            </p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">{user?.email || '—'}</p>
+          </div>
         </div>
+
+        {/* Üye Sayısı - Emerald */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+            <Users className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Kurum Üyeleri</p>
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono mt-0.5">
+              {myTenants.length}
+            </p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">Kayıtlı kurum sayısı</p>
+          </div>
+        </div>
+
+        {/* Para Birimi - Amber */}
+        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500 transition-all hover:shadow-md">
+          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 shrink-0">
+            <Wallet className="w-6 h-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Varsayılan Para Birimi</p>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono mt-0.5">{tenant?.currency || '—'}</p>
+            <p className="text-xs text-text-muted mt-0.5 font-medium">Finansal raporlama birimi</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab Navigation - Modern style */}
+      <div className="bg-bg-card p-1.5 rounded-2xl border border-border flex flex-wrap gap-1 shadow-sm">
+        <button
+          onClick={() => setActiveTab('CURRENT')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === 'CURRENT' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm' : 'text-text-muted hover:text-text-primary hover:bg-bg-secondary'
+          }`}
+        >
+          Profil & Kurum
+        </button>
+        <button
+          onClick={() => setActiveTab('CATEGORIES')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === 'CATEGORIES' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm' : 'text-text-muted hover:text-text-primary hover:bg-bg-secondary'
+          }`}
+        >
+          Kategoriler
+        </button>
+        <button
+          onClick={() => setActiveTab('MERCHANTS')}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            activeTab === 'MERCHANTS' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm' : 'text-text-muted hover:text-text-primary hover:bg-bg-secondary'
+          }`}
+        >
+          Harcama Yerleri
+        </button>
+        {user?.systemRole === 'ADMIN' && (
+          <button
+            onClick={() => setActiveTab('TENANTS')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'TENANTS' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm' : 'text-text-muted hover:text-text-primary hover:bg-bg-secondary'
+            }`}
+          >
+            Kurumlarım
+          </button>
+        )}
       </div>
 
       {activeTab === 'CURRENT' && (

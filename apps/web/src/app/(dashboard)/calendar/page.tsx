@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Calendar, List, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, List, LayoutGrid, ChevronLeft, ChevronRight, Info, ChevronDown, ChevronUp, CheckCircle2, TrendingDown, TrendingUp, BellRing, AlertTriangle } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { CalendarGrid } from '@/components/shared/CalendarGrid';
@@ -83,6 +83,7 @@ export default function CalendarPage() {
     receivables: true,
     reminders: true,
   });
+  const [showGuide, setShowGuide] = useState(false);
 
   // Calculate date range for API call
   const getDateRange = useCallback(() => {
@@ -241,6 +242,53 @@ export default function CalendarPage() {
 
       {/* Summary Bar */}
       <CalendarSummaryBar summary={summary} loading={loading} />
+
+      {/* Guide Banner */}
+      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-500">
+              <Info className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-text-primary">
+                Finansal Takvim & Vade Takip Rehberi
+              </h3>
+              <p className="text-xs text-text-muted mt-0.5">
+                Borç taksitleri, tahsil edilecek alacaklar ve hatırlatmalarınızı gün gün izleyin.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowGuide(!showGuide)}
+            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0 pt-1"
+          >
+            {showGuide ? "Rehberi Gizle" : "Nasıl Çalışır?"}
+            {showGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {showGuide && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-emerald-500/20 text-xs text-text-secondary">
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-blue-600 dark:text-blue-400 block mb-1">1. Borç Taksitleri</span>
+              Kredi kartı ve kredi taksitlerinizin vadesi geldiğinde takvimde mavi ve turuncu işaretlerle vurgulanır.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 block mb-1">2. Alacak Vadeleri</span>
+              Tahsil etmeniz gereken alacak taksitleri yeşil gösterilerek nakit girişini önceden planlamanızı sağlar.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-rose-600 dark:text-rose-400 block mb-1">3. Gecikme Uyarıları</span>
+              Günü geçmiş ödenmemiş taksitler kırmızı bildirimle üst bantta öne çıkarılır.
+            </div>
+            <div className="bg-bg-card/60 dark:bg-bg-card/40 backdrop-blur-sm rounded-xl p-3 border border-border/50">
+              <span className="font-bold text-purple-600 dark:text-purple-400 block mb-1">4. Çoklu Görünüm</span>
+              Ay, Hafta ve Liste modları arasında geçiş yaparak ister genel akışı ister günlük detayları görün.
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Legend / Filters */}
       <CalendarLegend
