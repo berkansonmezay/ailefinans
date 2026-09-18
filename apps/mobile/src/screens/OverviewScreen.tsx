@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BarChart, PieChart } from 'react-native-chart-kit';
+import { PieChart } from 'react-native-chart-kit';
+import { BarChart } from 'react-native-gifted-charts';
 
 const { width } = Dimensions.get('window');
 
@@ -19,19 +20,20 @@ const mockAssets = {
   gold: 35000,
 };
 
-const barData = {
-  labels: ["Oca", "Şub", "Mar", "Nis", "May", "Haz"],
-  datasets: [
-    {
-      data: [20, 45, 28, 80, 99, 43], // Income
-      color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-    },
-    {
-      data: [15, 30, 20, 45, 30, 25], // Expense
-      color: (opacity = 1) => `rgba(244, 63, 94, ${opacity})`,
-    }
-  ],
-};
+const barData = [
+  { value: 20, label: 'Oca', spacing: 4, labelWidth: 30, labelTextStyle: {color: '#64748b'}, frontColor: '#10b981' },
+  { value: 15, frontColor: '#f43f5e' },
+  { value: 45, label: 'Şub', spacing: 4, labelWidth: 30, labelTextStyle: {color: '#64748b'}, frontColor: '#10b981' },
+  { value: 30, frontColor: '#f43f5e' },
+  { value: 28, label: 'Mar', spacing: 4, labelWidth: 30, labelTextStyle: {color: '#64748b'}, frontColor: '#10b981' },
+  { value: 20, frontColor: '#f43f5e' },
+  { value: 80, label: 'Nis', spacing: 4, labelWidth: 30, labelTextStyle: {color: '#64748b'}, frontColor: '#10b981' },
+  { value: 45, frontColor: '#f43f5e' },
+  { value: 99, label: 'May', spacing: 4, labelWidth: 30, labelTextStyle: {color: '#64748b'}, frontColor: '#10b981' },
+  { value: 30, frontColor: '#f43f5e' },
+  { value: 43, label: 'Haz', spacing: 4, labelWidth: 30, labelTextStyle: {color: '#64748b'}, frontColor: '#10b981' },
+  { value: 25, frontColor: '#f43f5e' }
+];
 
 const pieData = [
   { name: 'Kira', value: 15000, color: '#3b82f6', legendFontColor: '#475569', legendFontSize: 12 },
@@ -104,23 +106,34 @@ export const OverviewScreen = ({ navigation }: any) => {
           <Text style={styles.chartTitle}>Aylık Gelir & Gider Analizi</Text>
           <BarChart
             data={barData}
-            width={width - 64} // padding adjustment
-            height={220}
-            yAxisLabel="₺"
-            yAxisSuffix="k"
-            chartConfig={{
-              backgroundColor: '#ffffff',
-              backgroundGradientFrom: '#ffffff',
-              backgroundGradientTo: '#ffffff',
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-              style: { borderRadius: 16 },
-            }}
-            style={{ marginVertical: 8, borderRadius: 16 }}
-            withInnerLines={true}
-            showBarTops={false}
+            barWidth={12}
+            spacing={24}
+            roundedTop
+            roundedBottom={false}
+            xAxisThickness={0}
+            yAxisThickness={0}
+            yAxisTextStyle={{ color: '#94a3b8', fontSize: 10 }}
+            noOfSections={4}
+            maxValue={100}
+            yAxisLabelPrefix="₺"
+            yAxisLabelSuffix="k"
+            initialSpacing={10}
+            rulesColor="#f1f5f9"
+            dashWidth={4}
+            dashGap={4}
+            hideRules={false}
+            isAnimated
           />
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 16, gap: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#10b981' }} />
+              <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '500' }}>Gelir</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#f43f5e' }} />
+              <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '500' }}>Gider</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.chartContainer}>
