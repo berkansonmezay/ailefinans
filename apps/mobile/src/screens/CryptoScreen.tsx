@@ -154,9 +154,7 @@ export const CryptoScreen = ({ navigation }: any) => {
           <Ionicons name="arrow-back" size={24} color="#1f2937" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Kripto Varlıklar</Text>
-        <TouchableOpacity onPress={() => handleAction('buy')} style={styles.addBtn}>
-          <Ionicons name="add" size={24} color="#10b981" />
-        </TouchableOpacity>
+        <View style={{ width: 24 }} />
       </View>
 
       {loading && data.length === 0 ? (
@@ -244,6 +242,10 @@ export const CryptoScreen = ({ navigation }: any) => {
           crypto={selectedCrypto}
         />
       )}
+
+      <TouchableOpacity style={styles.fab} onPress={() => handleAction('buy')}>
+        <Ionicons name="add" size={28} color="#ffffff" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -268,7 +270,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   backButton: { padding: 4 },
-  addBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 100 },
@@ -393,4 +394,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   emptyText: { textAlign: 'center', color: '#94a3b8', marginTop: 32, paddingHorizontal: 20 },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#10b981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 99,
+  },
 });
