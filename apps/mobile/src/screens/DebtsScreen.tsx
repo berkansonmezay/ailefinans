@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   kpiCard: {
-    width: (Dimensions.get('window').width - 32 - 12) / 2,
+    width: '48%',
     backgroundColor: '#ffffff',
     padding: 12,
     borderRadius: 12,
