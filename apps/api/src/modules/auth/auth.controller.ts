@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Put,
+  Get,
   Body,
   HttpCode,
   HttpStatus,
@@ -70,6 +71,14 @@ export class AuthController {
       dto.tenantId,
     );
     return success(result, "Aile değiştirildi.");
+  }
+
+  @UseGuards(AuthGuard("jwt"))
+  @Get("me")
+  @HttpCode(HttpStatus.OK)
+  async getProfile(@CurrentUser() user: any) {
+    const result = await this.authService.getProfile(user.userId);
+    return success(result, "Profil bilgileri getirildi.");
   }
 
   @UseGuards(AuthGuard("jwt"))

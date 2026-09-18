@@ -276,6 +276,41 @@ export class AuthService {
     return { message: "Çıkış başarılı." };
   }
 
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        memberships: {
+          where: { isActive: true },
+          include: { tenant: true },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException("Kullanıcı bulunamadı.");
+    }
+
+    const activeMembership = user.memberships[0];
+
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      activeTenantId: activeMembership?.tenantId,
+      activeTenantName: activeMembership?.tenant.name,
+      role: activeMembership?.role,
+      systemRole: user.systemRole,
+      tenants: user.memberships.map((m) => ({
+        id: m.tenantId,
+        name: m.tenant.name,
+        role: m.role,
+      })),
+    };
+  }
+
   async switchTenant(userId: string, tenantId: string) {
     const membership = await this.prisma.tenantMember.findUnique({
       where: { tenantId_userId: { tenantId, userId } },
