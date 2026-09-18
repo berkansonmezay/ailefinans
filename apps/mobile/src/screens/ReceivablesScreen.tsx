@@ -231,20 +231,19 @@ export const ReceivablesScreen = ({ navigation }: any) => {
     const progress = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
     const title = item.planTitle || item.description || item.debtorName || item.debtor || 'İsimsiz Alacak';
     const { width } = Dimensions.get('window');
-    const PLAN_CARD_WIDTH = (width - 32 - 12) / 2;
 
     return (
-      <View style={[styles.planCard, { width: PLAN_CARD_WIDTH }]}>
+      <View style={styles.planCard}>
         {/* Plan Header */}
         <TouchableOpacity style={styles.planHeader} onPress={() => toggleExpand(item.id)}>
           <View style={styles.planHeaderTop}>
-            <View style={[styles.planHeaderLeft, { flex: 1 }]}>
+            <View style={styles.planHeaderLeft}>
               <View style={styles.iconContainer}>
                 <Ionicons name="wallet" size={24} color="#10b981" />
               </View>
-              <View style={{ flex: 1, paddingRight: 4 }}>
-                <Text style={styles.planTitle} numberOfLines={1}>{title}</Text>
-                <Text style={styles.planSubtitle} numberOfLines={1}>{item.installmentCount || 1} Taksit • {formatCurrency(totalAmount, item.currency)}</Text>
+              <View style={{ paddingRight: 4 }}>
+                <Text style={styles.planTitle}>{title}</Text>
+                <Text style={styles.planSubtitle}>{item.installmentCount || 1} Taksit • {formatCurrency(totalAmount, item.currency)}</Text>
               </View>
             </View>
             <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#94a3b8" />
@@ -387,8 +386,6 @@ export const ReceivablesScreen = ({ navigation }: any) => {
       ) : (
         <FlatList
           key={viewMode}
-          numColumns={viewMode === 'plan' ? 2 : 1}
-          columnWrapperStyle={viewMode === 'plan' ? { justifyContent: 'space-between' } : undefined}
           data={viewMode === 'plan' ? filteredReceivables : filteredInstallments}
           keyExtractor={(item, index) => item.id || String(index)}
           contentContainerStyle={styles.listContent}
@@ -632,7 +629,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   
-  searchContainer: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 16, gap: 12 },
+  searchContainer: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 16, marginBottom: 16, gap: 12 },
   searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, height: 48, borderWidth: 1, borderColor: '#e2e8f0' },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, height: '100%', fontSize: 15, color: '#0f172a' },
