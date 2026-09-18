@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, 
-  ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Switch
+  ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Switch,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+
+const { width } = Dimensions.get('window');
 
 export const TransactionsScreen = ({ navigation }: any) => {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -286,56 +289,32 @@ export const TransactionsScreen = ({ navigation }: any) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={{ paddingTop: 16 }}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 16 }}
-        >
+      <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+        <View style={styles.kpiGrid}>
           {/* TOPLAM GELİR */}
           <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
-            <View style={styles.kpiIconWrapper}>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#10b981' }}>₺</Text>
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>TOPLAM GELİR</Text>
-              <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(totals.income)}</Text>
-            </View>
+            <Text style={styles.kpiLabel}>TOPLAM GELİR</Text>
+            <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(totals.income)}</Text>
           </View>
           
           {/* TOPLAM GİDER */}
           <View style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
-            <View style={[styles.kpiIconWrapper, { backgroundColor: '#ffe4e6' }]}>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#f43f5e' }}>₺</Text>
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>TOPLAM GİDER</Text>
-              <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(totals.expense)}</Text>
-            </View>
+            <Text style={styles.kpiLabel}>TOPLAM GİDER</Text>
+            <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(totals.expense)}</Text>
           </View>
           
           {/* NET BAKİYE */}
           <View style={[styles.kpiCard, { borderLeftColor: totals.balance >= 0 ? '#3b82f6' : '#64748b', borderLeftWidth: 4 }]}>
-            <View style={[styles.kpiIconWrapper, { backgroundColor: totals.balance >= 0 ? '#dbeafe' : '#f1f5f9' }]}>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', color: totals.balance >= 0 ? '#3b82f6' : '#64748b' }}>₺</Text>
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>NET BAKİYE</Text>
-              <Text style={[styles.kpiValue, { color: totals.balance >= 0 ? '#3b82f6' : '#64748b' }]}>{formatCurrency(totals.balance)}</Text>
-            </View>
+            <Text style={styles.kpiLabel}>NET BAKİYE</Text>
+            <Text style={[styles.kpiValue, { color: totals.balance >= 0 ? '#3b82f6' : '#64748b' }]}>{formatCurrency(totals.balance)}</Text>
           </View>
           
           {/* İŞLEM SAYISI */}
           <View style={[styles.kpiCard, { borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
-            <View style={[styles.kpiIconWrapper, { backgroundColor: '#ede9fe' }]}>
-              <Ionicons name="document-text" size={18} color="#8b5cf6" />
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>İŞLEM SAYISI</Text>
-              <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>{filteredTransactions.length} Adet</Text>
-            </View>
+            <Text style={styles.kpiLabel}>İŞLEM SAYISI</Text>
+            <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>{filteredTransactions.length} Adet</Text>
           </View>
-        </ScrollView>
+        </View>
       </View>
 
       {/* Search & Filter Bar */}
@@ -642,36 +621,34 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
   
+  kpiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   kpiCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    width: 160,
+    width: (width - 32 - 12) / 2,
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
     shadowColor: '#64748b',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
-  kpiIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#ecfdf5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
   kpiLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: '#64748b',
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   kpiValue: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '900',
     color: '#1e293b',
   },
 
