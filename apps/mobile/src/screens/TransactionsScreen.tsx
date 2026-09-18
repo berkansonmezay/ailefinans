@@ -142,6 +142,25 @@ export const TransactionsScreen = ({ navigation }: any) => {
     });
   }, [transactions, searchQuery, filterCategoryId, filterMerchantId, filterVade]);
 
+  const totals = React.useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    
+    filteredTransactions.forEach(tx => {
+      if (tx.type === 'INCOME') {
+        income += Number(tx.amount || 0);
+      } else {
+        expense += Number(tx.amount || 0);
+      }
+    });
+
+    return {
+      income,
+      expense,
+      balance: income - expense
+    };
+  }, [filteredTransactions]);
+
   const parseAmountValue = (val: any) => {
     if (val === undefined || val === null || val === '') return NaN;
     if (typeof val === 'number') return val;
@@ -265,6 +284,58 @@ export const TransactionsScreen = ({ navigation }: any) => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>İşlemler</Text>
         <View style={{ width: 24 }} />
+      </View>
+
+      <View style={{ paddingTop: 16 }}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 16 }}
+        >
+          {/* TOPLAM GELİR */}
+          <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
+            <View style={styles.kpiIconWrapper}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#10b981' }}>₺</Text>
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>TOPLAM GELİR</Text>
+              <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(totals.income)}</Text>
+            </View>
+          </View>
+          
+          {/* TOPLAM GİDER */}
+          <View style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
+            <View style={[styles.kpiIconWrapper, { backgroundColor: '#ffe4e6' }]}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#f43f5e' }}>₺</Text>
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>TOPLAM GİDER</Text>
+              <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(totals.expense)}</Text>
+            </View>
+          </View>
+          
+          {/* NET BAKİYE */}
+          <View style={[styles.kpiCard, { borderLeftColor: totals.balance >= 0 ? '#3b82f6' : '#64748b', borderLeftWidth: 4 }]}>
+            <View style={[styles.kpiIconWrapper, { backgroundColor: totals.balance >= 0 ? '#dbeafe' : '#f1f5f9' }]}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: totals.balance >= 0 ? '#3b82f6' : '#64748b' }}>₺</Text>
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>NET BAKİYE</Text>
+              <Text style={[styles.kpiValue, { color: totals.balance >= 0 ? '#3b82f6' : '#64748b' }]}>{formatCurrency(totals.balance)}</Text>
+            </View>
+          </View>
+          
+          {/* İŞLEM SAYISI */}
+          <View style={[styles.kpiCard, { borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
+            <View style={[styles.kpiIconWrapper, { backgroundColor: '#ede9fe' }]}>
+              <Ionicons name="document-text" size={18} color="#8b5cf6" />
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>İŞLEM SAYISI</Text>
+              <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>{filteredTransactions.length} Adet</Text>
+            </View>
+          </View>
+        </ScrollView>
       </View>
 
       {/* Search & Filter Bar */}
@@ -570,6 +641,40 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  
+  kpiCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
+    width: 160,
+    shadowColor: '#64748b',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  kpiIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#ecfdf5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  kpiLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94a3b8',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  kpiValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1e293b',
+  },
+
   searchBarContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
