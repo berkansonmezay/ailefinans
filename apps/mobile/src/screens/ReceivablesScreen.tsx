@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, ActivityIndicator, Alert, TextInput, Modal
+  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, ActivityIndicator, Alert, TextInput, Modal, ScrollView, Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
@@ -158,6 +158,72 @@ export const ReceivablesScreen = ({ navigation }: any) => {
 
   const activeFiltersCount = (filters.status !== 'ALL' ? 1 : 0);
 
+  const stats = useMemo(() => {
+    const now = new Date();
+    let totalAmount = 0;
+    let pendingAmount = 0;
+    let overdueAmount = 0;
+    let paidAmount = 0;
+
+    let totalInstallmentsCount = 0;
+    let pendingCount = 0;
+    let overdueCount = 0;
+    let paidCount = 0;
+    let totalOverdueDays = 0;
+
+    if (filteredInstallments.length > 0) {
+      totalInstallmentsCount = filteredInstallments.length;
+
+      filteredInstallments.forEach(inst => {
+        const amt = Number(inst.amount) || 0;
+        totalAmount += amt;
+
+        if (inst.status === 'PAID') {
+          paidAmount += amt;
+          paidCount++;
+        } else {
+          const dueDate = new Date(inst.transactionDate || inst.dueDate);
+          if (dueDate < now) {
+            overdueAmount += amt;
+            overdueCount++;
+            const diffDays = Math.max(1, Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+            totalOverdueDays += diffDays;
+          } else {
+            pendingAmount += amt;
+            pendingCount++;
+          }
+        }
+      });
+    } else {
+      receivables.forEach(item => {
+        const total = Number(item.totalAmount) || Number(item.principalAmount) || 0;
+        const paid = Number(item.paidAmount) || 0;
+        const remaining = Number(item.remainingAmount) || Math.max(0, total - paid);
+
+        totalAmount += total;
+        paidAmount += paid;
+        pendingAmount += remaining;
+        totalInstallmentsCount += (item.installmentCount || 1);
+      });
+    }
+
+    const performanceRate = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+    const overdueAvgDays = overdueCount > 0 ? Math.round(totalOverdueDays / overdueCount) : 0;
+
+    return {
+      totalAmount,
+      totalInstallmentsCount,
+      pendingAmount,
+      pendingCount,
+      overdueAmount,
+      overdueCount,
+      overdueAvgDays,
+      paidAmount,
+      paidCount,
+      performanceRate,
+    };
+  }, [receivables, filteredInstallments]);
+
   const renderPlanItem = ({ item }: { item: any }) => {
     const isExpanded = !!expandedPlans[item.id] || filters.status !== 'ALL';
     const totalAmount = item.totalAmount || item.principalAmount || 0;
@@ -312,6 +378,96 @@ export const ReceivablesScreen = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
 
+      <View style={{ paddingTop: 16 }}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 16 }}
+        >
+          {/* TOPLAM TUTAR */}
+          <View style={[styles.kpiCard, { borderLeftColor: '#3b82f6', borderLeftWidth: 4 }]}>
+            <View style={[styles.kpiIconWrapper, { backgroundColor: '#eff6ff' }]}>
+              <Ionicons name="cash" size={18} color="#3b82f6" />
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>TOPLAM TUTAR</Text>
+              <Text style={[styles.kpiValue, { color: '#3b82f6' }]}>{formatCurrency(stats.totalAmount)}</Text>
+              <Text style={styles.kpiSubText}>{stats.totalInstallmentsCount} taksit</Text>
+            </View>
+          </View>
+          
+          {/* BEKLEYEN */}
+          <View style={[styles.kpiCard, { borderLeftColor: '#f59e0b', borderLeftWidth: 4 }]}>
+            <View style={[styles.kpiIconWrapper, { backgroundColor: '#fef3c7' }]}>
+              <Ionicons name="time" size={18} color="#f59e0b" />
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>BEKLEYEN</Text>
+              <Text style={[styles.kpiValue, { color: '#f59e0b' }]}>{formatCurrency(stats.pendingAmount)}</Text>
+              <Text style={styles.kpiSubText}>{stats.pendingCount} taksit</Text>
+            </View>
+          </View>
+          
+          {/* GECİKMİŞ */}
+          <View style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
+            <View style={[styles.kpiIconWrapper, { backgroundColor: '#ffe4e6' }]}>
+              <Ionicons name="alert-circle" size={18} color="#f43f5e" />
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>GECİKMİŞ</Text>
+              <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(stats.overdueAmount)}</Text>
+              <Text style={styles.kpiSubText}>{stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}</Text>
+            </View>
+          </View>
+          
+          {/* TAHSİL EDİLEN */}
+          <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
+            <View style={[styles.kpiIconWrapper, { backgroundColor: '#d1fae5' }]}>
+              <Ionicons name="checkmark-circle" size={18} color="#10b981" />
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>TAHSİL EDİLEN</Text>
+              <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(stats.paidAmount)}</Text>
+              <Text style={styles.kpiSubText}>{stats.paidCount} taksit</Text>
+            </View>
+          </View>
+
+          {/* PERFORMANS */}
+          <View style={[styles.kpiCard, { borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
+            <View style={[styles.kpiIconWrapper, { backgroundColor: '#ede9fe' }]}>
+              <Ionicons name="pie-chart" size={18} color="#8b5cf6" />
+            </View>
+            <View>
+              <Text style={styles.kpiLabel}>PERFORMANS</Text>
+              <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>%{stats.performanceRate}</Text>
+              <Text style={[styles.kpiSubText, { color: '#10b981', fontWeight: '600' }]}>↑ Tahsilat Oranı</Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Info Box */}
+        <View style={[
+          styles.infoBox, 
+          stats.overdueCount > 0 ? styles.infoBoxDanger : styles.infoBoxSuccess
+        ]}>
+          <View style={[styles.infoBoxIcon, stats.overdueCount > 0 ? { backgroundColor: '#ffe4e6' } : { backgroundColor: '#d1fae5' }]}>
+            <Ionicons name={stats.overdueCount > 0 ? "warning" : "star"} size={20} color={stats.overdueCount > 0 ? "#f43f5e" : "#10b981"} />
+          </View>
+          <View style={styles.infoBoxTextContainer}>
+            <Text style={[styles.infoBoxTitle, { color: stats.overdueCount > 0 ? '#f43f5e' : '#10b981' }]}>
+              {stats.overdueCount > 0 ? 'Gecikmiş Alacak Hatırlatması' : 'Taksitli Alacak Durumu İyi'}
+            </Text>
+            <Text style={styles.infoBoxText}>
+              {stats.overdueCount > 0 ? (
+                `Şu anda vadesi geçmiş toplam ${stats.overdueCount} taksit (${formatCurrency(stats.overdueAmount)}) bulunmaktadır (ortalama gecikme: ${stats.overdueAvgDays} gün).`
+              ) : (
+                `Tebrikler! Vadesi geçmiş herhangi bir taksitli alacağınız bulunmamaktadır. Önümüzdeki vadelerde toplam ${formatCurrency(stats.pendingAmount)} tutarında ${stats.pendingCount} taksit tahsilatı beklenmektedir.`
+              )}
+            </Text>
+          </View>
+        </View>
+      </View>
+
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
@@ -427,6 +583,76 @@ const styles = StyleSheet.create({
   toggleBtn: { padding: 4, backgroundColor: '#f1f5f9', borderRadius: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  
+  kpiCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
+    width: 170,
+    shadowColor: '#64748b',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  kpiIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  kpiLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94a3b8',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  kpiValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  kpiSubText: {
+    fontSize: 11,
+    color: '#94a3b8',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'flex-start',
+  },
+  infoBoxSuccess: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#a7f3d0',
+  },
+  infoBoxDanger: {
+    backgroundColor: '#fff1f2',
+    borderColor: '#fecdd3',
+  },
+  infoBoxIcon: {
+    padding: 8,
+    borderRadius: 12,
+    marginRight: 12,
+  },
+  infoBoxTextContainer: {
+    flex: 1,
+  },
+  infoBoxTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  infoBoxText: {
+    fontSize: 12,
+    color: '#475569',
+    lineHeight: 18,
+  },
   
   searchContainer: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 16, gap: 12 },
   searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, height: 48, borderWidth: 1, borderColor: '#e2e8f0' },
