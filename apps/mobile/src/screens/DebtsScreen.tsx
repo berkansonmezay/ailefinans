@@ -401,87 +401,6 @@ export const DebtsScreen = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
-        <View style={styles.kpiGrid}>
-          {/* TOPLAM TUTAR */}
-          <View style={[styles.kpiCard, { borderLeftColor: '#3b82f6', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>TOPLAM TUTAR</Text>
-            <Text style={[styles.kpiValue, { color: '#3b82f6' }]}>{formatCurrency(stats.totalAmount)}</Text>
-            <Text style={styles.kpiSubText}>{stats.totalInstallmentsCount} taksit</Text>
-          </View>
-          
-          {/* BEKLEYEN */}
-          <View style={[styles.kpiCard, { borderLeftColor: '#f59e0b', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>BEKLEYEN</Text>
-            <Text style={[styles.kpiValue, { color: '#f59e0b' }]}>{formatCurrency(stats.pendingAmount)}</Text>
-            <Text style={styles.kpiSubText}>{stats.pendingCount} taksit</Text>
-          </View>
-          
-          {/* GECİKMİŞ */}
-          <View style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>GECİKMİŞ</Text>
-            <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(stats.overdueAmount)}</Text>
-            <Text style={styles.kpiSubText}>{stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}</Text>
-          </View>
-          
-          {/* ÖDENEN */}
-          <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>ÖDENEN</Text>
-            <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(stats.paidAmount)}</Text>
-            <Text style={styles.kpiSubText}>{stats.paidCount} taksit</Text>
-          </View>
-
-          {/* PERFORMANS */}
-          <View style={[styles.kpiCard, { borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>PERFORMANS</Text>
-            <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>%{stats.performanceRate}</Text>
-            <Text style={[styles.kpiSubText, { color: '#10b981', fontWeight: '600' }]}>↑ Ödeme Oranı</Text>
-          </View>
-        </View>
-
-        {/* Info Box */}
-        <View style={[
-          styles.infoBox, 
-          stats.overdueCount > 0 ? styles.infoBoxDanger : styles.infoBoxSuccess
-        ]}>
-          <View style={[styles.infoBoxIcon, stats.overdueCount > 0 ? { backgroundColor: '#ffe4e6' } : { backgroundColor: '#d1fae5' }]}>
-            <Ionicons name={stats.overdueCount > 0 ? "warning" : "star"} size={20} color={stats.overdueCount > 0 ? "#f43f5e" : "#10b981"} />
-          </View>
-          <View style={styles.infoBoxTextContainer}>
-            <Text style={[styles.infoBoxTitle, { color: stats.overdueCount > 0 ? '#f43f5e' : '#10b981' }]}>
-              {stats.overdueCount > 0 ? 'Gecikmiş Borç Hatırlatması' : 'Taksitli Borç Durumu İyi'}
-            </Text>
-            <Text style={styles.infoBoxText}>
-              {stats.overdueCount > 0 ? (
-                `Şu anda vadesi geçmiş toplam ${stats.overdueCount} taksit (${formatCurrency(stats.overdueAmount)}) bulunmaktadır (ortalama gecikme: ${stats.overdueAvgDays} gün). Bu ödemeleri en kısa sürede tamamlamanız tavsiye edilir.`
-              ) : (
-                `Tebrikler! Vadesi geçmiş herhangi bir taksitli borcunuz bulunmamaktadır. Önümüzdeki vadelerde toplam ${formatCurrency(stats.pendingAmount)} tutarında ${stats.pendingCount} taksit ödemesi beklenmektedir.`
-              )}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
-          <TextInput 
-            style={styles.searchInput}
-            placeholder="Borç adı veya kişi ara..."
-            value={filters.search}
-            onChangeText={(t) => setFilters(prev => ({ ...prev, search: t }))}
-          />
-        </View>
-        <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFiltersOpen(true)}>
-          <Ionicons name="filter" size={20} color={activeFiltersCount > 0 ? '#4f46e5' : '#64748b'} />
-          {activeFiltersCount > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#f43f5e" />
@@ -494,6 +413,90 @@ export const DebtsScreen = ({ navigation }: any) => {
           renderItem={viewMode === 'plan' ? renderPlanItem : renderListItem}
           ListEmptyComponent={
             <Text style={styles.emptyText}>Henüz bir taksitli borç bulunmuyor.</Text>
+          }
+          ListHeaderComponent={
+            <>
+              <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+                <View style={styles.kpiGrid}>
+                  {/* TOPLAM TUTAR */}
+                  <View style={[styles.kpiCard, { borderLeftColor: '#3b82f6', borderLeftWidth: 4 }]}>
+                    <Text style={styles.kpiLabel}>TOPLAM TUTAR</Text>
+                    <Text style={[styles.kpiValue, { color: '#3b82f6' }]}>{formatCurrency(stats.totalAmount)}</Text>
+                    <Text style={styles.kpiSubText}>{stats.totalInstallmentsCount} taksit</Text>
+                  </View>
+                  
+                  {/* BEKLEYEN */}
+                  <View style={[styles.kpiCard, { borderLeftColor: '#f59e0b', borderLeftWidth: 4 }]}>
+                    <Text style={styles.kpiLabel}>BEKLEYEN</Text>
+                    <Text style={[styles.kpiValue, { color: '#f59e0b' }]}>{formatCurrency(stats.pendingAmount)}</Text>
+                    <Text style={styles.kpiSubText}>{stats.pendingCount} taksit</Text>
+                  </View>
+                  
+                  {/* GECİKMİŞ */}
+                  <View style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
+                    <Text style={styles.kpiLabel}>GECİKMİŞ</Text>
+                    <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(stats.overdueAmount)}</Text>
+                    <Text style={styles.kpiSubText}>{stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}</Text>
+                  </View>
+                  
+                  {/* ÖDENEN */}
+                  <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
+                    <Text style={styles.kpiLabel}>ÖDENEN</Text>
+                    <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(stats.paidAmount)}</Text>
+                    <Text style={styles.kpiSubText}>{stats.paidCount} taksit</Text>
+                  </View>
+
+                  {/* PERFORMANS */}
+                  <View style={[styles.kpiCard, { borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
+                    <Text style={styles.kpiLabel}>PERFORMANS</Text>
+                    <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>%{stats.performanceRate}</Text>
+                    <Text style={[styles.kpiSubText, { color: '#10b981', fontWeight: '600' }]}>↑ Ödeme Oranı</Text>
+                  </View>
+                </View>
+
+                {/* Info Box */}
+                <View style={[
+                  styles.infoBox, 
+                  stats.overdueCount > 0 ? styles.infoBoxDanger : styles.infoBoxSuccess
+                ]}>
+                  <View style={[styles.infoBoxIcon, stats.overdueCount > 0 ? { backgroundColor: '#ffe4e6' } : { backgroundColor: '#d1fae5' }]}>
+                    <Ionicons name={stats.overdueCount > 0 ? "warning" : "star"} size={20} color={stats.overdueCount > 0 ? "#f43f5e" : "#10b981"} />
+                  </View>
+                  <View style={styles.infoBoxTextContainer}>
+                    <Text style={[styles.infoBoxTitle, { color: stats.overdueCount > 0 ? '#f43f5e' : '#10b981' }]}>
+                      {stats.overdueCount > 0 ? 'Gecikmiş Borç Hatırlatması' : 'Taksitli Borç Durumu İyi'}
+                    </Text>
+                    <Text style={styles.infoBoxText}>
+                      {stats.overdueCount > 0 ? (
+                        `Şu anda vadesi geçmiş toplam ${stats.overdueCount} taksit (${formatCurrency(stats.overdueAmount)}) bulunmaktadır (ortalama gecikme: ${stats.overdueAvgDays} gün). Bu ödemeleri en kısa sürede tamamlamanız tavsiye edilir.`
+                      ) : (
+                        `Tebrikler! Vadesi geçmiş herhangi bir taksitli borcunuz bulunmamaktadır. Önümüzdeki vadelerde toplam ${formatCurrency(stats.pendingAmount)} tutarında ${stats.pendingCount} taksit ödemesi beklenmektedir.`
+                      )}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.searchContainer}>
+                <View style={styles.searchBox}>
+                  <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+                  <TextInput 
+                    style={styles.searchInput}
+                    placeholder="Borç adı veya kişi ara..."
+                    value={filters.search}
+                    onChangeText={(t) => setFilters(prev => ({ ...prev, search: t }))}
+                  />
+                </View>
+                <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFiltersOpen(true)}>
+                  <Ionicons name="filter" size={20} color={activeFiltersCount > 0 ? '#4f46e5' : '#64748b'} />
+                  {activeFiltersCount > 0 && (
+                    <View style={styles.filterBadge}>
+                      <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
           }
         />
       )}
