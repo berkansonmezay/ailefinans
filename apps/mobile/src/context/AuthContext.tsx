@@ -45,8 +45,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           try {
             const userData = await fetchApi<any>('/auth/me');
             setUser(userData.data || userData);
-          } catch (e) {
-            console.error('Initial user fetch error:', e);
+          } catch (e: any) {
+            if (e.message !== 'Unauthorized') {
+              console.error('Initial user fetch error:', e);
+            }
           }
         }
       } catch (error) {

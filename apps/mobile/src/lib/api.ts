@@ -55,8 +55,10 @@ export const fetchApi = async <T,>(
     const data = await response.json();
     // The backend returns { success: true, data: [...] }
     return data.data !== undefined ? data.data as T : data as T;
-  } catch (error) {
-    console.error(`API Error (${endpoint}):`, error);
+  } catch (error: any) {
+    if (error.message !== 'Unauthorized') {
+      console.error(`API Error (${endpoint}):`, error);
+    }
     throw error;
   }
 };
