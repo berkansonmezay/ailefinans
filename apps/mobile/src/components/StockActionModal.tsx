@@ -14,19 +14,75 @@ interface StockActionModalProps {
 }
 
 export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }: StockActionModalProps) => {
-  const [symbol, setSymbol] = useState(stock?.symbol || '');
-  const [quantity, setQuantity] = useState(action === 'edit' ? String(stock?.quantity || '') : '');
-  const [price, setPrice] = useState(action === 'edit' ? String(stock?.averageCost || '') : '');
+  const [symbol, setSymbol] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  
+  const skipSearchRef = React.useRef(false);
 
   // Reset states when modal opens
   React.useEffect(() => {
     if (visible) {
-      setSymbol(stock?.symbol || '');
+      const initSymbol = stock?.symbol || '';
+      setSymbol(initSymbol);
+      setSearchQuery(initSymbol);
       setQuantity(action === 'edit' ? String(stock?.quantity || '') : '');
       setPrice(action === 'edit' ? String(stock?.averageCost || '') : '');
+      setSearchResults([]);
+      setShowDropdown(false);
     }
-  }, [visible, action, stock]);
+  }, [visible]);
+
+  React.useEffect(() => {
+    if (!searchQuery || searchQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    if (skipSearchRef.current) {
+      skipSearchRef.current = false;
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const results = await fetchApi<any[]>(`/stocks/search?q=${searchQuery}`);
+        setSearchResults(results || []);
+        setShowDropdown(true);
+      } catch (error) {
+        console.error('Search failed:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSelectStock = async (selectedSymbol: string) => {
+    let finalSymbol = selectedSymbol.toUpperCase();
+    skipSearchRef.current = true;
+    setSymbol(finalSymbol);
+    setSearchQuery(finalSymbol);
+    setShowDropdown(false);
+
+    try {
+      const cleanSymbol = finalSymbol.replace('.IS', '');
+      const quote = await fetchApi<any>(`/stocks/${cleanSymbol}/quote`);
+      if (quote && quote.regularMarketPrice) {
+        setPrice(quote.regularMarketPrice.toString());
+      }
+    } catch (error) {
+      // Silently ignore if quote fails
+    }
+  };
 
   const handleSubmit = async () => {
     if (!symbol || !quantity || !price) {
@@ -109,16 +165,41 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
           </View>
 
           <View style={styles.form}>
-            <View style={styles.inputGroup}>
+            <View style={[styles.inputGroup, { zIndex: 100 }]}>
               <Text style={styles.label}>Hisse Kodu (Örn: THYAO)</Text>
               <TextInput
                 style={styles.input}
-                value={symbol}
-                onChangeText={setSymbol}
-                placeholder="THYAO"
+                value={searchQuery}
+                onChangeText={(text) => {
+                  setSearchQuery(text);
+                  setSymbol(text);
+                  setShowDropdown(true);
+                }}
+                placeholder="Hisse Ara... (örn: THYAO)"
                 autoCapitalize="characters"
                 editable={action === 'buy' && !stock} // Only editable for new buys without selected stock
               />
+              
+              {showDropdown && (searchQuery.length >= 2) && (
+                <View style={styles.dropdown}>
+                  {isSearching ? (
+                    <Text style={styles.dropdownEmptyText}>Aranıyor...</Text>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.map((result, idx) => (
+                      <TouchableOpacity 
+                        key={idx} 
+                        style={styles.dropdownItem}
+                        onPress={() => handleSelectStock(result.symbol)}
+                      >
+                        <Text style={styles.dropdownSymbol}>{result.symbol}</Text>
+                        <Text style={styles.dropdownName} numberOfLines={1}>{result.shortname || result.longname}</Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <Text style={styles.dropdownEmptyText}>Sonuç bulunamadı</Text>
+                  )}
+                </View>
+              )}
             </View>
 
             <View style={styles.row}>
@@ -227,5 +308,48 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 76,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    maxHeight: 200,
+    zIndex: 100,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  dropdownSymbol: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  dropdownName: {
+    fontSize: 12,
+    color: '#64748b',
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 8,
+  },
+  dropdownEmptyText: {
+    padding: 16,
+    textAlign: 'center',
+    color: '#94a3b8',
+    fontSize: 13,
   },
 });
