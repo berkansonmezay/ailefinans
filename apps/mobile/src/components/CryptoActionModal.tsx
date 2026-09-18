@@ -14,18 +14,65 @@ interface CryptoActionModalProps {
 }
 
 export const CryptoActionModal = ({ visible, onClose, onSuccess, action, crypto }: CryptoActionModalProps) => {
-  const [symbol, setSymbol] = useState(crypto?.symbol || '');
-  const [quantity, setQuantity] = useState(action === 'edit' ? String(crypto?.quantity || '') : '');
-  const [price, setPrice] = useState(action === 'edit' ? String(crypto?.averageCost || '') : '');
+  const [symbol, setSymbol] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   React.useEffect(() => {
     if (visible) {
-      setSymbol(crypto?.symbol || '');
+      const initSymbol = crypto?.symbol || '';
+      setSymbol(initSymbol);
+      setSearchQuery(initSymbol);
       setQuantity(action === 'edit' ? String(crypto?.quantity || '') : '');
       setPrice(action === 'edit' ? String(crypto?.averageCost || '') : '');
+      setSearchResults([]);
+      setShowDropdown(false);
     }
-  }, [visible, action, crypto]);
+  }, [visible]); // Only run when visible changes to avoid losing focus on every prop change
+
+  React.useEffect(() => {
+    if (!searchQuery || searchQuery.length < 2 || searchQuery === symbol) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const results = await fetchApi<any[]>(`/crypto/search?q=${searchQuery}`);
+        setSearchResults(results || []);
+        setShowDropdown(true);
+      } catch (error) {
+        console.error('Search failed:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, symbol]);
+
+  const handleSelectCrypto = async (selectedSymbol: string) => {
+    let finalSymbol = selectedSymbol.toUpperCase();
+    setSymbol(finalSymbol);
+    setSearchQuery(finalSymbol);
+    setShowDropdown(false);
+
+    try {
+      const quote = await fetchApi<any>(`/crypto/${finalSymbol}/quote`);
+      if (quote && quote.regularMarketPrice) {
+        setPrice(quote.regularMarketPrice.toString());
+      }
+    } catch (error) {
+      // Silently ignore if quote fails
+    }
+  };
 
   const handleSubmit = async () => {
     if (!symbol || !quantity || !price) {
@@ -104,16 +151,41 @@ export const CryptoActionModal = ({ visible, onClose, onSuccess, action, crypto 
 
           <View style={styles.form}>
             {(!crypto || action === 'buy') && (
-              <View style={styles.inputGroup}>
+              <View style={[styles.inputGroup, { zIndex: 100 }]}>
                 <Text style={styles.label}>Sembol (Örn: BTC)</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="BTC"
-                  value={symbol}
-                  onChangeText={setSymbol}
+                  placeholder="Kripto Ara... (örn: BTC)"
+                  value={searchQuery}
+                  onChangeText={(text) => {
+                    setSearchQuery(text.toUpperCase());
+                    setSymbol(text.toUpperCase());
+                    setShowDropdown(true);
+                  }}
                   autoCapitalize="characters"
                   editable={action !== 'edit'}
                 />
+                
+                {showDropdown && (searchQuery.length >= 2) && (
+                  <View style={styles.dropdown}>
+                    {isSearching ? (
+                      <Text style={styles.dropdownEmptyText}>Aranıyor...</Text>
+                    ) : searchResults.length > 0 ? (
+                      searchResults.map((result, idx) => (
+                        <TouchableOpacity 
+                          key={idx} 
+                          style={styles.dropdownItem}
+                          onPress={() => handleSelectCrypto(result.symbol)}
+                        >
+                          <Text style={styles.dropdownSymbol}>{result.symbol}</Text>
+                          <Text style={styles.dropdownName} numberOfLines={1}>{result.shortname || result.longname}</Text>
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <Text style={styles.dropdownEmptyText}>Sonuç bulunamadı</Text>
+                    )}
+                  </View>
+                )}
               </View>
             )}
 
@@ -218,5 +290,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 76,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    maxHeight: 200,
+    zIndex: 100,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  dropdownSymbol: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  dropdownName: {
+    fontSize: 12,
+    color: '#64748b',
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 8,
+  },
+  dropdownEmptyText: {
+    padding: 16,
+    textAlign: 'center',
+    color: '#94a3b8',
+    fontSize: 13,
   },
 });
