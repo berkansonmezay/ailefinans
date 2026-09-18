@@ -13,7 +13,14 @@ export const TransactionsScreen = ({ navigation }: any) => {
   const [merchants, setMerchants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filters State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterVade, setFilterVade] = useState('');
+  const [filterCategoryId, setFilterCategoryId] = useState('Tümü');
+  const [filterMerchantId, setFilterMerchantId] = useState('Tümü');
 
   // Form State
   const [type, setType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
@@ -52,13 +59,17 @@ export const TransactionsScreen = ({ navigation }: any) => {
       const expList = expArray.map((t: any) => ({ ...t, type: 'EXPENSE' }));
       const incList = incArray.map((t: any) => ({ ...t, type: 'INCOME' }));
       
-      const allTx = [...expList, ...incList].sort(
-        (a, b) => new Date(b.transactionDate || b.date).getTime() - new Date(a.transactionDate || a.date).getTime()
-      );
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const allTx = [...expList, ...incList]
+        .filter(tx => new Date(tx.transactionDate || tx.date).getTime() <= todayEnd.getTime())
+        .sort((a, b) => new Date(b.transactionDate || b.date).getTime() - new Date(a.transactionDate || a.date).getTime());
 
       const populatedTx = allTx.map((tx: any) => ({
         ...tx,
         category: catArray.find((c: any) => c.id === tx.categoryId),
+        merchant: merArray.find((m: any) => m.id === tx.merchantId) || accArray.find((a: any) => a.id === (tx.accountId || tx.merchantId)),
       }));
 
       setTransactions(populatedTx);
@@ -85,6 +96,51 @@ export const TransactionsScreen = ({ navigation }: any) => {
   useEffect(() => {
     loadData();
   }, []);
+
+  const filteredTransactions = React.useMemo(() => {
+    return transactions.filter(tx => {
+      // Search
+      if (searchQuery) {
+        const lowerQ = searchQuery.toLowerCase();
+        const descMatch = tx.description?.toLowerCase().includes(lowerQ);
+        const catMatch = tx.category?.name?.toLowerCase().includes(lowerQ);
+        const merMatch = tx.merchant?.name?.toLowerCase().includes(lowerQ);
+        const typeMatch = (tx.type === 'INCOME' ? 'gelir' : 'gider').includes(lowerQ);
+        if (!descMatch && !catMatch && !merMatch && !typeMatch) return false;
+      }
+
+      // Category
+      if (filterCategoryId !== 'Tümü' && tx.categoryId !== filterCategoryId) {
+        return false;
+      }
+
+      // Merchant/Account
+      if (filterMerchantId !== 'Tümü') {
+        const txAcc = tx.accountId || tx.merchantId || tx.merchant?.id;
+        if (txAcc !== filterMerchantId) return false;
+      }
+
+      // Vade (Date)
+      if (filterVade) {
+        const txTime = new Date(tx.transactionDate || tx.date).getTime();
+        const today = new Date();
+        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+
+        if (filterVade === 'Bugün' && (txTime < startOfToday || txTime >= startOfToday + oneDayMs)) return false;
+        if (filterVade === 'Bu Hafta' && txTime < startOfToday - (today.getDay() * oneDayMs)) return false;
+        if (filterVade === 'Bu Ay' && (new Date(txTime).getMonth() !== today.getMonth() || new Date(txTime).getFullYear() !== today.getFullYear())) return false;
+        if (filterVade === 'Geçen Ay') {
+          const lastMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+          const lastMonthYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+          if (new Date(txTime).getMonth() !== lastMonth || new Date(txTime).getFullYear() !== lastMonthYear) return false;
+        }
+        if (filterVade === '15 Gün' && txTime < startOfToday - (15 * oneDayMs)) return false;
+      }
+
+      return true;
+    });
+  }, [transactions, searchQuery, filterCategoryId, filterMerchantId, filterVade]);
 
   const parseAmountValue = (val: any) => {
     if (val === undefined || val === null || val === '') return NaN;
@@ -211,13 +267,32 @@ export const TransactionsScreen = ({ navigation }: any) => {
         <View style={{ width: 24 }} />
       </View>
 
+      {/* Search & Filter Bar */}
+      <View style={styles.searchBarContainer}>
+        <View style={styles.searchInputWrapper}>
+          <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="İşlem ara..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+        <TouchableOpacity 
+          style={[styles.filterButton, (filterVade || filterCategoryId !== 'Tümü' || filterMerchantId !== 'Tümü') && styles.filterButtonActive]} 
+          onPress={() => setIsFilterModalVisible(true)}
+        >
+          <Ionicons name="filter" size={20} color={(filterVade || filterCategoryId !== 'Tümü' || filterMerchantId !== 'Tümü') ? '#fff' : '#64748b'} />
+        </TouchableOpacity>
+      </View>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#6366f1" />
         </View>
       ) : (
         <FlatList
-          data={transactions}
+          data={filteredTransactions}
           keyExtractor={(item, index) => item.id || String(index)}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
@@ -299,17 +374,8 @@ export const TransactionsScreen = ({ navigation }: any) => {
                 onChangeText={setDate}
               />
 
-              <Text style={styles.inputLabel}>Hesap / Harcama Yeri</Text>
+              <Text style={styles.inputLabel}>Harcama Yeri</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20, flexGrow: 0 }}>
-                {accounts.map(a => (
-                  <TouchableOpacity 
-                    key={a.id} 
-                    style={[styles.catChip, merchantId === a.id && styles.catChipActive, { marginRight: 8 }]}
-                    onPress={() => setMerchantId(a.id)}
-                  >
-                    <Text style={[styles.catChipText, merchantId === a.id && styles.catChipTextActive]}>🏦 {a.name}</Text>
-                  </TouchableOpacity>
-                ))}
                 {merchants.map(m => (
                   <TouchableOpacity 
                     key={m.id} 
@@ -383,6 +449,102 @@ export const TransactionsScreen = ({ navigation }: any) => {
         </KeyboardAvoidingView>
       </Modal>
 
+      {/* Filter Modal */}
+      <Modal visible={isFilterModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filtreler</Text>
+              <TouchableOpacity onPress={() => setIsFilterModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.inputLabel}>VADE</Text>
+              <View style={styles.catGrid}>
+                {['Bugün', 'Bu Hafta', '15 Gün', 'Bu Ay', 'Geçen Ay', 'Geçmiş'].map(vade => (
+                  <TouchableOpacity 
+                    key={vade} 
+                    style={[styles.catChip, filterVade === vade && styles.catChipActive]}
+                    onPress={() => setFilterVade(vade === filterVade ? '' : vade)}
+                  >
+                    <Text style={[styles.catChipText, filterVade === vade && styles.catChipTextActive]}>{vade}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.inputLabel}>KATEGORİ</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24, flexGrow: 0 }}>
+                <TouchableOpacity 
+                  style={[styles.catChip, filterCategoryId === 'Tümü' && styles.catChipActive, { marginRight: 8 }]}
+                  onPress={() => setFilterCategoryId('Tümü')}
+                >
+                  <Text style={[styles.catChipText, filterCategoryId === 'Tümü' && styles.catChipTextActive]}>Tümü</Text>
+                </TouchableOpacity>
+                {categories.map(c => (
+                  <TouchableOpacity 
+                    key={c.id} 
+                    style={[styles.catChip, filterCategoryId === c.id && styles.catChipActive, { marginRight: 8 }]}
+                    onPress={() => setFilterCategoryId(c.id)}
+                  >
+                    <Text style={[styles.catChipText, filterCategoryId === c.id && styles.catChipTextActive]}>{c.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={styles.inputLabel}>HARCAMA YERİ / HESAP</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 32, flexGrow: 0 }}>
+                <TouchableOpacity 
+                  style={[styles.catChip, filterMerchantId === 'Tümü' && styles.catChipActive, { marginRight: 8 }]}
+                  onPress={() => setFilterMerchantId('Tümü')}
+                >
+                  <Text style={[styles.catChipText, filterMerchantId === 'Tümü' && styles.catChipTextActive]}>Tümü</Text>
+                </TouchableOpacity>
+                {merchants.map(m => (
+                  <TouchableOpacity 
+                    key={m.id} 
+                    style={[styles.catChip, filterMerchantId === m.id && styles.catChipActive, { marginRight: 8 }]}
+                    onPress={() => setFilterMerchantId(m.id)}
+                  >
+                    <Text style={[styles.catChipText, filterMerchantId === m.id && styles.catChipTextActive]}>🏪 {m.name}</Text>
+                  </TouchableOpacity>
+                ))}
+                {accounts.map(a => (
+                  <TouchableOpacity 
+                    key={a.id} 
+                    style={[styles.catChip, filterMerchantId === a.id && styles.catChipActive, { marginRight: 8 }]}
+                    onPress={() => setFilterMerchantId(a.id)}
+                  >
+                    <Text style={[styles.catChipText, filterMerchantId === a.id && styles.catChipTextActive]}>🏦 {a.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <TouchableOpacity 
+                  style={[styles.submitBtn, { flex: 1, backgroundColor: '#f1f5f9' }]} 
+                  onPress={() => {
+                    setFilterVade('');
+                    setFilterCategoryId('Tümü');
+                    setFilterMerchantId('Tümü');
+                  }}
+                >
+                  <Text style={[styles.submitBtnText, { color: '#64748b' }]}>Temizle</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.submitBtn, { flex: 2 }]} 
+                  onPress={() => setIsFilterModalVisible(false)}
+                >
+                  <Text style={styles.submitBtnText}>Uygula</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -408,8 +570,45 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  searchBarContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    gap: 12,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  searchIcon: { marginRight: 8 },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 15,
+    color: '#0f172a',
+  },
+  filterButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  filterButtonActive: {
+    backgroundColor: '#6366f1',
+    borderColor: '#6366f1',
+  },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { padding: 16, paddingBottom: 100 },
+  listContent: { padding: 16, paddingTop: 4, paddingBottom: 100 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

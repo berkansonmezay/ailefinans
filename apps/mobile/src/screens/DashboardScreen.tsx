@@ -73,11 +73,19 @@ export const DashboardScreen = ({ navigation }: any) => {
           <Text style={styles.userName}>{displayName}</Text>
         </View>
 
-        <View style={styles.bellContainer}>
-          <Ionicons name="notifications-outline" size={24} color="#111827" />
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>10</Text>
-          </View>
+        <View style={styles.rightIconsContainer}>
+          <TouchableOpacity style={styles.bellContainer}>
+            <Ionicons name="notifications-outline" size={24} color="#111827" />
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>10</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingsContainer}
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <Ionicons name="settings-outline" size={24} color="#111827" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -169,8 +177,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1f2937',
   },
+  rightIconsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   bellContainer: {
     position: 'relative',
+    padding: 4,
+  },
+  settingsContainer: {
     padding: 4,
   },
   badge: {
@@ -208,10 +224,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   logoTextMain: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#0f172a',
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
   gridContainer: {
     flexDirection: 'row',
