@@ -326,11 +326,11 @@ export const ReceivablesScreen = ({ navigation }: any) => {
     else if (isOverdue) { statusColor = '#f43f5e'; statusText = 'Gecikti'; }
 
     return (
-      <View style={[styles.planCard, { padding: 16 }]}>
+      <View style={styles.planCard}>
         <View style={styles.listRowHeader}>
           <View style={styles.planHeaderLeft}>
-            <View style={[styles.iconContainer, { width: 36, height: 36, borderRadius: 10 }]}>
-              <Ionicons name="cash" size={20} color="#10b981" />
+            <View style={styles.iconContainer}>
+              <Ionicons name="wallet" size={24} color="#10b981" />
             </View>
             <View>
               <Text style={styles.planTitle}>{item.planTitle}</Text>
@@ -639,24 +639,29 @@ const styles = StyleSheet.create({
   
   planCard: {
     backgroundColor: '#fff',
+    padding: 16,
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     shadowColor: '#64748b',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
-    overflow: 'hidden',
   },
-  planHeader: { padding: 16 },
+  planHeader: { padding: 0 },
   planHeaderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   planHeaderLeft: { flexDirection: 'row', alignItems: 'center' },
   iconContainer: { 
-    width: 44, height: 44, borderRadius: 12, backgroundColor: '#ecfdf5', 
-    alignItems: 'center', justifyContent: 'center', marginRight: 12 
+    marginRight: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  planTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a', marginBottom: 4 },
-  planSubtitle: { fontSize: 13, color: '#64748b', fontWeight: '500' },
+  planTitle: { fontSize: 16, fontWeight: '700', color: '#1e293b', marginBottom: 2 },
+  planSubtitle: { fontSize: 13, color: '#64748b' },
   
   progressContainer: { marginBottom: 16 },
   progressBarBg: { height: 8, backgroundColor: '#f1f5f9', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
@@ -664,9 +669,24 @@ const styles = StyleSheet.create({
   progressTextRow: { flexDirection: 'row', justifyContent: 'space-between' },
   progressText: { fontSize: 12, color: '#64748b', fontWeight: '600' },
 
-  planActionsRow: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#f8fafc', gap: 6 },
-  actionBtnText: { fontSize: 12, fontWeight: '600', color: '#64748b' },
+  planActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 12,
+    marginTop: 12,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  actionBtnActive: { },
+  actionBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
 
   installmentsList: { backgroundColor: '#f8fafc', padding: 16, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
   instRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 12, marginBottom: 8 },
