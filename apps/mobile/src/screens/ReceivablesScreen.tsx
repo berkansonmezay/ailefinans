@@ -378,72 +378,43 @@ export const ReceivablesScreen = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      <View style={{ paddingTop: 16 }}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 16 }}
-        >
+      <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+        <View style={styles.kpiGrid}>
           {/* TOPLAM TUTAR */}
           <View style={[styles.kpiCard, { borderLeftColor: '#3b82f6', borderLeftWidth: 4 }]}>
-            <View style={[styles.kpiIconWrapper, { backgroundColor: '#eff6ff' }]}>
-              <Ionicons name="cash" size={18} color="#3b82f6" />
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>TOPLAM TUTAR</Text>
-              <Text style={[styles.kpiValue, { color: '#3b82f6' }]}>{formatCurrency(stats.totalAmount)}</Text>
-              <Text style={styles.kpiSubText}>{stats.totalInstallmentsCount} taksit</Text>
-            </View>
+            <Text style={styles.kpiLabel}>TOPLAM TUTAR</Text>
+            <Text style={[styles.kpiValue, { color: '#3b82f6' }]}>{formatCurrency(stats.totalAmount)}</Text>
+            <Text style={styles.kpiSubText}>{stats.totalInstallmentsCount} taksit</Text>
           </View>
           
           {/* BEKLEYEN */}
           <View style={[styles.kpiCard, { borderLeftColor: '#f59e0b', borderLeftWidth: 4 }]}>
-            <View style={[styles.kpiIconWrapper, { backgroundColor: '#fef3c7' }]}>
-              <Ionicons name="time" size={18} color="#f59e0b" />
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>BEKLEYEN</Text>
-              <Text style={[styles.kpiValue, { color: '#f59e0b' }]}>{formatCurrency(stats.pendingAmount)}</Text>
-              <Text style={styles.kpiSubText}>{stats.pendingCount} taksit</Text>
-            </View>
+            <Text style={styles.kpiLabel}>BEKLEYEN</Text>
+            <Text style={[styles.kpiValue, { color: '#f59e0b' }]}>{formatCurrency(stats.pendingAmount)}</Text>
+            <Text style={styles.kpiSubText}>{stats.pendingCount} taksit</Text>
           </View>
           
           {/* GECİKMİŞ */}
           <View style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
-            <View style={[styles.kpiIconWrapper, { backgroundColor: '#ffe4e6' }]}>
-              <Ionicons name="alert-circle" size={18} color="#f43f5e" />
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>GECİKMİŞ</Text>
-              <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(stats.overdueAmount)}</Text>
-              <Text style={styles.kpiSubText}>{stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}</Text>
-            </View>
+            <Text style={styles.kpiLabel}>GECİKMİŞ</Text>
+            <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(stats.overdueAmount)}</Text>
+            <Text style={styles.kpiSubText}>{stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}</Text>
           </View>
           
           {/* TAHSİL EDİLEN */}
           <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
-            <View style={[styles.kpiIconWrapper, { backgroundColor: '#d1fae5' }]}>
-              <Ionicons name="checkmark-circle" size={18} color="#10b981" />
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>TAHSİL EDİLEN</Text>
-              <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(stats.paidAmount)}</Text>
-              <Text style={styles.kpiSubText}>{stats.paidCount} taksit</Text>
-            </View>
+            <Text style={styles.kpiLabel}>TAHSİL EDİLEN</Text>
+            <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(stats.paidAmount)}</Text>
+            <Text style={styles.kpiSubText}>{stats.paidCount} taksit</Text>
           </View>
 
           {/* PERFORMANS */}
           <View style={[styles.kpiCard, { borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
-            <View style={[styles.kpiIconWrapper, { backgroundColor: '#ede9fe' }]}>
-              <Ionicons name="pie-chart" size={18} color="#8b5cf6" />
-            </View>
-            <View>
-              <Text style={styles.kpiLabel}>PERFORMANS</Text>
-              <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>%{stats.performanceRate}</Text>
-              <Text style={[styles.kpiSubText, { color: '#10b981', fontWeight: '600' }]}>↑ Tahsilat Oranı</Text>
-            </View>
+            <Text style={styles.kpiLabel}>PERFORMANS</Text>
+            <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>%{stats.performanceRate}</Text>
+            <Text style={[styles.kpiSubText, { color: '#10b981', fontWeight: '600' }]}>↑ Tahsilat Oranı</Text>
           </View>
-        </ScrollView>
+        </View>
 
         {/* Info Box */}
         <View style={[
@@ -584,35 +555,34 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   
+  kpiGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   kpiCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    width: 170,
+    width: (Dimensions.get('window').width - 32 - 12) / 2,
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
     shadowColor: '#64748b',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
-  kpiIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
   kpiLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: '#64748b',
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   kpiValue: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '900',
     marginBottom: 2,
   },
   kpiSubText: {
@@ -621,7 +591,7 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     flexDirection: 'row',
-    marginHorizontal: 20,
+    marginBottom: 16,
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
