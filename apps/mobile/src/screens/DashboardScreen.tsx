@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   },
   logoTextMain: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#0f172a',
     letterSpacing: -0.5,
   },
