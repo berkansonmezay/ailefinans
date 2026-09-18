@@ -36,10 +36,10 @@ const barData = [
 ];
 
 const pieData = [
-  { name: 'Kira', value: 15000, color: '#3b82f6', legendFontColor: '#475569', legendFontSize: 12 },
-  { name: 'Market', value: 8000, color: '#10b981', legendFontColor: '#475569', legendFontSize: 12 },
-  { name: 'Fatura', value: 3500, color: '#f59e0b', legendFontColor: '#475569', legendFontSize: 12 },
-  { name: 'Eğlence', value: 5000, color: '#8b5cf6', legendFontColor: '#475569', legendFontSize: 12 },
+  { value: 15000, color: '#FF006E', text: 'Kira' },
+  { value: 8000, color: '#00E5FF', text: 'Market' },
+  { value: 5000, color: '#8338EC', text: 'Eğlence' },
+  { value: 3500, color: '#FFBE0B', text: 'Fatura' },
 ];
 
 const formatCurrency = (val: number) => {
@@ -138,22 +138,32 @@ export const OverviewScreen = ({ navigation }: any) => {
 
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Gider Dağılımı</Text>
-          <PieChart
-            data={pieData}
-            width={width - 32}
-            height={200}
-            chartConfig={{
-              backgroundColor: '#ffffff',
-              backgroundGradientFrom: '#ffffff',
-              backgroundGradientTo: '#ffffff',
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            }}
-            accessor={"value"}
-            backgroundColor={"transparent"}
-            paddingLeft={"15"}
-            center={[10, 0]}
-            absolute
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <PieChart
+              data={pieData}
+              donut
+              innerRadius={50}
+              radius={80}
+              centerLabelComponent={() => {
+                return (
+                  <View style={{justifyContent: 'center', alignItems: 'center'}}>
+                    <Text style={{fontSize: 22, color: '#1e293b', fontWeight: 'bold'}}>
+                      %100
+                    </Text>
+                    <Text style={{fontSize: 10, color: '#64748b'}}>Dağılım</Text>
+                  </View>
+                );
+              }}
+            />
+            <View style={{ gap: 12, marginRight: 10 }}>
+              {pieData.map((item, index) => (
+                <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: item.color }} />
+                  <Text style={{ fontSize: 13, color: '#475569', fontWeight: '600' }}>{item.text}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
 
         {/* Asset Cards */}
