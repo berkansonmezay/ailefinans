@@ -23,6 +23,8 @@ export const CryptoActionModal = ({ visible, onClose, onSuccess, action, crypto 
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  const skipSearchRef = React.useRef(false);
 
   React.useEffect(() => {
     if (visible) {
@@ -37,8 +39,13 @@ export const CryptoActionModal = ({ visible, onClose, onSuccess, action, crypto 
   }, [visible]); // Only run when visible changes to avoid losing focus on every prop change
 
   React.useEffect(() => {
-    if (!searchQuery || searchQuery.length < 2 || searchQuery === symbol) {
+    if (!searchQuery || searchQuery.length < 2) {
       setSearchResults([]);
+      return;
+    }
+
+    if (skipSearchRef.current) {
+      skipSearchRef.current = false;
       return;
     }
 
@@ -56,10 +63,11 @@ export const CryptoActionModal = ({ visible, onClose, onSuccess, action, crypto 
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, symbol]);
+  }, [searchQuery]);
 
   const handleSelectCrypto = async (selectedSymbol: string) => {
     let finalSymbol = selectedSymbol.toUpperCase();
+    skipSearchRef.current = true;
     setSymbol(finalSymbol);
     setSearchQuery(finalSymbol);
     setShowDropdown(false);
@@ -158,8 +166,8 @@ export const CryptoActionModal = ({ visible, onClose, onSuccess, action, crypto 
                   placeholder="Kripto Ara... (örn: BTC)"
                   value={searchQuery}
                   onChangeText={(text) => {
-                    setSearchQuery(text.toUpperCase());
-                    setSymbol(text.toUpperCase());
+                    setSearchQuery(text);
+                    setSymbol(text);
                     setShowDropdown(true);
                   }}
                   autoCapitalize="characters"
