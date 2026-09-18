@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseUrl = () => {
@@ -39,8 +39,8 @@ export const fetchApi = async <T,>(
       if (response.status === 401) {
         // Oturum süresi dolmuş veya geçersiz
         await AsyncStorage.removeItem('accessToken');
-        // İdeal olanı uygulamanın state'ini tetikleyerek login'e atmaktır
-        // AuthContext içerisindeki state bir sonraki render'da bunu fark edecektir.
+        // AuthContext'i tetikleyerek login'e atmak için event fırlat
+        DeviceEventEmitter.emit('auth:logout');
       }
       
       const errorData = await response.json().catch(() => ({}));
