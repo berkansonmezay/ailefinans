@@ -229,20 +229,22 @@ export const ReceivablesScreen = ({ navigation }: any) => {
     const totalAmount = item.totalAmount || item.principalAmount || 0;
     const paidAmount = item.paidAmount || 0;
     const progress = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
-    const title = item.description || item.debtorName || item.debtor || 'İsimsiz Alacak';
+    const title = item.planTitle || item.description || item.debtorName || item.debtor || 'İsimsiz Alacak';
+    const { width } = Dimensions.get('window');
+    const PLAN_CARD_WIDTH = (width - 32 - 12) / 2;
 
     return (
-      <View style={styles.planCard}>
+      <View style={[styles.planCard, { width: PLAN_CARD_WIDTH }]}>
         {/* Plan Header */}
         <TouchableOpacity style={styles.planHeader} onPress={() => toggleExpand(item.id)}>
           <View style={styles.planHeaderTop}>
-            <View style={styles.planHeaderLeft}>
+            <View style={[styles.planHeaderLeft, { flex: 1 }]}>
               <View style={styles.iconContainer}>
-                <Ionicons name="cash" size={24} color="#10b981" />
+                <Ionicons name="wallet" size={24} color="#10b981" />
               </View>
-              <View>
-                <Text style={styles.planTitle}>{title}</Text>
-                <Text style={styles.planSubtitle}>{item.installmentCount || 1} Taksit • {formatCurrency(totalAmount, item.currency)}</Text>
+              <View style={{ flex: 1, paddingRight: 4 }}>
+                <Text style={styles.planTitle} numberOfLines={1}>{title}</Text>
+                <Text style={styles.planSubtitle} numberOfLines={1}>{item.installmentCount || 1} Taksit • {formatCurrency(totalAmount, item.currency)}</Text>
               </View>
             </View>
             <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#94a3b8" />
@@ -384,6 +386,9 @@ export const ReceivablesScreen = ({ navigation }: any) => {
         </View>
       ) : (
         <FlatList
+          key={viewMode}
+          numColumns={viewMode === 'plan' ? 2 : 1}
+          columnWrapperStyle={viewMode === 'plan' ? { justifyContent: 'space-between' } : undefined}
           data={viewMode === 'plan' ? filteredReceivables : filteredInstallments}
           keyExtractor={(item, index) => item.id || String(index)}
           contentContainerStyle={styles.listContent}
