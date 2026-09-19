@@ -1,7 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { 
-  View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image, ScrollView, Keyboard, TouchableWithoutFeedback 
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image, ScrollView, Keyboard, TouchableWithoutFeedback, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { fetchApi } from '../lib/api';
 
@@ -129,7 +128,8 @@ export const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#f3f4f6' 
+    backgroundColor: '#f3f4f6',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
   },
   keyboardView: { 
     flex: 1, 

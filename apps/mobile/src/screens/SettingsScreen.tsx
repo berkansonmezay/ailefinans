@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { 
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, 
-  ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, FlatList
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, FlatList, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { AuthContext } from '../context/AuthContext';
@@ -421,7 +419,8 @@ export const SettingsScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f8fafc' },
+  safeArea: { flex: 1, backgroundColor: '#f8fafc',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#ffffff',

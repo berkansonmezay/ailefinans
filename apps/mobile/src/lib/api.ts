@@ -26,6 +26,10 @@ export const fetchApi = async <T,>(
       ...options.headers,
     };
 
+    if (options.body instanceof FormData) {
+      delete headers['Content-Type'];
+    }
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }

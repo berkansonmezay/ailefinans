@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, 
-  ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Switch,
-  Dimensions
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Switch, Dimensions, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 
@@ -600,7 +597,8 @@ export const TransactionsScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1, backgroundColor: '#f8fafc',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

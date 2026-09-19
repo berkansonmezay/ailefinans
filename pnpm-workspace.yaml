@@ -8,3 +8,5 @@ allowBuilds:
   prisma: true
   tesseract.js: set this to true or false
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - expo-image-picker@57.0.19
