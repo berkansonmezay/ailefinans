@@ -14,6 +14,7 @@ interface Document {
   fileType: string;
   fileSize: number;
   storageKey: string;
+  fileUrl?: string;
   createdAt: string;
 }
 
@@ -152,8 +153,19 @@ export default function DocumentsPage() {
           documents.map(doc => (
             <Card key={doc.id} className="group border-border bg-bg-card backdrop-blur-xl hover:bg-bg-card transition-colors">
               <CardContent className="p-5 flex flex-col items-center text-center">
-                <div className="w-full flex justify-end mb-2">
-                  <button onClick={() => handleDelete(doc.id)} className="text-text-muted hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="w-full flex justify-between items-center mb-2">
+                  {doc.fileUrl ? (
+                    <a
+                      href={doc.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-text-muted hover:text-indigo-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Belgeyi Aç / İndir"
+                    >
+                      <ArrowDownToLine className="w-4 h-4" />
+                    </a>
+                  ) : <div />}
+                  <button onClick={() => handleDelete(doc.id)} className="text-text-muted hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Sil">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>

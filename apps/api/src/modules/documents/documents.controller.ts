@@ -8,16 +8,16 @@ import {
   UseInterceptors,
   UploadedFile,
   Body,
+  Res,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
-import { extname } from "path";
+import { Response } from "express";
 import { DocumentsService } from "./documents.service";
 import { CurrentUser, ActiveTenant } from "../../common/decorators";
 import { TenantGuard } from "../../common/guards";
 import { success } from "../../common/helpers";
-import { v4 as uuidv4 } from "uuid";
 
 @Controller("documents")
 @UseGuards(AuthGuard("jwt"), TenantGuard)
@@ -27,6 +27,24 @@ export class DocumentsController {
   @Get()
   async findAll(@ActiveTenant() tenantId: string) {
     return success(await this.service.findAll(tenantId));
+  }
+
+  @Get(":id/file")
+  async getFile(
+    @Param("id") id: string,
+    @ActiveTenant() tenantId: string,
+    @Res() res: Response,
+  ) {
+    const fileResult = await this.service.getFileStream(id, tenantId);
+    if (fileResult.type === "REDIRECT") {
+      return res.redirect(fileResult.url!);
+    }
+
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(fileResult.fileName)}"`);
+    if (fileResult.mimeType) {
+      res.setHeader("Content-Type", fileResult.mimeType);
+    }
+    fileResult.stream!.pipe(res);
   }
 
   @Post("upload")
