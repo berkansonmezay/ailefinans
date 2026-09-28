@@ -2,8 +2,11 @@ import { Platform, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseUrl = () => {
-  // Use the local network IP so that both iOS/Android physical devices and emulators can reach the backend.
-  return 'http://192.168.1.8:4000/api/v1';
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  // Canlı Render.com API adresi
+  return 'https://ailefinans-api.onrender.com/api/v1';
 };
 
 const BASE_URL = getBaseUrl();
