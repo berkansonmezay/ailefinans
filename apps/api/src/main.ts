@@ -9,7 +9,25 @@ async function bootstrap() {
   // Security
   app.use(helmet());
   app.enableCors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:8081",
+        process.env.FRONTEND_URL,
+      ].filter(Boolean) as string[];
+
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app") ||
+        origin.includes("localhost") ||
+        origin.includes("192.168.")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   });
 
@@ -17,7 +35,7 @@ async function bootstrap() {
   app.setGlobalPrefix("api/v1");
 
   const port = process.env.PORT || 4000;
-  await app.listen(port);
+  await app.listen(port, "0.0.0.0");
   console.log(`🚀 API running on http://localhost:${port}/api/v1`);
 }
 bootstrap();
