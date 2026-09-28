@@ -817,7 +817,12 @@ export default function TransactionsPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-text-muted">Yükleniyor...</td>
+                  <td colSpan={7} className="px-6 py-12 text-center text-text-muted">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm font-medium">İşlemler sunucudan yükleniyor...</span>
+                    </div>
+                  </td>
                 </tr>
               ) : paginatedTransactions.length === 0 ? (
                 <tr>

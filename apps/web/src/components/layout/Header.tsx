@@ -144,7 +144,7 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-4">
-        {user?.activeTenantName && user?.systemRole === 'ADMIN' && (
+        {user?.activeTenantName && (
           <div className="relative hidden md:block" ref={tenantDropdownRef}>
             <button 
               onClick={() => setIsTenantDropdownOpen(!isTenantDropdownOpen)}
