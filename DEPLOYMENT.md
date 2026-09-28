@@ -95,10 +95,10 @@ Mobil uygulamanızın (`apps/mobile`) yerel ağ yerine internet üzerinden canl�
 2. `getBaseUrl()` fonksiyonunu canlı adresinizle güncelleyin:
    ```typescript
    const getBaseUrl = () => {
-     if (!__DEV__) {
-       return 'https://ailefinans-api.onrender.com/api/v1';
+     if (process.env.EXPO_PUBLIC_API_URL) {
+       return process.env.EXPO_PUBLIC_API_URL;
      }
-     // Geliştirme ortamında canlı API'yi test etmek için doğrudan bunu da verebilirsiniz:
+     // Canlı Render.com API adresi
      return 'https://ailefinans-api.onrender.com/api/v1';
    };
    ```
