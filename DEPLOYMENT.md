@@ -103,3 +103,30 @@ Mobil uygulamanızın (`apps/mobile`) yerel ağ yerine internet üzerinden canl�
    };
    ```
 3. Artık hem iOS hem Android cihazlarınız dünyanın her yerinden aile finans verilerinize kesintisiz erişebilir!
+
+---
+
+## 5. Adım: Android APK Çıktısı Alma (EAS Build)
+
+Mobil uygulamanız Expo tabanlı olduğu için bilgisayarınızda ağır Android Studio veya SDK kurulumlarına gerek kalmadan, **Expo Application Services (EAS Build)** üzerinden tamamen ücretsiz bulutta `.apk` çıktısı alabilirsiniz:
+
+1. **Expo Hesabı:**
+   Eğer hesabınız yoksa [expo.dev/signup](https://expo.dev/signup) adresinden ücretsiz bir hesap oluşturun.
+
+2. **Giriş Yapın:**
+   Terminalinizden oturum açın:
+   ```bash
+   npx eas-cli login
+   ```
+
+3. **APK Derlemesini Başlatın:**
+   Proje mobil dizinine geçip tek komutla APK oluşturun:
+   ```bash
+   cd apps/mobile
+   npx eas-cli build -p android --profile preview
+   ```
+
+4. **İndirme ve Kurulum:**
+   * EAS Build bulut sunucularında derlemeyi tamamlayıp terminale doğrudan bir **indirme linki** ve **QR kod** verecektir.
+   * Telefondan linke tıklayarak veya QR kodu taratarak `.apk` dosyasını doğrudan indirip telefonunuza yükleyebilirsiniz!
+
