@@ -6,6 +6,7 @@ services:
     region: frankfurt
     buildCommand: npm install -g pnpm@11.25.0 && pnpm install --frozen-lockfile && pnpm --filter @family-app/types build && pnpm --filter api db:generate && pnpm --filter api build
     startCommand: pnpm --filter api start:prod
+    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production

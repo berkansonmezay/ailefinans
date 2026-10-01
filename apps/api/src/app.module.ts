@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { APP_GUARD } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
+import { AppController } from "./app.controller";
 import { PrismaModule } from "./prisma/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { TenantsModule } from "./modules/tenants/tenants.module";
@@ -69,6 +70,7 @@ import { CryptoModule } from './modules/crypto/crypto.module';
     IntegrationsModule,
     CryptoModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,

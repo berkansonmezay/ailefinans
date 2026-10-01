@@ -1,0 +1,18 @@
+import { Controller, Get } from '@nestjs/common';
+
+@Controller()
+export class AppController {
+  @Get('health')
+  health() {
+    return {
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('ping')
+  ping() {
+    return 'pong';
+  }
+}
