@@ -130,3 +130,20 @@ Mobil uygulamanız Expo tabanlı olduğu için bilgisayarınızda ağır Android
    * EAS Build bulut sunucularında derlemeyi tamamlayıp terminale doğrudan bir **indirme linki** ve **QR kod** verecektir.
    * Telefondan linke tıklayarak veya QR kodu taratarak `.apk` dosyasını doğrudan indirip telefonunuza yükleyebilirsiniz!
 
+---
+
+## 6. Adım: Render API'yi 7/24 Uyanık ve Hızlı Tutma (Cold Start Engelleyici)
+
+Render ücretsiz planında servisler 15 dakika işlem yapılmadığında uyku moduna geçer (Spin-down) ve ilk açılışta 50 saniyelik gecikme yaşanır. Bunu tamamen ücretsiz olarak engellemek için:
+
+1. [uptimerobot.com](https://uptimerobot.com) adresinden ücretsiz bir hesap oluşturun.
+2. Dashboard'da **"Add New Monitor"** butonuna tıklayın.
+3. Ayarları şu şekilde yapın:
+   * **Monitor Type:** `HTTP(s)`
+   * **Friendly Name:** `Aile Finans API Keep-Alive`
+   * **URL (or IP):** `https://ailefinans-api.onrender.com/api/v1/health`
+   * **Monitoring Interval:** `5 minutes` (veya `10 minutes`)
+4. **"Create Monitor"** butonuna tıklayın.
+
+Artık UptimeRobot her 5 dakikada bir API'nizin `/health` uç noktasına hafif bir ping atacak; Render sunucunuz **asla uyku moduna geçmeyecek**, ilk açılış dahil her zaman anında yanıt verecektir!
+
