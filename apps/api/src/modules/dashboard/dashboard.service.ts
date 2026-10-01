@@ -176,8 +176,8 @@ export class DashboardService {
   }
 
   async getMonthlyChart(tenantId: string, months: number = 6) {
-    const result: any[] = [];
     const now = new Date();
+    const monthConfigs: Array<{ start: Date; end: Date }> = [];
     for (let i = months - 1; i >= 0; i--) {
       const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const end = new Date(
@@ -188,6 +188,10 @@ export class DashboardService {
         59,
         59,
       );
+      monthConfigs.push({ start, end });
+    }
+
+    const monthPromises = monthConfigs.map(async ({ start, end }) => {
       const [income, expense] = await Promise.all([
         this.prisma.incomeTransaction.aggregate({
           where: {
@@ -218,13 +222,14 @@ export class DashboardService {
           _sum: { amount: true },
         }),
       ]);
-      result.push({
+      return {
         month: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
         income: parseFloat(income._sum.amount?.toString() || "0"),
         expense: parseFloat(expense._sum.amount?.toString() || "0"),
-      });
-    }
-    return result;
+      };
+    });
+
+    return Promise.all(monthPromises);
   }
 
   async getCategoryBreakdown(tenantId: string, startDate: Date, endDate: Date, type: "INCOME" | "EXPENSE" = "EXPENSE") {
