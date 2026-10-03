@@ -1,0 +1,17 @@
+name: Keep Alive Render API
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render free instance from sleeping (15 min inactivity timeout)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API Health
+        run: |
+          echo "Pinging Render API to keep instance awake..."
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}\nTIME_TOTAL:%{time_total}s" -m 90 "https://ailefinans-api.onrender.com/api/v1/health")
+          echo "$RESPONSE"

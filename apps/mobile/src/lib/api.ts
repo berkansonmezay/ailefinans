@@ -11,15 +11,43 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+
+const apiCache = new Map<string, CacheEntry>();
+const CACHEABLE_ENDPOINTS = ['/categories', '/accounts', '/merchants'];
+const CACHE_TTL_MS = 60 * 1000; // 60 saniye
+
+export const clearApiCache = () => {
+  apiCache.clear();
+};
+
 export const fetchApi = async <T,>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
   try {
     const url = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    const method = (options.method || 'GET').toUpperCase();
     
     // Get token dynamically from storage
     const token = await AsyncStorage.getItem('accessToken');
+
+    // Invalidate cache on mutations (POST, PUT, DELETE, PATCH)
+    if (method !== 'GET') {
+      apiCache.clear();
+    } else {
+      const isCacheable = CACHEABLE_ENDPOINTS.some(p => endpoint.startsWith(p));
+      if (isCacheable) {
+        const cacheKey = `${token || ''}:${endpoint}`;
+        const cached = apiCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+          return cached.data as T;
+        }
+      }
+    }
 
     const headers: any = {
       'Content-Type': 'application/json',
@@ -44,9 +72,9 @@ export const fetchApi = async <T,>(
 
     if (!response.ok) {
       if (response.status === 401) {
-        // Oturum süresi dolmuş veya geçersiz
+        apiCache.clear();
         await AsyncStorage.removeItem('accessToken');
-        // AuthContext'i tetikleyerek login'e atmak için event fırlat
+        await AsyncStorage.removeItem('userData');
         DeviceEventEmitter.emit('auth:logout');
       }
       
@@ -60,8 +88,14 @@ export const fetchApi = async <T,>(
     }
 
     const data = await response.json();
-    // The backend returns { success: true, data: [...] }
-    return data.data !== undefined ? data.data as T : data as T;
+    const result = data.data !== undefined ? (data.data as T) : (data as T);
+
+    if (method === 'GET' && CACHEABLE_ENDPOINTS.some(p => endpoint.startsWith(p))) {
+      const cacheKey = `${token || ''}:${endpoint}`;
+      apiCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    }
+
+    return result;
   } catch (error: any) {
     if (error.message !== 'Unauthorized') {
       console.error(`API Error (${endpoint}):`, error);

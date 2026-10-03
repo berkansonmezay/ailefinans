@@ -7,7 +7,7 @@ interface AuthContextType {
   token: string | null;
   user: any | null;
   isLoading: boolean;
-  login: (token: string) => Promise<void>;
+  login: (token: string, initialUser?: any) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: any) => void;
 }
@@ -29,7 +29,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loadUser = async () => {
     try {
       const userData = await fetchApi<any>('/auth/me');
-      setUser(userData.data || userData);
+      const u = userData.data || userData;
+      setUser(u);
+      await AsyncStorage.setItem('userData', JSON.stringify(u));
     } catch (error) {
       console.error('Kullanıcı bilgileri çekilemedi:', error);
     }
@@ -38,18 +40,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadToken = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem('accessToken');
+        const [storedToken, storedUserData] = await Promise.all([
+          AsyncStorage.getItem('accessToken'),
+          AsyncStorage.getItem('userData'),
+        ]);
+
         if (storedToken) {
           setToken(storedToken);
-          // Token varsa user bilgilerini de çek
-          try {
-            const userData = await fetchApi<any>('/auth/me');
-            setUser(userData.data || userData);
-          } catch (e: any) {
-            if (e.message !== 'Unauthorized') {
-              console.error('Initial user fetch error:', e);
+          if (storedUserData) {
+            try {
+              setUser(JSON.parse(storedUserData));
+            } catch (e) {
+              console.error('UserData parse error:', e);
             }
           }
+          // Anında açılış (Zero delay): Kullanıcıyı beklemeden içeri al
+          setIsLoading(false);
+
+          // Arka planda sessizce kullanıcı bilgilerini tazele (kullanıcıyı bloke etmez)
+          fetchApi<any>('/auth/me')
+            .then(async (userData) => {
+              const u = userData.data || userData;
+              setUser(u);
+              await AsyncStorage.setItem('userData', JSON.stringify(u));
+            })
+            .catch((e: any) => {
+              if (e.message !== 'Unauthorized') {
+                console.log('Arka plan kullanıcı güncelleme:', e.message);
+              }
+            });
+          return;
         }
       } catch (error) {
         console.error('Token yüklenirken hata:', error);
@@ -69,13 +89,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const login = async (newToken: string) => {
+  const login = async (newToken: string, initialUser?: any) => {
     try {
       await AsyncStorage.setItem('accessToken', newToken);
       setToken(newToken);
-      // Login sonrası user çek
-      const userData = await fetchApi<any>('/auth/me');
-      setUser(userData.data || userData);
+      if (initialUser) {
+        setUser(initialUser);
+        await AsyncStorage.setItem('userData', JSON.stringify(initialUser));
+      } else {
+        const userData = await fetchApi<any>('/auth/me');
+        const u = userData.data || userData;
+        setUser(u);
+        await AsyncStorage.setItem('userData', JSON.stringify(u));
+      }
     } catch (error) {
       console.error('Token kaydedilirken veya user alınırken hata:', error);
     }
@@ -83,7 +109,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('accessToken');
+      await Promise.all([
+        AsyncStorage.removeItem('accessToken'),
+        AsyncStorage.removeItem('userData'),
+      ]);
       setToken(null);
       setUser(null);
     } catch (error) {

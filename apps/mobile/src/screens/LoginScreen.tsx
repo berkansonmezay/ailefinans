@@ -26,7 +26,7 @@ export const LoginScreen = () => {
       
       const token = res?.tokens?.accessToken || res?.accessToken;
       if (token) {
-        await login(token);
+        await login(token, res?.user);
       } else {
         throw new Error('Giriş başarılı fakat token alınamadı.');
       }
