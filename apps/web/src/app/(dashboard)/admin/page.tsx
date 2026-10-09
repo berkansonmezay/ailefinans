@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { 
   Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, 
   Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal, 
-  Package, Zap, Crown, Pencil, Home, Building2, Plus, ArrowRight
+  Package, Zap, Crown, Pencil, Home, Building2, Plus, ArrowRight,
+  FolderTree, ChevronDown, ChevronRight, CornerDownRight, ListTree
 } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
@@ -120,8 +121,30 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [activeTab, setActiveTab] = useState<'users' | 'tenants'>('users');
+  const [isFamilyView, setIsFamilyView] = useState(false);
+  const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const toggleFamilyCollapse = (tenantId: string) => {
+    setCollapsedFamilies(prev => {
+      const next = new Set(prev);
+      if (next.has(tenantId)) {
+        next.delete(tenantId);
+      } else {
+        next.add(tenantId);
+      }
+      return next;
+    });
+  };
+
+  const expandAllFamilies = () => {
+    setCollapsedFamilies(new Set());
+  };
+
+  const collapseAllFamilies = (allTenantIds: string[]) => {
+    setCollapsedFamilies(new Set(allTenantIds));
+  };
   
   // Add User Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -504,6 +527,48 @@ export default function AdminUsersPage() {
     return nameMatch || ownerMatch || memberMatch;
   });
 
+  const familyGroups = React.useMemo(() => {
+    const groupsMap = new Map<string, {
+      tenantId: string;
+      tenantName: string;
+      currency: string;
+      ownerName?: string;
+      stats?: any;
+      members: User[];
+    }>();
+
+    filteredUsers.forEach((u) => {
+      const key = u.tenantId || (u.tenantName ? `name_${u.tenantName}` : 'no_family');
+      if (!groupsMap.has(key)) {
+        const foundTenant = tenants.find(t => (u.tenantId && t.id === u.tenantId) || (u.tenantName && t.name === u.tenantName));
+        groupsMap.set(key, {
+          tenantId: u.tenantId || key,
+          tenantName: u.tenantName || foundTenant?.name || 'Ailesiz / Bağımsız Kullanıcılar',
+          currency: foundTenant?.currency || 'TRY',
+          ownerName: foundTenant?.owner?.fullName,
+          stats: foundTenant?.stats,
+          members: [],
+        });
+      }
+      groupsMap.get(key)!.members.push(u);
+    });
+
+    const roleWeight: Record<string, number> = { OWNER: 1, ADMIN: 2, MEMBER: 3, VIEWER: 4 };
+    const groups = Array.from(groupsMap.values());
+
+    groups.forEach((grp) => {
+      grp.members.sort((a, b) => {
+        const wa = roleWeight[a.tenantRole || 'MEMBER'] || 99;
+        const wb = roleWeight[b.tenantRole || 'MEMBER'] || 99;
+        if (wa !== wb) return wa - wb;
+        return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, 'tr');
+      });
+    });
+
+    groups.sort((a, b) => a.tenantName.localeCompare(b.tenantName, 'tr'));
+    return groups;
+  }, [filteredUsers, tenants]);
+
   if (isLoading) return <div className="p-8 text-center text-text-muted">Yükleniyor...</div>;
 
   const totalUsers = users.length;
@@ -618,174 +683,459 @@ export default function AdminUsersPage() {
           </div>
 
           {/* Search Toolbar */}
-          <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-              <input
-                type="text"
-                placeholder="İsim, e-posta veya aile adı ara..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-4 py-2 border border-border rounded-xl bg-bg-secondary/60 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-colors"
-              />
+          <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto flex-1">
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+                <input
+                  type="text"
+                  placeholder="İsim, e-posta veya aile adı ara..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="block w-full pl-10 pr-4 py-2 border border-border rounded-xl bg-bg-secondary/60 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-colors"
+                />
+              </div>
+
+              {/* View Toggle (Aile Görünümü) */}
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsFamilyView(!isFamilyView)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+                    isFamilyView
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-500/20'
+                      : 'bg-bg-secondary text-text-secondary hover:text-text-primary border-border hover:border-text-muted/30'
+                  }`}
+                  title="Kullanıcıları ailelere göre gruplanmış ağaç hiyerarşisinde görüntüle"
+                >
+                  <FolderTree className={`w-4 h-4 ${isFamilyView ? 'text-white' : 'text-emerald-500'}`} />
+                  <span>Aile Görünümü</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    isFamilyView
+                      ? 'bg-white/20 text-white'
+                      : 'bg-bg-card text-text-muted border border-border'
+                  }`}>
+                    {isFamilyView ? 'Açık' : 'Kapalı'}
+                  </span>
+                </button>
+
+                {isFamilyView && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={expandAllFamilies}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-text-muted hover:text-text-primary hover:bg-bg-secondary border border-border transition-colors cursor-pointer"
+                      title="Tüm aile dallarını genişlet"
+                    >
+                      Tümünü Aç
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => collapseAllFamilies(familyGroups.map(g => g.tenantId))}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-text-muted hover:text-text-primary hover:bg-bg-secondary border border-border transition-colors cursor-pointer"
+                      title="Tüm aile dallarını daralt"
+                    >
+                      Kapat
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-text-muted font-medium">
+
+            <p className="text-xs text-text-muted font-medium shrink-0">
               {filteredUsers.length} / {totalUsers} kullanıcı gösteriliyor
             </p>
           </div>
 
-          {/* User Table */}
-          <div className="bg-bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-bg-sidebar border-b border-border">
-                  <tr>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı</th>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Hesabı</th>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Rolü</th>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı Adı</th>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Mail Adresi</th>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kayıt Tarihi</th>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Yetki</th>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Durum</th>
-                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider text-right">İşlemler</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
-                      </td>
-                      <td className="px-5 py-3.5 text-text-secondary text-sm">
-                        <div className="flex items-center gap-1.5 font-medium text-text-primary">
-                          <Home className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          <span>{u.tenantName}</span>
+          {isFamilyView ? (
+            /* Family Tree View (Ağaç Yapısı) */
+            <div className="space-y-4">
+              {familyGroups.length === 0 ? (
+                <div className="bg-bg-card border border-border rounded-2xl p-12 text-center text-text-muted shadow-sm">
+                  <Home className="w-12 h-12 mx-auto text-text-muted/40 mb-3" />
+                  <p className="font-semibold text-text-primary">Eşleşen aile veya kullanıcı bulunamadı</p>
+                  <p className="text-xs text-text-muted mt-1">Arama filtrenizi değiştirerek tekrar deneyebilirsiniz.</p>
+                </div>
+              ) : (
+                familyGroups.map((family) => {
+                  const isCollapsed = collapsedFamilies.has(family.tenantId);
+                  return (
+                    <div
+                      key={family.tenantId}
+                      className="bg-bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-sm transition-all hover:border-emerald-500/30"
+                    >
+                      {/* Family Node Header (Ağaç Kökü) */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/70">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => toggleFamilyCollapse(family.tenantId)}
+                            className="p-1.5 rounded-lg hover:bg-bg-secondary text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                            title={isCollapsed ? 'Genişlet' : 'Daralt'}
+                          >
+                            {isCollapsed ? (
+                              <ChevronRight className="w-5 h-5 text-emerald-500 transition-transform" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5 text-emerald-500 transition-transform" />
+                            )}
+                          </button>
+
+                          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                            <Home className="w-5 h-5" />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-bold text-base text-text-primary tracking-tight">
+                                {family.tenantName}
+                              </h3>
+                              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                {family.members.length} Kullanıcı
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-medium bg-bg-secondary text-text-secondary border border-border">
+                                {family.currency}
+                              </span>
+                            </div>
+                            {family.ownerName && (
+                              <p className="text-xs text-text-muted mt-0.5 flex items-center gap-1">
+                                <Crown className="w-3 h-3 text-amber-500" />
+                                <span>Aile Kurucusu: <strong className="text-text-secondary font-medium">{family.ownerName}</strong></span>
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        {u.tenantRole === 'OWNER' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                            <Crown size={12} /> Kurucu
-                          </span>
-                        ) : u.tenantRole === 'ADMIN' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                            <ShieldCheck size={12} /> Yönetici
-                          </span>
-                        ) : u.tenantRole === 'VIEWER' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-500/10 text-gray-400 border border-gray-500/20">
-                            <Eye size={12} /> İzleyici
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                            <Users size={12} /> Üye
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-text-secondary text-sm font-mono">
-                        {u.username ? `@${u.username}` : '-'}
-                      </td>
-                      <td className="px-5 py-3.5 text-text-secondary text-sm">
-                        {u.email}
-                      </td>
-                      <td className="px-5 py-3.5 text-text-secondary text-sm">
-                        {new Date(u.createdAt).toLocaleDateString('tr-TR')}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        {u.systemRole === 'SUPER_ADMIN' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                            Kurucu
-                          </span>
-                        ) : u.systemRole === 'ADMIN' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                            Yönetici
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-bg-secondary text-text-muted border border-border">
-                            Kullanıcı
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        {u.isActive ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500">
-                            <CheckCircle size={12} /> Onaylı
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500">
-                            <ShieldAlert size={12} /> Bekliyor
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {!u.isActive && (
-                            <button
-                              onClick={() => approveUser(u.id)}
-                              className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 text-xs font-semibold rounded-lg hover:text-white transition-colors cursor-pointer"
-                            >
-                              Onayla
-                            </button>
-                          )}
-                          
-                          {u.isActive && currentUser?.systemRole === 'SUPER_ADMIN' && currentUser.id !== u.id && (
-                            <button
-                              onClick={() => handleImpersonate(u.id, `${u.firstName} ${u.lastName}`)}
-                              className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
-                              title="Bu hesapla giriş yap (Impersonate)"
-                            >
-                              <LogIn size={16} />
-                            </button>
-                          )}
 
+                        {/* Family Quick Actions */}
+                        <div className="flex items-center gap-2 self-end sm:self-auto pl-10 sm:pl-0">
                           <button
-                            onClick={() => openEditModal(u)}
-                            className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
-                            title="Kullanıcı Bilgilerini Düzenle"
+                            type="button"
+                            onClick={() => {
+                              resetAddForm();
+                              setAddFormData(prev => ({
+                                ...prev,
+                                tenantMode: 'existing',
+                                existingTenantId: family.tenantId.startsWith('name_') || family.tenantId === 'no_family' ? '' : family.tenantId,
+                                tenantRole: 'MEMBER',
+                              }));
+                              setIsAddModalOpen(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-colors cursor-pointer"
+                            title="Bu aileye yeni üye tanımla"
                           >
-                            <Pencil size={16} />
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Üye Ekle</span>
                           </button>
-
-                          <button
-                            onClick={() => openPasswordModal(u)}
-                            className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
-                            title="Şifreyi Sıfırla / Değiştir"
-                          >
-                            <Key size={16} />
-                          </button>
-
-                          <button
-                            onClick={() => openMenuModal(u)}
-                            className="p-1.5 text-text-muted hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors cursor-pointer"
-                            title="Menü Görünürlük Ayarları"
-                          >
-                            <SlidersHorizontal size={16} />
-                          </button>
-
-                          {u.systemRole !== 'ADMIN' && (
-                            <button
-                              onClick={() => deleteUser(u.id)}
-                              className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                              title="Sil / Reddet"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          )}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredUsers.length === 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-6 py-12 text-center text-text-muted">
-                        Kullanıcı bulunamadı.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                      </div>
+
+                      {/* Tree Branch: Member List (Ağaç Dalları) */}
+                      {!isCollapsed && (
+                        <div className="pt-3.5 pl-3 sm:pl-6 relative">
+                          {/* Vertical stem line connecting parent to children */}
+                          <div className="border-l-2 border-emerald-500/30 ml-2 sm:ml-3 pl-4 sm:pl-5 space-y-2.5 relative">
+                            {family.members.map((u) => (
+                              <div
+                                key={u.id}
+                                className="relative flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-xl bg-bg-secondary/40 hover:bg-bg-secondary/80 border border-border/70 hover:border-emerald-500/30 transition-all"
+                              >
+                                {/* Horizontal branch line connecting stem to node */}
+                                <div className="absolute -left-4 sm:-left-5 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-px bg-emerald-500/30" />
+                                
+                                {/* Left Info: Avatar + Details */}
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  {/* Member Initials Avatar */}
+                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                                    u.tenantRole === 'OWNER'
+                                      ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                                      : u.tenantRole === 'ADMIN'
+                                      ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                                      : u.tenantRole === 'VIEWER'
+                                      ? 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
+                                      : 'bg-blue-500/15 text-blue-500 border border-blue-500/30'
+                                  }`}>
+                                    {u.firstName.charAt(0)}{u.lastName.charAt(0)}
+                                  </div>
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-semibold text-sm text-text-primary">
+                                        {u.firstName} {u.lastName}
+                                      </span>
+                                      
+                                      {/* Tenant Role Badge */}
+                                      {u.tenantRole === 'OWNER' ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                          <Crown size={11} /> Kurucu
+                                        </span>
+                                      ) : u.tenantRole === 'ADMIN' ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                          <ShieldCheck size={11} /> Yönetici
+                                        </span>
+                                      ) : u.tenantRole === 'VIEWER' ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                                          <Eye size={11} /> İzleyici
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                                          <Users size={11} /> Üye
+                                        </span>
+                                      )}
+
+                                      {/* System Role Badge */}
+                                      {u.systemRole === 'SUPER_ADMIN' ? (
+                                        <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                          Kurucu
+                                        </span>
+                                      ) : u.systemRole === 'ADMIN' ? (
+                                        <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                          Yönetici
+                                        </span>
+                                      ) : null}
+
+                                      {/* Active Status Badge */}
+                                      {u.isActive ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 text-emerald-500">
+                                          <CheckCircle size={10} /> Onaylı
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-500">
+                                          <ShieldAlert size={10} /> Bekliyor
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Secondary Row: username, email, join date */}
+                                    <div className="flex items-center gap-3 text-xs text-text-muted mt-1 flex-wrap">
+                                      {u.username && (
+                                        <span className="font-mono text-text-secondary">@{u.username}</span>
+                                      )}
+                                      <span>{u.email}</span>
+                                      <span className="text-[11px] text-text-muted/70">
+                                        Kayıt: {new Date(u.createdAt).toLocaleDateString('tr-TR')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-1.5 self-end md:self-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border/50">
+                                  {!u.isActive && (
+                                    <button
+                                      onClick={() => approveUser(u.id)}
+                                      className="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 text-xs font-semibold rounded-lg hover:text-white transition-colors cursor-pointer mr-1"
+                                    >
+                                      Onayla
+                                    </button>
+                                  )}
+                                  
+                                  {u.isActive && currentUser?.systemRole === 'SUPER_ADMIN' && currentUser.id !== u.id && (
+                                    <button
+                                      onClick={() => handleImpersonate(u.id, `${u.firstName} ${u.lastName}`)}
+                                      className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                                      title="Bu hesapla giriş yap (Impersonate)"
+                                    >
+                                      <LogIn size={16} />
+                                    </button>
+                                  )}
+
+                                  <button
+                                    onClick={() => openEditModal(u)}
+                                    className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                                    title="Kullanıcı Bilgilerini Düzenle"
+                                  >
+                                    <Pencil size={16} />
+                                  </button>
+
+                                  <button
+                                    onClick={() => openPasswordModal(u)}
+                                    className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+                                    title="Şifreyi Sıfırla / Değiştir"
+                                  >
+                                    <Key size={16} />
+                                  </button>
+
+                                  <button
+                                    onClick={() => openMenuModal(u)}
+                                    className="p-1.5 text-text-muted hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors cursor-pointer"
+                                    title="Menü Görünürlük Ayarları"
+                                  >
+                                    <SlidersHorizontal size={16} />
+                                  </button>
+
+                                  {u.systemRole !== 'ADMIN' && (
+                                    <button
+                                      onClick={() => deleteUser(u.id)}
+                                      className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                      title="Sil / Reddet"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
-          </div>
+          ) : (
+            /* User Table */
+            <div className="bg-bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-bg-sidebar border-b border-border">
+                    <tr>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı</th>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Hesabı</th>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Rolü</th>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı Adı</th>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Mail Adresi</th>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kayıt Tarihi</th>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Yetki</th>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Durum</th>
+                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider text-right">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredUsers.map((u) => (
+                      <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
+                        </td>
+                        <td className="px-5 py-3.5 text-text-secondary text-sm">
+                          <div className="flex items-center gap-1.5 font-medium text-text-primary">
+                            <Home className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <span>{u.tenantName}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          {u.tenantRole === 'OWNER' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                              <Crown size={12} /> Kurucu
+                            </span>
+                          ) : u.tenantRole === 'ADMIN' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                              <ShieldCheck size={12} /> Yönetici
+                            </span>
+                          ) : u.tenantRole === 'VIEWER' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                              <Eye size={12} /> İzleyici
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                              <Users size={12} /> Üye
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 text-text-secondary text-sm font-mono">
+                          {u.username ? `@${u.username}` : '-'}
+                        </td>
+                        <td className="px-5 py-3.5 text-text-secondary text-sm">
+                          {u.email}
+                        </td>
+                        <td className="px-5 py-3.5 text-text-secondary text-sm">
+                          {new Date(u.createdAt).toLocaleDateString('tr-TR')}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          {u.systemRole === 'SUPER_ADMIN' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                              Kurucu
+                            </span>
+                          ) : u.systemRole === 'ADMIN' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              Yönetici
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-bg-secondary text-text-muted border border-border">
+                              Kullanıcı
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          {u.isActive ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500">
+                              <CheckCircle size={12} /> Onaylı
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500">
+                              <ShieldAlert size={12} /> Bekliyor
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {!u.isActive && (
+                              <button
+                                onClick={() => approveUser(u.id)}
+                                className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 text-xs font-semibold rounded-lg hover:text-white transition-colors cursor-pointer"
+                              >
+                                Onayla
+                              </button>
+                            )}
+                            
+                            {u.isActive && currentUser?.systemRole === 'SUPER_ADMIN' && currentUser.id !== u.id && (
+                              <button
+                                onClick={() => handleImpersonate(u.id, `${u.firstName} ${u.lastName}`)}
+                                className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                                title="Bu hesapla giriş yap (Impersonate)"
+                              >
+                                <LogIn size={16} />
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => openEditModal(u)}
+                              className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Kullanıcı Bilgilerini Düzenle"
+                            >
+                              <Pencil size={16} />
+                            </button>
+
+                            <button
+                              onClick={() => openPasswordModal(u)}
+                              className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Şifreyi Sıfırla / Değiştir"
+                            >
+                              <Key size={16} />
+                            </button>
+
+                            <button
+                              onClick={() => openMenuModal(u)}
+                              className="p-1.5 text-text-muted hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Menü Görünürlük Ayarları"
+                            >
+                              <SlidersHorizontal size={16} />
+                            </button>
+
+                            {u.systemRole !== 'ADMIN' && (
+                              <button
+                                onClick={() => deleteUser(u.id)}
+                                className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                title="Sil / Reddet"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredUsers.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="px-6 py-12 text-center text-text-muted">
+                          Kullanıcı bulunamadı.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
