@@ -24,6 +24,16 @@ export const clearApiCache = () => {
   apiCache.clear();
 };
 
+export const getAvatarUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const apiBase = BASE_URL.replace(/\/api\/v1\/?$/, '');
+  return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+
 export const fetchApi = async <T,>(
   endpoint: string,
   options: RequestInit = {}

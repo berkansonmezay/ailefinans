@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
-import { fetchApi } from '../lib/api';
+import { fetchApi, getAvatarUrl } from '../lib/api';
 
 export const ProfileScreen = ({ navigation }: any) => {
   const { user, setUser, logout } = useContext(AuthContext);
@@ -248,8 +248,8 @@ export const ProfileScreen = ({ navigation }: any) => {
                 disabled={uploadingAvatar}
               >
                 <View style={styles.avatarLarge}>
-                  {user?.avatarUrl ? (
-                    <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+                  {user?.avatarUrl && getAvatarUrl(user.avatarUrl) ? (
+                    <Image source={{ uri: getAvatarUrl(user.avatarUrl)! }} style={styles.avatarImage} />
                   ) : (
                     <Text style={styles.avatarLargeText}>
                       {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, FlatList, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchApi } from '../lib/api';
+import { fetchApi, getAvatarUrl } from '../lib/api';
 import { AuthContext } from '../context/AuthContext';
 
 type Tab = 'TENANT' | 'CATEGORIES' | 'MERCHANTS';
@@ -246,8 +246,8 @@ export const SettingsScreen = ({ navigation }: any) => {
           {members.map((m, idx) => (
             <View key={idx} style={styles.memberRow}>
               <View style={[styles.avatarMini, { overflow: 'hidden' }]}>
-                {m.user?.avatarUrl ? (
-                  <Image source={{ uri: m.user.avatarUrl }} style={{ width: '100%', height: '100%' }} />
+                {m.user?.avatarUrl && getAvatarUrl(m.user.avatarUrl) ? (
+                  <Image source={{ uri: getAvatarUrl(m.user.avatarUrl)! }} style={{ width: '100%', height: '100%' }} />
                 ) : (
                   <Text style={styles.avatarMiniText}>{(m.user?.firstName?.[0] || 'U').toUpperCase()}</Text>
                 )}

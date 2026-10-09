@@ -15,4 +15,6 @@ ornek_kategoriler.csv
 update_reports.py
 *.tsbuildinfo
 *.traineddata
+uploads/
+apps/api/uploads/
 

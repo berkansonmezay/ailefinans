@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { fetchApi } from '@/lib/api';
 import clsx from 'clsx';
 import { QuickAddModal } from '@/components/shared/QuickAddModal';
+import { getAvatarUrl } from '@/lib/utils';
 
 interface Notification {
   id: string;
@@ -23,6 +24,7 @@ export function Header() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -281,10 +283,11 @@ export function Header() {
             className="w-9 h-9 rounded-full bg-accent-light text-accent flex items-center justify-center border border-accent/20 hover:border-accent transition-all overflow-hidden cursor-pointer" 
             title="Profilim"
           >
-            {user?.avatarUrl ? (
+            {user?.avatarUrl && !avatarError ? (
               <img 
-                src={user.avatarUrl} 
+                src={getAvatarUrl(user.avatarUrl)} 
                 alt={`${user.firstName} ${user.lastName}`} 
+                onError={() => setAvatarError(true)}
                 className="w-full h-full object-cover" 
               />
             ) : (

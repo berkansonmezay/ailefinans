@@ -12,7 +12,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { MailService } from "./mail.service";
 import * as crypto from "crypto";
 import { extname, resolve } from "path";
-import { existsSync, writeFileSync, mkdirSync, readdirSync, createReadStream } from "fs";
+import { existsSync, writeFileSync, mkdirSync, readdirSync, createReadStream, unlinkSync, statSync } from "fs";
 
 @Injectable()
 export class AuthService {
@@ -469,8 +469,24 @@ export class AuthService {
       throw new BadRequestException("Lütfen bir resim dosyası seçin.");
     }
 
-    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic"];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
+    const allowedMimeTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/heic",
+      "image/heif",
+      "image/pjpeg",
+      "image/x-png",
+    ];
+    const allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"];
+    const ext = extname(file.originalname || "").toLowerCase() || ".jpg";
+
+    const isAllowedMime = allowedMimeTypes.includes(file.mimetype?.toLowerCase());
+    const isAllowedExt = allowedExtensions.includes(ext);
+
+    if (!isAllowedMime && !isAllowedExt) {
       throw new BadRequestException("Yalnızca resim dosyaları (JPEG, PNG, WEBP, GIF) yüklenebilir.");
     }
 
@@ -480,7 +496,6 @@ export class AuthService {
     }
 
     let avatarUrl = "";
-    const ext = extname(file.originalname) || ".jpg";
     const filename = `${uuid()}${ext}`;
     const filePath = `avatars/${userId}/${filename}`;
 
@@ -500,10 +515,16 @@ export class AuthService {
         });
 
         if (uploadRes.ok) {
-          avatarUrl = `${supabase.url}/storage/v1/object/public/${supabase.bucket}/${filePath}`;
+          const contentType = uploadRes.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const data = await uploadRes.json().catch(() => null);
+            if (data && (data.Key || data.id || !data.error)) {
+              avatarUrl = `${supabase.url}/storage/v1/object/public/${supabase.bucket}/${filePath}`;
+            }
+          }
         }
       } catch (err) {
-        console.error("Supabase avatar upload failed, falling back to local storage:", err);
+        // Fallback to local storage silently
       }
     }
 
@@ -512,6 +533,16 @@ export class AuthService {
       const uploadDir = resolve("./uploads/avatars", userId);
       if (!existsSync(uploadDir)) {
         mkdirSync(uploadDir, { recursive: true });
+      } else {
+        // Clean up previous avatar files
+        try {
+          const oldFiles = readdirSync(uploadDir).filter((f) => !f.startsWith("."));
+          for (const oldFile of oldFiles) {
+            try {
+              unlinkSync(resolve(uploadDir, oldFile));
+            } catch {}
+          }
+        } catch {}
       }
       const localFilePath = resolve(uploadDir, filename);
       writeFileSync(localFilePath, file.buffer);
@@ -541,6 +572,19 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException("Kullanıcı bulunamadı.");
 
+    // Remove local file if exists
+    try {
+      const uploadDir = resolve("./uploads/avatars", userId);
+      if (existsSync(uploadDir)) {
+        const files = readdirSync(uploadDir);
+        for (const file of files) {
+          try {
+            unlinkSync(resolve(uploadDir, file));
+          } catch {}
+        }
+      }
+    } catch {}
+
     await this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: null },
@@ -564,12 +608,19 @@ export class AuthService {
       throw new NotFoundException("Profil fotoğrafı dosyası bulunamadı.");
     }
 
-    const files = readdirSync(uploadDir);
+    const files = readdirSync(uploadDir)
+      .filter((f) => !f.startsWith("."))
+      .map((f) => ({
+        name: f,
+        time: statSync(resolve(uploadDir, f)).mtimeMs,
+      }))
+      .sort((a, b) => b.time - a.time);
+
     if (files.length === 0) {
       throw new NotFoundException("Profil fotoğrafı bulunamadı.");
     }
 
-    const latestFile = files[files.length - 1];
+    const latestFile = files[0].name;
     const filePath = resolve(uploadDir, latestFile);
     const ext = extname(latestFile).toLowerCase();
     const mimeMap: Record<string, string> = {
@@ -578,6 +629,8 @@ export class AuthService {
       ".png": "image/png",
       ".webp": "image/webp",
       ".gif": "image/gif",
+      ".heic": "image/heic",
+      ".heif": "image/heif",
     };
 
     return {

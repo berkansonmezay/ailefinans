@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
+import { getAvatarUrl } from '../lib/api';
 
 const { width } = Dimensions.get('window');
 const CARD_MARGIN = 8;
@@ -98,8 +99,8 @@ export const DashboardScreen = ({ navigation }: any) => {
           onPress={() => navigation.navigate('Profile')}
         >
           <View style={styles.avatarContainer}>
-            {user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+            {user?.avatarUrl && getAvatarUrl(user.avatarUrl) ? (
+              <Image source={{ uri: getAvatarUrl(user.avatarUrl)! }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarText}>{initial}</Text>
             )}

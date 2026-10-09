@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { fetchApi } from '@/lib/api';
+import { getAvatarUrl } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth';
 import { User as UserIcon, Lock, Shield, Camera, Upload, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -13,6 +14,7 @@ export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [username, setUsername] = useState(user?.username || '');
@@ -26,12 +28,15 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Fotoğraf boyutu 5 MB\'tan küçük olmalıdır.');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Fotoğraf boyutu 10 MB\'tan küçük olmalıdır.');
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
+    const isImageMime = file.type?.startsWith('image/');
+    const isImageExt = /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || '');
+
+    if (!isImageMime && !isImageExt) {
       toast.error('Lütfen geçerli bir resim dosyası seçin (JPG, PNG, WEBP).');
       return;
     }
@@ -48,6 +53,7 @@ export default function ProfilePage() {
 
       const newAvatarUrl = res?.data?.avatarUrl || res?.avatarUrl;
       if (newAvatarUrl && user) {
+        setAvatarError(false);
         setUser({
           ...user,
           avatarUrl: newAvatarUrl,
@@ -163,10 +169,11 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-bg-secondary/40 border border-border/70 mb-5">
               <div className="relative group shrink-0">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-emerald-500/30 bg-bg-card shadow-md flex items-center justify-center relative">
-                  {user?.avatarUrl ? (
+                  {user?.avatarUrl && !avatarError ? (
                     <img
-                      src={user.avatarUrl}
+                      src={getAvatarUrl(user.avatarUrl)}
                       alt={`${user.firstName} ${user.lastName}`}
+                      onError={() => setAvatarError(true)}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -196,7 +203,7 @@ export default function ProfilePage() {
               <div className="flex-1 text-center sm:text-left">
                 <h3 className="font-semibold text-sm text-text-primary">Profil Fotoğrafı</h3>
                 <p className="text-xs text-text-muted mt-0.5">
-                  JPG, PNG veya WEBP (Maksimum 5 MB). Web ve mobil uygulamanızda görüntülenir.
+                  JPG, PNG veya WEBP (Maksimum 10 MB). Web ve mobil uygulamanızda görüntülenir.
                 </p>
 
                 <div className="flex items-center gap-2 mt-3 justify-center sm:justify-start flex-wrap">

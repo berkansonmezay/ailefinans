@@ -9,6 +9,7 @@ import {
   FolderTree, ChevronDown, ChevronRight, CornerDownRight, ListTree
 } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
+import { getAvatarUrl } from '@/lib/utils';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth';
@@ -855,7 +856,7 @@ export default function AdminUsersPage() {
                                       : 'bg-blue-500/15 text-blue-500 border border-blue-500/30'
                                   }`}>
                                     {u.avatarUrl ? (
-                                      <img src={u.avatarUrl} alt={`${u.firstName} ${u.lastName}`} className="w-full h-full object-cover" />
+                                      <img src={getAvatarUrl(u.avatarUrl)} alt={`${u.firstName} ${u.lastName}`} className="w-full h-full object-cover" />
                                     ) : (
                                       <span>{u.firstName.charAt(0)}{u.lastName.charAt(0)}</span>
                                     )}
@@ -1012,7 +1013,7 @@ export default function AdminUsersPage() {
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-full overflow-hidden bg-bg-secondary border border-border flex items-center justify-center text-xs font-bold text-text-muted shrink-0">
                               {u.avatarUrl ? (
-                                <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                <img src={getAvatarUrl(u.avatarUrl)} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <span>{u.firstName.charAt(0)}{u.lastName.charAt(0)}</span>
                               )}
