@@ -148,37 +148,50 @@ export function Header() {
       <div className="flex items-center gap-4">
         {user?.activeTenantName && (
           <div className="relative hidden md:block" ref={tenantDropdownRef}>
-            <button 
-              onClick={() => setIsTenantDropdownOpen(!isTenantDropdownOpen)}
-              className="flex items-center px-3 py-1.5 bg-bg-card rounded-full border border-border text-sm hover:border-accent/50 transition-colors"
-            >
-              <span className="text-text-muted mr-2">Aile:</span>
-              <span className="font-medium text-text-primary">{user.activeTenantName}</span>
-              <span className="ml-2 text-text-muted text-[10px]">▼</span>
-            </button>
-            
-            {isTenantDropdownOpen && myTenants.length > 0 && (
-              <div className="absolute right-0 mt-2 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50">
-                <div className="p-3 border-b border-border bg-bg-card">
-                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Kurumlarım</p>
-                </div>
-                <div className="max-h-60 overflow-y-auto p-1">
-                  {myTenants.map((t: any) => (
-                    <button
-                      key={t.id}
-                      onClick={() => handleSwitchTenant(t.id)}
-                      className={clsx(
-                        "w-full text-left px-3 py-2 text-sm rounded-lg flex items-center justify-between transition-colors mb-1",
-                        t.id === user.activeTenantId 
-                          ? "bg-accent/10 text-accent font-medium" 
-                          : "text-text-secondary hover:bg-bg-secondary"
-                      )}
-                    >
-                      <span className="truncate">{t.name}</span>
-                      {t.id === user.activeTenantId && <Check size={14} />}
-                    </button>
-                  ))}
-                </div>
+            {(Array.isArray(myTenants) && myTenants.length > 1) ? (
+              <>
+                <button 
+                  onClick={() => setIsTenantDropdownOpen(!isTenantDropdownOpen)}
+                  className="flex items-center px-3 py-1.5 bg-bg-card rounded-full border border-border text-sm hover:border-accent/50 transition-colors cursor-pointer"
+                  title="Aile hesabını değiştir"
+                >
+                  <span className="text-text-muted mr-1.5 text-xs">Aile:</span>
+                  <span className="font-semibold text-text-primary text-xs">{user.activeTenantName}</span>
+                  <span className="ml-2 text-text-muted text-[10px]">▼</span>
+                </button>
+                
+                {isTenantDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="p-3 border-b border-border bg-bg-card">
+                      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Aile Hesaplarım</p>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto p-1">
+                      {myTenants.map((t: any) => (
+                        <button
+                          key={t.id}
+                          onClick={() => {
+                            setIsTenantDropdownOpen(false);
+                            handleSwitchTenant(t.id);
+                          }}
+                          className={clsx(
+                            "w-full text-left px-3 py-2 text-sm rounded-lg flex items-center justify-between transition-colors mb-1 cursor-pointer",
+                            t.id === user.activeTenantId 
+                              ? "bg-accent/10 text-accent font-medium" 
+                              : "text-text-secondary hover:bg-bg-secondary"
+                          )}
+                        >
+                          <span className="truncate">{t.name}</span>
+                          {t.id === user.activeTenantId && <Check size={14} />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center px-3 py-1.5 bg-bg-card/70 rounded-full border border-border text-xs select-none">
+                <span className="text-text-muted mr-1.5">Aile:</span>
+                <span className="font-semibold text-text-primary">{user.activeTenantName}</span>
               </div>
             )}
           </div>
