@@ -62,13 +62,33 @@ export class InvoicesController {
   @UseInterceptors(FileInterceptor("file"))
   async extractData(
     @ActiveTenant() tenantId: string,
-    @UploadedFile() file: Express.Multer.File,
-    @Body("documentType") documentType: string,
+    @UploadedFile() file?: Express.Multer.File,
+    @Body() body?: { base64?: string; mimeType?: string; filename?: string; documentType?: string },
   ) {
-    if (!file) {
+    let targetFile = file;
+    const docType = body?.documentType || "invoice";
+
+    if (!targetFile && body?.base64) {
+      let rawBase64 = body.base64.trim();
+      let mime = body.mimeType || "image/jpeg";
+      const dataUrlMatch = rawBase64.match(/^data:([^;]+);base64,(.+)$/);
+      if (dataUrlMatch) {
+        mime = dataUrlMatch[1];
+        rawBase64 = dataUrlMatch[2];
+      }
+      const buffer = Buffer.from(rawBase64, "base64");
+      targetFile = {
+        buffer,
+        mimetype: mime,
+        originalname: body.filename || `document_${Date.now()}.${mime.includes("pdf") ? "pdf" : "jpg"}`,
+        size: buffer.length,
+      } as Express.Multer.File;
+    }
+
+    if (!targetFile) {
       return success(null, "No file uploaded");
     }
-    const extractedData = await this.service.extractData(file, documentType);
+    const extractedData = await this.service.extractData(targetFile, docType);
     return success(extractedData, "Fatura verileri çıkarıldı.");
   }
 }

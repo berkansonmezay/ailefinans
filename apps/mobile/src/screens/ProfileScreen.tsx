@@ -24,17 +24,49 @@ export const ProfileScreen = ({ navigation }: any) => {
   const uploadAvatarAsset = async (asset: ImagePicker.ImagePickerAsset) => {
     setUploadingAvatar(true);
     try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: asset.uri,
-        name: asset.fileName || `avatar_${Date.now()}.jpg`,
-        type: asset.mimeType || 'image/jpeg',
-      } as any);
+      let base64Data = asset.base64;
+      if (!base64Data && asset.uri) {
+        try {
+          const resp = await fetch(asset.uri);
+          const blob = await resp.blob();
+          base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const res = reader.result as string;
+              const commaIdx = res.indexOf(',');
+              resolve(commaIdx !== -1 ? res.slice(commaIdx + 1) : res);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          console.warn('Fallback base64 reading failed:', e);
+        }
+      }
 
-      const res = await fetchApi<any>('/auth/avatar', {
-        method: 'POST',
-        body: formData,
-      });
+      let res: any;
+      if (base64Data) {
+        // Send as pure JSON Base64 - avoids React Native / Expo FormDataPart bugs completely!
+        res = await fetchApi<any>('/auth/avatar', {
+          method: 'POST',
+          body: JSON.stringify({
+            base64: base64Data,
+            mimeType: asset.mimeType || 'image/jpeg',
+          }),
+        });
+      } else {
+        const formData = new FormData();
+        formData.append('file', {
+          uri: asset.uri,
+          name: asset.fileName || `avatar_${Date.now()}.jpg`,
+          type: asset.mimeType || 'image/jpeg',
+        } as any);
+
+        res = await fetchApi<any>('/auth/avatar', {
+          method: 'POST',
+          body: formData,
+        });
+      }
 
       const newAvatarUrl = res?.data?.avatarUrl || res?.avatarUrl;
       if (newAvatarUrl && user) {
@@ -62,7 +94,8 @@ export const ProfileScreen = ({ navigation }: any) => {
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.7,
+        base64: true,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         await uploadAvatarAsset(result.assets[0]);
@@ -84,7 +117,8 @@ export const ProfileScreen = ({ navigation }: any) => {
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.7,
+        base64: true,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         await uploadAvatarAsset(result.assets[0]);

@@ -111,9 +111,10 @@ export class AuthController {
   )
   async uploadAvatar(
     @CurrentUser() user: any,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file?: Express.Multer.File,
+    @Body() body?: { base64?: string; mimeType?: string },
   ) {
-    const result = await this.authService.uploadAvatar(user.userId, file);
+    const result = await this.authService.uploadAvatar(user.userId, file, body);
     return success(result, "Profil fotoğrafı başarıyla yüklendi.");
   }
 

@@ -13,6 +13,7 @@ interface SelectedFileAsset {
   name: string;
   mimeType: string;
   size?: number;
+  base64?: string;
 }
 
 export const InvoiceScannerScreen = ({ navigation }: any) => {
@@ -111,6 +112,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.8,
+        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -120,6 +122,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
           name: asset.fileName || `scan_${Date.now()}.jpg`,
           mimeType: asset.mimeType || 'image/jpeg',
           size: asset.fileSize,
+          base64: asset.base64 || undefined,
         };
         setSelectedAsset(fileAsset);
         processDocumentWithAI(fileAsset);
@@ -143,6 +146,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.8,
+        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -152,6 +156,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
           name: asset.fileName || `gallery_${Date.now()}.jpg`,
           mimeType: asset.mimeType || 'image/jpeg',
           size: asset.fileSize,
+          base64: asset.base64 || undefined,
         };
         setSelectedAsset(fileAsset);
         processDocumentWithAI(fileAsset);
@@ -193,18 +198,51 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
     setExtractedData(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
-        name: asset.name || 'document.jpg',
-        type: asset.mimeType || 'image/jpeg',
-      } as any);
-      formData.append('documentType', documentType);
+      let base64Data = asset.base64;
+      if (!base64Data && asset.uri) {
+        try {
+          const resp = await fetch(asset.uri);
+          const blob = await resp.blob();
+          base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const res = reader.result as string;
+              const commaIdx = res.indexOf(',');
+              resolve(commaIdx !== -1 ? res.slice(commaIdx + 1) : res);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          console.warn('Fallback base64 reading failed for document:', e);
+        }
+      }
 
-      const res = await fetchApi<any>('/invoices/extract', {
-        method: 'POST',
-        body: formData,
-      });
+      let res: any;
+      if (base64Data) {
+        res = await fetchApi<any>('/invoices/extract', {
+          method: 'POST',
+          body: JSON.stringify({
+            base64: base64Data,
+            mimeType: asset.mimeType || 'image/jpeg',
+            filename: asset.name,
+            documentType,
+          }),
+        });
+      } else {
+        const formData = new FormData();
+        formData.append('file', {
+          uri: Platform.OS === 'ios' ? asset.uri.replace('file://', '') : asset.uri,
+          name: asset.name || 'document.jpg',
+          type: asset.mimeType || 'image/jpeg',
+        } as any);
+        formData.append('documentType', documentType);
+
+        res = await fetchApi<any>('/invoices/extract', {
+          method: 'POST',
+          body: formData,
+        });
+      }
 
       const data = res || {};
       if (documentType === 'invoice') {

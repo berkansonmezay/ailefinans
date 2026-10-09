@@ -464,9 +464,47 @@ export class AuthService {
     return { url, key, bucket };
   }
 
-  async uploadAvatar(userId: string, file: Express.Multer.File) {
-    if (!file) {
+  async uploadAvatar(
+    userId: string,
+    file?: Express.Multer.File,
+    body?: { base64?: string; mimeType?: string },
+  ) {
+    let fileBuffer: Buffer | null = null;
+    let mimetype = "image/jpeg";
+    let ext = ".jpg";
+
+    if (body?.base64) {
+      let rawBase64 = body.base64.trim();
+      const dataUrlMatch = rawBase64.match(/^data:([^;]+);base64,(.+)$/);
+      if (dataUrlMatch) {
+        mimetype = dataUrlMatch[1];
+        rawBase64 = dataUrlMatch[2];
+      } else if (body.mimeType) {
+        mimetype = body.mimeType;
+      }
+
+      try {
+        fileBuffer = Buffer.from(rawBase64, "base64");
+      } catch {
+        throw new BadRequestException("Geçersiz base64 resim verisi.");
+      }
+
+      if (mimetype.includes("png")) ext = ".png";
+      else if (mimetype.includes("webp")) ext = ".webp";
+      else if (mimetype.includes("gif")) ext = ".gif";
+      else ext = ".jpg";
+    } else if (file) {
+      fileBuffer = file.buffer;
+      mimetype = file.mimetype || "image/jpeg";
+      ext = extname(file.originalname || "").toLowerCase() || ".jpg";
+    }
+
+    if (!fileBuffer || fileBuffer.length === 0) {
       throw new BadRequestException("Lütfen bir resim dosyası seçin.");
+    }
+
+    if (fileBuffer.length > 10 * 1024 * 1024) {
+      throw new BadRequestException("Profil resmi en fazla 10MB olabilir.");
     }
 
     const allowedMimeTypes = [
@@ -481,9 +519,8 @@ export class AuthService {
       "image/x-png",
     ];
     const allowedExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"];
-    const ext = extname(file.originalname || "").toLowerCase() || ".jpg";
 
-    const isAllowedMime = allowedMimeTypes.includes(file.mimetype?.toLowerCase());
+    const isAllowedMime = allowedMimeTypes.includes(mimetype.toLowerCase());
     const isAllowedExt = allowedExtensions.includes(ext);
 
     if (!isAllowedMime && !isAllowedExt) {
@@ -509,9 +546,9 @@ export class AuthService {
           headers: {
             Authorization: `Bearer ${supabase.key}`,
             apikey: supabase.key,
-            "Content-Type": file.mimetype || "image/jpeg",
+            "Content-Type": mimetype,
           },
-          body: file.buffer as any,
+          body: fileBuffer as any,
         });
 
         if (uploadRes.ok) {
@@ -545,11 +582,11 @@ export class AuthService {
         } catch {}
       }
       const localFilePath = resolve(uploadDir, filename);
-      writeFileSync(localFilePath, file.buffer);
+      writeFileSync(localFilePath, fileBuffer);
 
       // Always store as base64 Data URL directly in the database so that all clients
       // (web, mobile, Expo, cloud, and different developer machines) can render it instantly with 0 sync issues!
-      avatarUrl = `data:${file.mimetype || "image/jpeg"};base64,${file.buffer.toString("base64")}`;
+      avatarUrl = `data:${mimetype};base64,${fileBuffer.toString("base64")}`;
     }
 
     const updatedUser = await this.prisma.user.update({
