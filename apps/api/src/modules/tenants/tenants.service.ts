@@ -2,12 +2,18 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
+import * as bcrypt from "bcryptjs";
+import { MailService } from "../auth/mail.service";
 
 @Injectable()
 export class TenantsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   async getUserTenants(userId: string) {
     const memberships = await this.prisma.tenantMember.findMany({
@@ -83,41 +89,143 @@ export class TenantsService {
   async addMember(
     tenantId: string,
     requesterId: string,
-    dto: { email: string; role: string },
+    dto: {
+      email: string;
+      role?: string;
+      firstName?: string;
+      lastName?: string;
+      password?: string;
+    },
   ) {
     await this.requireRole(tenantId, requesterId, ["OWNER", "ADMIN"]);
 
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-    if (!user) {
-      throw new NotFoundException(
-        "Bu e-posta adresine ait kullanıcı bulunamadı.",
-      );
+    if (!dto.email || !dto.email.trim()) {
+      throw new BadRequestException("E-posta adresi gereklidir.");
     }
 
+    const email = dto.email.toLowerCase().trim();
+    const role = (dto.role as any) || "MEMBER";
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+    if (!tenant) throw new NotFoundException("Aile bulunamadı.");
+
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId },
+    });
+
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    let isNewUser = false;
+
+    if (!user) {
+      // Model 1: Doğrudan yeni kullanıcı oluştur
+      const firstName = dto.firstName?.trim();
+      const lastName = dto.lastName?.trim();
+
+      if (!firstName || !lastName) {
+        throw new BadRequestException(
+          "Yeni kullanıcı oluşturmak için Ad ve Soyad alanları zorunludur.",
+        );
+      }
+
+      const password = dto.password?.trim() || Math.random().toString(36).slice(-8) + "1Aa!";
+      if (password.length < 6) {
+        throw new BadRequestException("Şifre en az 6 karakter olmalıdır.");
+      }
+
+      const passwordHash = await bcrypt.hash(password, 12);
+      const baseUsername = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") || "uye";
+      const username = `${baseUsername}${Math.floor(100 + Math.random() * 900)}`;
+
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          username,
+          firstName,
+          lastName,
+          passwordHash,
+          isActive: true, // Aile yöneticisi eklediği için doğrudan aktif
+          systemRole: "USER",
+        },
+      });
+
+      isNewUser = true;
+
+      // E-posta ile davet/giriş bilgilerini gönder (hata alsa bile kullanıcı oluşturmayı engellemez)
+      this.mailService
+        .sendFamilyInvitationEmail(user.email, {
+          name: `${user.firstName} ${user.lastName}`,
+          inviterName: requester ? `${requester.firstName} ${requester.lastName}` : "Aile Yöneticiniz",
+          familyName: tenant.name,
+          temporaryPassword: password,
+          loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
+        })
+        .catch(() => {});
+    }
+
+    // Üyelik kontrolü
     const existing = await this.prisma.tenantMember.findUnique({
       where: { tenantId_userId: { tenantId, userId: user.id } },
     });
 
     if (existing) {
       if (existing.isActive) {
-        throw new ForbiddenException("Bu kullanıcı zaten aile üyesi.");
+        throw new ForbiddenException("Bu kullanıcı zaten bu ailenin üyesi.");
       }
-      // Reactivate
-      return this.prisma.tenantMember.update({
+      // Yeniden aktifleştir
+      const updated = await this.prisma.tenantMember.update({
         where: { id: existing.id },
-        data: { isActive: true, role: dto.role as any },
+        data: { isActive: true, role },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              avatarUrl: true,
+            },
+          },
+        },
       });
+
+      return {
+        ...updated,
+        isNewUser: false,
+        message: "Kullanıcı aileye dahil edildi.",
+      };
     }
 
-    return this.prisma.tenantMember.create({
+    const membership = await this.prisma.tenantMember.create({
       data: {
         tenantId,
         userId: user.id,
-        role: dto.role as any,
+        role,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
+
+    return {
+      ...membership,
+      isNewUser,
+      message: isNewUser
+        ? "Yeni kullanıcı oluşturuldu ve aileye eklendi."
+        : "Kayıtlı kullanıcı aileye eklendi.",
+    };
   }
 
   async removeMember(

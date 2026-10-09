@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { fetchApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
-import { Trash2, Edit2, Search, Plus, Tag, ArrowUpCircle, ArrowDownCircle, Users, Building, Settings as SettingsIcon, UserPlus, Cloud, Info, ChevronDown, ChevronUp, Wallet, Shield, ArrowRight } from 'lucide-react';
+import { Trash2, Edit2, Search, Plus, Tag, ArrowUpCircle, ArrowDownCircle, Users, Building, Settings as SettingsIcon, UserPlus, ChevronDown, ChevronUp, Wallet, Shield, ArrowRight, Eye, EyeOff, Sparkles, Key, Mail } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
 import { CategoriesTab } from '@/components/settings/CategoriesTab';
@@ -31,8 +31,18 @@ export default function SettingsPage() {
   const [tenant, setTenant] = useState<any>(null);
   const [tenantName, setTenantName] = useState('');
   const [currency, setCurrency] = useState('TRY');
-  const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberRole, setNewMemberRole] = useState('MEMBER');
+
+  // Add Member Modal State (Model 1)
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [isSubmittingMember, setIsSubmittingMember] = useState(false);
+  const [showMemberPassword, setShowMemberPassword] = useState(false);
+  const [memberForm, setMemberForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    role: 'MEMBER',
+  });
 
   // Tenants List States
   const [myTenants, setMyTenants] = useState<any[]>([]);
@@ -40,8 +50,6 @@ export default function SettingsPage() {
   const [newTenantName, setNewTenantName] = useState('');
   const [newTenantCurrency, setNewTenantCurrency] = useState('TRY');
   const [tenantSearchQuery, setTenantSearchQuery] = useState('');
-  
-  const [integrationInfoModalOpen, setIntegrationInfoModalOpen] = useState(false);
 
   const loadCurrentTenant = async () => {
     try {
@@ -132,19 +140,59 @@ export default function SettingsPage() {
     }
   };
 
+  const canManageMembers = user?.role === 'OWNER' || user?.role === 'ADMIN' || user?.systemRole === 'ADMIN' || user?.systemRole === 'SUPER_ADMIN';
+
+  const generateRandomPassword = () => {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+    let pass = '';
+    for (let i = 0; i < 8; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setMemberForm(prev => ({ ...prev, password: pass }));
+  };
+
   const handleAddMember = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!user?.activeTenantId) return;
+
+    if (!memberForm.email.trim() || !memberForm.firstName.trim() || !memberForm.lastName.trim()) {
+      toast.error('Lütfen ad, soyad ve e-posta alanlarını doldurun');
+      return;
+    }
+
+    if (memberForm.password && memberForm.password.length < 6) {
+      toast.error('Şifre en az 6 karakter olmalıdır');
+      return;
+    }
+
+    setIsSubmittingMember(true);
     try {
-      await fetchApi(`/tenants/${user.activeTenantId}/members`, {
+      const res = await fetchApi<any>(`/tenants/${user.activeTenantId}/members`, {
         method: 'POST',
-        body: JSON.stringify({ email: newMemberEmail, role: newMemberRole }),
+        body: JSON.stringify({
+          firstName: memberForm.firstName.trim(),
+          lastName: memberForm.lastName.trim(),
+          email: memberForm.email.trim(),
+          password: memberForm.password.trim() || undefined,
+          role: memberForm.role,
+        }),
       });
-      toast.success('Üye davet edildi');
-      setNewMemberEmail('');
+
+      toast.success(res?.message || 'Üye başarıyla eklendi');
+      setIsAddMemberModalOpen(false);
+      setMemberForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        role: 'MEMBER',
+      });
+      setShowMemberPassword(false);
       loadCurrentTenant();
     } catch (error: any) {
       toast.error(error.message || 'Üye eklenirken hata oluştu');
+    } finally {
+      setIsSubmittingMember(false);
     }
   };
 
@@ -410,35 +458,61 @@ export default function SettingsPage() {
 
           {/* Aile Üyeleri */}
           <section>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                <Users className="w-4 h-4 text-cyan-400" /> Aile Üyeleri
-              </h3>
-              <span className="text-xs bg-bg-secondary text-text-secondary px-2.5 py-1 rounded-full font-medium">
-                {tenant?.members?.length || 0} Üye
-              </span>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                  <Users className="w-4 h-4 text-cyan-400" /> Aile Üyeleri
+                </h3>
+                <span className="text-xs bg-bg-secondary text-text-secondary px-2.5 py-0.5 rounded-full font-medium">
+                  {tenant?.members?.length || 0} Üye
+                </span>
+              </div>
+              
+              {canManageMembers && (
+                <Button 
+                  size="sm" 
+                  onClick={() => setIsAddMemberModalOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Yeni Üye Ekle
+                </Button>
+              )}
             </div>
             
             <div className="bg-bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
               {tenant?.members?.map((m: any) => (
                 <div key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 hover:bg-bg-secondary/30 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-bg-secondary flex items-center justify-center text-text-muted font-bold text-xs uppercase">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 font-bold text-xs uppercase shadow-sm shrink-0">
                       {m.firstName?.[0]}{m.lastName?.[0]}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-text-primary">{m.firstName} {m.lastName}</p>
+                      <p className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                        {m.firstName} {m.lastName}
+                        {m.userId === user?.id && (
+                          <span className="text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                            Siz
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-text-muted">{m.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                      m.role === 'OWNER' ? 'bg-amber-500/15 text-amber-500' : 'bg-bg-secondary text-text-secondary'
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${
+                      m.role === 'OWNER' ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30' :
+                      m.role === 'ADMIN' ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30' :
+                      m.role === 'VIEWER' ? 'bg-gray-500/15 text-gray-400 border border-gray-500/30' :
+                      'bg-blue-500/15 text-blue-500 border border-blue-500/30'
                     }`}>
-                      {m.role === 'OWNER' ? 'Yönetici' : 'Üye'}
+                      {m.role === 'OWNER' ? 'Kurucu' : m.role === 'ADMIN' ? 'Yönetici' : m.role === 'VIEWER' ? 'İzleyici' : 'Standart Üye'}
                     </span>
-                    {user?.role === 'OWNER' && m.userId !== user.id && (
-                      <button onClick={() => handleRemoveMember(m.userId)} className="text-text-muted hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10" title="Üyeyi Çıkar">
+                    {canManageMembers && m.userId !== user?.id && (
+                      <button 
+                        onClick={() => handleRemoveMember(m.userId)} 
+                        className="text-text-muted hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10 cursor-pointer" 
+                        title="Üyeyi Aileden Çıkar"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
@@ -446,57 +520,21 @@ export default function SettingsPage() {
                 </div>
               ))}
               
-              {user?.role === 'OWNER' && (
-                <div className="p-4 bg-bg-secondary/10 flex flex-col sm:flex-row items-end sm:items-center gap-3 border-t border-border/50 mt-2">
-                  <div className="flex-1 w-full">
-                    <input type="email" value={newMemberEmail} onChange={(e) => setNewMemberEmail(e.target.value)} placeholder="Davet edilecek E-posta" className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors" />
-                  </div>
-                  <div className="w-full sm:w-auto">
-                    <select value={newMemberRole} onChange={(e) => setNewMemberRole(e.target.value)} className="w-full bg-bg-card border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors appearance-none min-w-[130px]">
-                      <option value="MEMBER">Standart Üye</option>
-                      <option value="OWNER">Yönetici</option>
-                    </select>
-                  </div>
-                  <Button onClick={handleAddMember} className="w-full sm:w-auto whitespace-nowrap"><UserPlus className="w-4 h-4 mr-2"/>Davet Et</Button>
+              {canManageMembers && (
+                <div className="p-4 bg-bg-secondary/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-border/50">
+                  <p className="text-xs text-text-muted">
+                    Ailenize eşiniz, çocuklarınız veya ortaklarınızı ekleyerek bütçeyi birlikte yönetebilirsiniz.
+                  </p>
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={() => setIsAddMemberModalOpen(true)}
+                    className="whitespace-nowrap text-xs cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Yeni Üye Ekle
+                  </Button>
                 </div>
               )}
-            </div>
-          </section>
-
-          {/* Entegrasyonlar */}
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                <Cloud className="w-4 h-4 text-blue-400" /> Entegrasyonlar
-              </h3>
-              <button onClick={() => setIntegrationInfoModalOpen(true)} className="text-text-muted hover:text-blue-500 transition-colors" title="Nasıl Yapılır?">
-                <Info className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="bg-bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2 sm:gap-4 hover:bg-bg-secondary/30 transition-colors">
-                <div className="sm:w-1/2">
-                  <p className="text-sm font-medium text-text-primary">Google Drive Bağlantısı</p>
-                  <p className="text-xs text-text-muted mt-0.5">Garanti ve fatura belgeleriniz kendi Google Drive hesabınızda güvenle saklansın.</p>
-                </div>
-                <div className="flex-1 flex justify-end">
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const res = await fetchApi<any>('/integrations/google-drive/auth');
-                        if (res && res.url) {
-                          window.location.href = res.url;
-                        }
-                      } catch (error: any) {
-                        toast.error(error.message || 'Drive bağlantısı başlatılamadı');
-                      }
-                    }} 
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                  >
-                    <Cloud className="w-4 h-4" /> Drive'ı Bağla
-                  </button>
-                </div>
-              </div>
             </div>
           </section>
         </div>
@@ -599,40 +637,125 @@ export default function SettingsPage() {
         </form>
       </Modal>
 
-      <Modal isOpen={integrationInfoModalOpen} onClose={() => setIntegrationInfoModalOpen(false)} title="Google Drive Entegrasyon Rehberi">
-        <div className="space-y-4 text-sm text-text-secondary pb-4">
-          <p>
-            Google Drive entegrasyonu sayesinde garanti belgelerinizi ve fatura görsellerinizi uygulamanın sunucusu yerine
-            doğrudan <strong>kendi Google Drive alanınızda</strong> saklayabilirsiniz.
-          </p>
-          
-          <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
-            <h4 className="font-semibold text-blue-600 mb-2 flex items-center gap-2">
-              <Info className="w-4 h-4" /> Sistem Yöneticisi İçin Kurulum Adımları
-            </h4>
-            <ul className="list-decimal list-inside space-y-2">
-              <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Google Cloud Console</a>'a giriş yapın.</li>
-              <li>Yeni bir proje oluşturun ve <strong>Google Drive API</strong>'yi aktif hale getirin.</li>
-              <li><strong>OAuth Consent Screen</strong> ayarlarını yapılandırın.</li>
-              <li>Credentials bölümünden <strong>OAuth Client ID</strong> (Web Application) oluşturun.</li>
-              <li>
-                Yönlendirme (Redirect URI) adresi olarak şu anki sunucunuzun callback adresini girin: <br />
-                <code className="bg-bg-secondary px-2 py-1 rounded text-xs break-all mt-1 inline-block text-text-primary">
-                  {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/integrations/google-drive/callback
-                </code>
-              </li>
-              <li>Oluşan <strong>Client ID</strong> ve <strong>Client Secret</strong> değerlerini backend uygulamanızın `.env` dosyasına kaydedip sunucuyu yeniden başlatın.</li>
-            </ul>
-          </div>
-          
-          <p>
-            Yukarıdaki adımlar tamamlandıktan sonra <strong>"Drive'ı Bağla"</strong> butonunu kullanarak yetkilendirme işlemini gerçekleştirebilirsiniz.
+      {/* Aileye Yeni Üye Ekle Modalı (Model 1) */}
+      <Modal 
+        isOpen={isAddMemberModalOpen} 
+        onClose={() => setIsAddMemberModalOpen(false)} 
+        title="Aileye Yeni Üye Ekle"
+      >
+        <form onSubmit={handleAddMember} className="space-y-4">
+          <p className="text-xs text-text-muted leading-relaxed">
+            Aile bireyinizin bilgilerini girerek doğrudan aile hesabınıza yeni bir kullanıcı ekleyin. Belirlediğiniz şifre ile anında giriş yapabilir.
           </p>
 
-          <div className="pt-4 flex justify-end">
-            <Button onClick={() => setIntegrationInfoModalOpen(false)}>Anladım</Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-text-secondary mb-1">Ad *</label>
+              <input
+                type="text"
+                placeholder="Örn: Ayşe"
+                value={memberForm.firstName}
+                onChange={(e) => setMemberForm({ ...memberForm, firstName: e.target.value })}
+                required
+                className="w-full bg-bg-card border border-border rounded-xl px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-secondary mb-1">Soyad *</label>
+              <input
+                type="text"
+                placeholder="Örn: Sönmezay"
+                value={memberForm.lastName}
+                onChange={(e) => setMemberForm({ ...memberForm, lastName: e.target.value })}
+                required
+                className="w-full bg-bg-card border border-border rounded-xl px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors"
+              />
+            </div>
           </div>
-        </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1">E-posta Adresi *</label>
+            <input
+              type="email"
+              placeholder="Örn: ornek@gmail.com"
+              value={memberForm.email}
+              onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+              required
+              className="w-full bg-bg-card border border-border rounded-xl px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors"
+            />
+            <p className="text-[11px] text-text-muted mt-1">
+              Eğer bu e-posta adresi sistemde zaten kayıtlıysa, mevcut hesap doğrudan bu aileye bağlanır.
+            </p>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-text-secondary">Giriş Şifresi *</label>
+              <button
+                type="button"
+                onClick={generateRandomPassword}
+                className="text-[11px] text-emerald-500 hover:text-emerald-400 font-medium flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles size={12} /> Rastgele Şifre Üret
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type={showMemberPassword ? 'text' : 'password'}
+                placeholder="En az 6 karakter"
+                value={memberForm.password}
+                onChange={(e) => setMemberForm({ ...memberForm, password: e.target.value })}
+                minLength={6}
+                required
+                className="w-full bg-bg-card border border-border rounded-xl pl-3 pr-10 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowMemberPassword(!showMemberPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary cursor-pointer"
+              >
+                {showMemberPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1">Aile İçi Rolü</label>
+            <select
+              value={memberForm.role}
+              onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+              className="w-full bg-bg-card border border-border rounded-xl px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors appearance-none"
+            >
+              <option value="MEMBER">Standart Üye (Gelir/Gider ekleyebilir, takip edebilir)</option>
+              <option value="VIEWER">İzleyici (Sadece görüntüleyebilir, işlem ekleyemez)</option>
+              <option value="OWNER">Yönetici (Tüm ayarları ve üyeleri yönetebilir)</option>
+            </select>
+          </div>
+
+          <div className="pt-3 flex justify-end gap-3 border-t border-border/50">
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={() => setIsAddMemberModalOpen(false)}
+              disabled={isSubmittingMember}
+            >
+              İptal
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmittingMember}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer"
+            >
+              {isSubmittingMember ? (
+                <span>Ekleniyor...</span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <UserPlus size={16} /> Üyeyi Oluştur ve Ekle
+                </span>
+              )}
+            </Button>
+          </div>
+        </form>
       </Modal>
 
     </div>

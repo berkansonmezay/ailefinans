@@ -67,14 +67,14 @@ export class TenantsController {
   async addMember(
     @Param("tenantId") tenantId: string,
     @CurrentUser() user: any,
-    @Body() dto: { email: string; role: string },
+    @Body() dto: { email: string; role?: string; firstName?: string; lastName?: string; password?: string },
   ) {
     const member = await this.tenantsService.addMember(
       tenantId,
       user.userId,
       dto,
     );
-    return success(member, "Üye eklendi.");
+    return success(member, member?.message || "Üye eklendi.");
   }
 
   @Delete(":tenantId/members/:memberUserId")

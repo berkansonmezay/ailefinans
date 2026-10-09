@@ -6,7 +6,8 @@ import {
   Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, 
   Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal, 
   Package, Zap, Crown, Pencil, Home, Building2, Plus, ArrowRight,
-  FolderTree, ChevronDown, ChevronRight, CornerDownRight, ListTree
+  FolderTree, ChevronDown, ChevronRight, CornerDownRight, ListTree,
+  Minimize2, Maximize2
 } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { getAvatarUrl } from '@/lib/utils';
@@ -160,6 +161,27 @@ export default function AdminUsersPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [activeTab, setActiveTab] = useState<'users' | 'tenants'>('users');
   const [isFamilyView, setIsFamilyView] = useState(false);
+  const [isFitMode, setIsFitMode] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('admin_fit_mode');
+      if (saved !== null) {
+        setIsFitMode(saved === 'true');
+      }
+    }
+  }, []);
+
+  const toggleFitMode = () => {
+    setIsFitMode(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('admin_fit_mode', String(next));
+      }
+      return next;
+    });
+  };
+
   const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -734,8 +756,28 @@ export default function AdminUsersPage() {
                 />
               </div>
 
-              {/* View Toggle (Aile Görünümü) */}
-              <div className="flex items-center gap-2 self-start sm:self-auto">
+              {/* View Toggles (Aile Görünümü & Ekrana Sığdır) */}
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={toggleFitMode}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+                    isFitMode
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20'
+                      : 'bg-bg-secondary text-text-secondary hover:text-text-primary border-border hover:border-text-muted/30'
+                  }`}
+                  title="Sütunları daraltarak tüm verileri ve işlem butonlarını yatay kaydırma olmadan ekrana sığdır"
+                >
+                  <Minimize2 className={`w-4 h-4 ${isFitMode ? 'text-white' : 'text-blue-500'}`} />
+                  <span>Ekrana Sığdır</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    isFitMode
+                      ? 'bg-white/20 text-white'
+                      : 'bg-bg-card text-text-muted border border-border'
+                  }`}>
+                    {isFitMode ? 'Açık' : 'Kapalı'}
+                  </span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setIsFamilyView(!isFamilyView)}
@@ -1026,95 +1068,110 @@ export default function AdminUsersPage() {
             /* User Table */
             <div className="bg-bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className={`w-full text-left transition-all ${isFitMode ? 'text-xs' : 'text-sm'}`}>
                   <thead className="bg-bg-sidebar border-b border-border">
                     <tr>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı</th>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Hesabı</th>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Rolü</th>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı Adı</th>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Mail Adresi</th>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kayıt Tarihi</th>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Yetki</th>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Durum</th>
-                      <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider text-right">İşlemler</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider`}>Kullanıcı</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider`}>Aile Hesabı</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider`}>Aile Rolü</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider`}>Kullanıcı Adı</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider`}>Mail Adresi</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider`}>Kayıt Tarihi</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider`}>Yetki</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider`}>Durum</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3 text-[12px]'} font-semibold text-text-muted uppercase tracking-wider text-right`}>İşlemler</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filteredUsers.map((u) => (
                       <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2.5">
-                            <UserAvatar user={u} className="w-8 h-8 rounded-full" />
-                            <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
+                        <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'} transition-all`}>
+                          <div className="flex items-center gap-2">
+                            <UserAvatar 
+                              user={u} 
+                              className={`${isFitMode ? 'w-6.5 h-6.5 text-[10px]' : 'w-8 h-8 text-xs'} rounded-full`} 
+                            />
+                            <div 
+                              className={`font-semibold text-text-primary ${isFitMode ? 'whitespace-nowrap text-xs max-w-[130px] truncate' : ''}`}
+                              title={`${u.firstName} ${u.lastName}`}
+                            >
+                              {u.firstName} {u.lastName}
+                            </div>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5 text-text-secondary text-sm">
-                          <div className="flex items-center gap-1.5 font-medium text-text-primary">
-                            <Home className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                            <span>{u.tenantName}</span>
+                        <td className={`${isFitMode ? 'px-2.5 py-1.5 text-xs' : 'px-5 py-3.5 text-sm'} text-text-secondary`}>
+                          <div 
+                            className={`flex items-center gap-1.5 font-medium text-text-primary ${isFitMode ? 'max-w-[125px] truncate' : ''}`}
+                            title={u.tenantName}
+                          >
+                            <Home className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-emerald-500 shrink-0`} />
+                            <span className="truncate">{u.tenantName}</span>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className={isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}>
                           {u.tenantRole === 'OWNER' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                              <Crown size={12} /> Kurucu
+                            <span className={`inline-flex items-center gap-1 rounded-md font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20 whitespace-nowrap ${isFitMode ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'}`}>
+                              <Crown size={isFitMode ? 10 : 12} /> Kurucu
                             </span>
                           ) : u.tenantRole === 'ADMIN' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                              <ShieldCheck size={12} /> Yönetici
+                            <span className={`inline-flex items-center gap-1 rounded-md font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap ${isFitMode ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'}`}>
+                              <ShieldCheck size={isFitMode ? 10 : 12} /> Yönetici
                             </span>
                           ) : u.tenantRole === 'VIEWER' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-500/10 text-gray-400 border border-gray-500/20">
-                              <Eye size={12} /> İzleyici
+                            <span className={`inline-flex items-center gap-1 rounded-md font-semibold bg-gray-500/10 text-gray-400 border border-gray-500/20 whitespace-nowrap ${isFitMode ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'}`}>
+                              <Eye size={isFitMode ? 10 : 12} /> İzleyici
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                              <Users size={12} /> Üye
+                            <span className={`inline-flex items-center gap-1 rounded-md font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20 whitespace-nowrap ${isFitMode ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'}`}>
+                              <Users size={isFitMode ? 10 : 12} /> Üye
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5 text-text-secondary text-sm font-mono">
-                          {u.username ? `@${u.username}` : '-'}
+                        <td className={`${isFitMode ? 'px-2.5 py-1.5 text-xs' : 'px-5 py-3.5 text-sm'} text-text-secondary font-mono`}>
+                          <div className={isFitMode ? 'max-w-[95px] truncate' : ''} title={u.username ? `@${u.username}` : ''}>
+                            {u.username ? `@${u.username}` : '-'}
+                          </div>
                         </td>
-                        <td className="px-5 py-3.5 text-text-secondary text-sm">
-                          {u.email}
+                        <td className={`${isFitMode ? 'px-2.5 py-1.5 text-xs' : 'px-5 py-3.5 text-sm'} text-text-secondary`}>
+                          <div className={isFitMode ? 'max-w-[150px] truncate' : ''} title={u.email}>
+                            {u.email}
+                          </div>
                         </td>
-                        <td className="px-5 py-3.5 text-text-secondary text-sm">
+                        <td className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px] font-mono' : 'px-5 py-3.5 text-sm'} text-text-secondary whitespace-nowrap`}>
                           {new Date(u.createdAt).toLocaleDateString('tr-TR')}
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className={isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}>
                           {u.systemRole === 'SUPER_ADMIN' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                            <span className={`inline-flex items-center rounded-md font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap ${isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'}`}>
                               Kurucu
                             </span>
                           ) : u.systemRole === 'ADMIN' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <span className={`inline-flex items-center rounded-md font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 whitespace-nowrap ${isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'}`}>
                               Yönetici
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-bg-secondary text-text-muted border border-border">
+                            <span className={`inline-flex items-center rounded-md font-semibold bg-bg-secondary text-text-muted border border-border whitespace-nowrap ${isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'}`}>
                               Kullanıcı
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className={isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}>
                           {u.isActive ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500">
-                              <CheckCircle size={12} /> Onaylı
+                            <span className={`inline-flex items-center gap-1 rounded-md font-semibold bg-emerald-500/10 text-emerald-500 whitespace-nowrap ${isFitMode ? 'px-1.5 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'}`}>
+                              <CheckCircle size={isFitMode ? 10 : 12} /> Onaylı
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500">
-                              <ShieldAlert size={12} /> Bekliyor
+                            <span className={`inline-flex items-center gap-1 rounded-md font-semibold bg-amber-500/10 text-amber-500 whitespace-nowrap ${isFitMode ? 'px-1.5 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'}`}>
+                              <ShieldAlert size={isFitMode ? 10 : 12} /> Bekliyor
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'} text-right whitespace-nowrap`}>
+                          <div className={`flex items-center justify-end ${isFitMode ? 'gap-0.5' : 'gap-2'}`}>
                             {!u.isActive && (
                               <button
                                 onClick={() => approveUser(u.id)}
-                                className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 text-xs font-semibold rounded-lg hover:text-white transition-colors cursor-pointer"
+                                className={`${isFitMode ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1.5 text-xs'} bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 font-semibold rounded-lg hover:text-white transition-colors cursor-pointer`}
                               >
                                 Onayla
                               </button>
@@ -1123,44 +1180,44 @@ export default function AdminUsersPage() {
                             {u.isActive && currentUser?.systemRole === 'SUPER_ADMIN' && currentUser.id !== u.id && (
                               <button
                                 onClick={() => handleImpersonate(u.id, `${u.firstName} ${u.lastName}`)}
-                                className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                                className={`${isFitMode ? 'p-1' : 'p-1.5'} text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer`}
                                 title="Bu hesapla giriş yap (Impersonate)"
                               >
-                                <LogIn size={16} />
+                                <LogIn size={isFitMode ? 14 : 16} />
                               </button>
                             )}
 
                             <button
                               onClick={() => openEditModal(u)}
-                              className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                              className={`${isFitMode ? 'p-1' : 'p-1.5'} text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer`}
                               title="Kullanıcı Bilgilerini Düzenle"
                             >
-                              <Pencil size={16} />
+                              <Pencil size={isFitMode ? 14 : 16} />
                             </button>
 
                             <button
                               onClick={() => openPasswordModal(u)}
-                              className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+                              className={`${isFitMode ? 'p-1' : 'p-1.5'} text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer`}
                               title="Şifreyi Sıfırla / Değiştir"
                             >
-                              <Key size={16} />
+                              <Key size={isFitMode ? 14 : 16} />
                             </button>
 
                             <button
                               onClick={() => openMenuModal(u)}
-                              className="p-1.5 text-text-muted hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors cursor-pointer"
+                              className={`${isFitMode ? 'p-1' : 'p-1.5'} text-text-muted hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors cursor-pointer`}
                               title="Menü Görünürlük Ayarları"
                             >
-                              <SlidersHorizontal size={16} />
+                              <SlidersHorizontal size={isFitMode ? 14 : 16} />
                             </button>
 
                             {u.systemRole !== 'ADMIN' && (
                               <button
                                 onClick={() => deleteUser(u.id)}
-                                className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                className={`${isFitMode ? 'p-1' : 'p-1.5'} text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer`}
                                 title="Sil / Reddet"
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={isFitMode ? 14 : 16} />
                               </button>
                             )}
                           </div>

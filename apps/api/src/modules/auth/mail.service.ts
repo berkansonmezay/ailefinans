@@ -154,4 +154,76 @@ export class MailService {
       this.logger.error(`Failed to send password reset email to ${to}: ${err.message}`, err.stack);
     }
   }
+
+  async sendFamilyInvitationEmail(
+    to: string,
+    data: {
+      name: string;
+      inviterName: string;
+      familyName: string;
+      temporaryPassword?: string;
+      loginUrl: string;
+    }
+  ) {
+    await this.initPromise;
+    if (!this.transporter) {
+      this.logger.warn(`Mail transporter not available, skipping invitation email to ${to}`);
+      return;
+    }
+
+    const fromAddress = process.env.SMTP_FROM || 'Aile Finans <sonmezayberkan@gmail.com>';
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: fromAddress,
+        to,
+        subject: `🎉 ${data.familyName} Ailesine Katılmaya Davet Edildiniz - Aile Finans`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; background-color: #f8fafc; border-radius: 16px;">
+            <div style="background-color: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <span style="font-size: 24px; font-weight: 700; color: #059669; letter-spacing: -0.5px;">Aile Finans</span>
+              </div>
+              
+              <h2 style="font-size: 18px; font-weight: 600; color: #1e293b; margin-top: 0; margin-bottom: 12px;">
+                Merhaba ${data.name},
+              </h2>
+              
+              <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+                <strong>${data.inviterName}</strong> sizi Aile Finans üzerinde <strong>${data.familyName}</strong> aile bütçesini birlikte yönetmek üzere aileye ekledi.
+              </p>
+
+              ${data.temporaryPassword ? `
+              <div style="background-color: #f1f5f9; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Giriş Bilgileriniz</p>
+                <p style="margin: 0 0 4px 0; font-size: 13px; color: #334155;"><strong>E-posta:</strong> ${to}</p>
+                <p style="margin: 0; font-size: 13px; color: #334155;"><strong>Şifre:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace;">${data.temporaryPassword}</code></p>
+              </div>
+              ` : ''}
+              
+              <div style="text-align: center; margin: 28px 0;">
+                <a href="${data.loginUrl}" style="background-color: #059669; color: #ffffff; padding: 12px 28px; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);">
+                  Giriş Yap ve Ailene Katıl
+                </a>
+              </div>
+              
+              <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
+              
+              <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0;">
+                Giriş yaptıktan sonra şifrenizi Ayarlar sayfasından dilediğiniz gibi güncelleyebilirsiniz.
+              </p>
+            </div>
+            
+            <p style="text-align: center; font-size: 11px; color: #94a3b8; margin-top: 16px;">
+              © ${new Date().getFullYear()} Aile Finans. Tüm hakları saklıdır.
+            </p>
+          </div>
+        `,
+      });
+
+      this.logger.log(`Family invitation email sent successfully to ${to} (Message ID: ${info.messageId})`);
+    } catch (err: any) {
+      this.logger.error(`Failed to send invitation email to ${to}: ${err.message}`, err.stack);
+    }
+  }
 }
