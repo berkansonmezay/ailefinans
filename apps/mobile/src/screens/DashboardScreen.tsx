@@ -125,7 +125,7 @@ export const DashboardScreen = ({ navigation }: any) => {
       <ScrollView style={{ flex: 1, backgroundColor: '#f8fafc' }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Logo Area */}
         <View style={styles.logoWrapper}>
-          <Image source={require('../../assets/logo.jpg')} style={styles.logoImage} />
+          <Image source={require('../../assets/logo.png')} style={styles.logoImage} resizeMode="contain" />
           <Text style={styles.logoTextMain}>Aile Finans</Text>
         </View>
 
@@ -252,10 +252,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logoImage: {
-    width: 48,
-    height: 48,
-    marginRight: 12,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    marginRight: 10,
   },
   logoTextMain: {
     fontSize: 20,

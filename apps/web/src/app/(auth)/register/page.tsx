@@ -49,8 +49,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-md bg-bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
         <div className="p-8">
           <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-white overflow-hidden flex items-center justify-center">
-              <Image src="/logo.jpg" alt="Logo" width={64} height={64} className="object-cover" />
+            <div className="w-16 h-16 rounded-2xl bg-white/80 dark:bg-slate-800/80 shadow-sm flex items-center justify-center p-2">
+              <Image src="/logo.png" alt="Logo" width={56} height={56} className="object-contain" />
             </div>
           </div>
           

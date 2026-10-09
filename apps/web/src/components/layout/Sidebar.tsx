@@ -61,8 +61,8 @@ export function Sidebar() {
     <aside className="w-[var(--sidebar-width)] bg-bg-sidebar border-r border-border flex-shrink-0 hidden md:flex flex-col h-screen sticky top-0">
       <div className="h-[var(--header-height)] flex items-center px-6 border-b border-border">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg text-text-primary">
-          <div className="w-8 h-8 rounded-lg bg-white overflow-hidden flex items-center justify-center">
-            <Image src="/logo.jpg" alt="Logo" width={32} height={32} className="object-cover" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
           </div>
           <span>Aile Finans</span>
         </Link>

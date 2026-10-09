@@ -54,9 +54,9 @@ export const LoginScreen = () => {
               <View style={styles.logoContainer}>
                 <View style={styles.logoBackground}>
                   <Image 
-                    source={require('../../assets/logo.jpg')} 
+                    source={require('../../assets/logo.png')} 
                     style={styles.logoImage} 
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 </View>
               </View>
@@ -168,8 +168,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   logoImage: {
-    width: 64,
-    height: 64,
+    width: 52,
+    height: 52,
   },
   title: { 
     fontSize: 24, 
