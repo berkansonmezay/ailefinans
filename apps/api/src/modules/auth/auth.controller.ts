@@ -132,6 +132,11 @@ export class AuthController {
     if (fileResult.type === "REDIRECT") {
       return res.redirect(fileResult.url!);
     }
+    if (fileResult.type === "BUFFER") {
+      res.setHeader("Content-Type", fileResult.mimeType || "image/jpeg");
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.send(fileResult.buffer);
+    }
     res.setHeader("Content-Type", fileResult.mimeType || "image/jpeg");
     res.setHeader("Cache-Control", "public, max-age=86400");
     fileResult.stream!.pipe(res);

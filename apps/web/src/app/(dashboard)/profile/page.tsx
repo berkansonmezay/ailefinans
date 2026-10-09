@@ -24,6 +24,41 @@ export default function ProfilePage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const compressImageForAvatar = (file: File): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const maxDim = 400;
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.85);
+        } else {
+          resolve(file);
+        }
+      };
+      img.onerror = () => resolve(file);
+      img.src = objectUrl;
+    });
+  };
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -41,11 +76,12 @@ export default function ProfilePage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     setUploadingAvatar(true);
     try {
+      const processedBlob = await compressImageForAvatar(file);
+      const formData = new FormData();
+      formData.append('file', processedBlob, 'avatar.jpg');
+
       const res = await fetchApi<any>('/auth/avatar', {
         method: 'POST',
         body: formData,

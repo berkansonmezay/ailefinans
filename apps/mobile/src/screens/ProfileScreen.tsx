@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
@@ -137,6 +138,20 @@ export const ProfileScreen = ({ navigation }: any) => {
 
     Alert.alert('Profil Fotoğrafı', 'Profil fotoğrafınızı güncellemek için bir seçenek seçin:', buttons);
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchApi<any>('/auth/me')
+        .then(async (userData) => {
+          const u = userData?.data || userData;
+          if (u && setUser) {
+            setUser(u);
+            await AsyncStorage.setItem('userData', JSON.stringify(u));
+          }
+        })
+        .catch(() => {});
+    }, [setUser])
+  );
 
   useEffect(() => {
     if (user) {

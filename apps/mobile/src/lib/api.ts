@@ -5,6 +5,12 @@ const getBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
+  if (__DEV__) {
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:4000/api/v1';
+    }
+    return 'http://localhost:4000/api/v1';
+  }
   // Canlı Render.com API adresi
   return 'https://ailefinans-api.onrender.com/api/v1';
 };

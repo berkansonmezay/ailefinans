@@ -528,7 +528,7 @@ export class AuthService {
       }
     }
 
-    // 2. Local fallback storage
+    // 2. Local fallback storage + Data URL embedding
     if (!avatarUrl) {
       const uploadDir = resolve("./uploads/avatars", userId);
       if (!existsSync(uploadDir)) {
@@ -546,7 +546,14 @@ export class AuthService {
       }
       const localFilePath = resolve(uploadDir, filename);
       writeFileSync(localFilePath, file.buffer);
-      avatarUrl = `/api/v1/auth/avatar/${userId}?t=${Date.now()}`;
+
+      // If file is <= 2MB, store directly as base64 Data URL so that all clients
+      // (web, mobile, Expo, cloud, local) can render it instantly with 0 sync issues!
+      if (file.buffer && file.buffer.length <= 2 * 1024 * 1024) {
+        avatarUrl = `data:${file.mimetype || "image/jpeg"};base64,${file.buffer.toString("base64")}`;
+      } else {
+        avatarUrl = `/api/v1/auth/avatar/${userId}?t=${Date.now()}`;
+      }
     }
 
     const updatedUser = await this.prisma.user.update({
@@ -601,6 +608,19 @@ export class AuthService {
 
     if (user.avatarUrl.startsWith("http://") || user.avatarUrl.startsWith("https://")) {
       return { type: "REDIRECT", url: user.avatarUrl };
+    }
+
+    if (user.avatarUrl.startsWith("data:")) {
+      const matches = user.avatarUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches) {
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], "base64");
+        return {
+          type: "BUFFER",
+          buffer,
+          mimeType,
+        };
+      }
     }
 
     const uploadDir = resolve("./uploads/avatars", userId);
