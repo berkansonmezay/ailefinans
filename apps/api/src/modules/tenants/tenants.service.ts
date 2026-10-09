@@ -154,14 +154,9 @@ export class TenantsService {
         },
       });
 
-      // Seed default categories
-      const defaultExpenseCategories = [
-        "Market", "Fatura", "Ulaşım", "Konut", "Sağlık", 
-        "Eğitim", "Giyim", "Eğlence", "Kozmetik", "Diğer"
-      ];
-      const defaultIncomeCategories = [
-        "Maaş", "Prim", "Yatırım", "Kira", "Ek Gelir"
-      ];
+      // Seed default categories (1 sample category each)
+      const defaultExpenseCategories = ["Genel Gider"];
+      const defaultIncomeCategories = ["Maaş"];
 
       const categoryCreates = [
         ...defaultExpenseCategories.map((name) => ({

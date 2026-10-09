@@ -87,12 +87,8 @@ export class AdminService {
         }
       });
 
-      // Seed default expense categories
-      const defaultExpenseCategories = [
-        "Market", "Fatura", "Ulaşım", "Konut", "Sağlık", "Eğitim",
-        "Giyim", "Restoran", "Eğlence", "Tatil", "Teknoloji", "Çocuk",
-        "Ev", "Sigorta", "Vergi", "Diğer"
-      ];
+      // Seed default expense categories (1 sample category)
+      const defaultExpenseCategories = ["Genel Gider"];
       for (const cat of defaultExpenseCategories) {
         await tx.category.create({
           data: {
@@ -103,10 +99,8 @@ export class AdminService {
         });
       }
 
-      // Seed default income categories
-      const defaultIncomeCategories = [
-        "Maaş", "Prim", "Serbest Gelir", "Kira Geliri", "Faiz", "Yatırım Geliri", "Diğer"
-      ];
+      // Seed default income categories (1 sample category)
+      const defaultIncomeCategories = ["Maaş"];
       for (const cat of defaultIncomeCategories) {
         await tx.category.create({
           data: {
@@ -147,6 +141,7 @@ export class AdminService {
         firstName: true,
         lastName: true,
         email: true,
+        username: true,
         isActive: true,
         systemRole: true,
         createdAt: true,

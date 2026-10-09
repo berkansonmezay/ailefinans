@@ -80,34 +80,9 @@ export class AuthService {
         },
       });
 
-      // Seed default categories for this tenant
-      const defaultExpenseCategories = [
-        "Market",
-        "Fatura",
-        "Ulaşım",
-        "Konut",
-        "Sağlık",
-        "Eğitim",
-        "Giyim",
-        "Restoran",
-        "Eğlence",
-        "Tatil",
-        "Teknoloji",
-        "Çocuk",
-        "Ev",
-        "Sigorta",
-        "Vergi",
-        "Diğer",
-      ];
-      const defaultIncomeCategories = [
-        "Maaş",
-        "Prim",
-        "Serbest Gelir",
-        "Kira Geliri",
-        "Faiz",
-        "Yatırım Geliri",
-        "Diğer",
-      ];
+      // Seed default categories for this tenant (1 sample category each)
+      const defaultExpenseCategories = ["Genel Gider"];
+      const defaultIncomeCategories = ["Maaş"];
 
       for (const name of defaultExpenseCategories) {
         await tx.category.create({

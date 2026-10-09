@@ -15,6 +15,7 @@ interface User {
   firstName: string;
   lastName: string;
   email: string;
+  username?: string;
   isActive: boolean;
   systemRole: string;
   createdAt: string;
@@ -203,7 +204,8 @@ export default function AdminUsersPage() {
   const filteredUsers = users.filter(u => {
     const searchStr = searchTerm.toLowerCase();
     const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
-    return fullName.includes(searchStr) || u.email.toLowerCase().includes(searchStr);
+    const username = (u.username || '').toLowerCase();
+    return fullName.includes(searchStr) || u.email.toLowerCase().includes(searchStr) || username.includes(searchStr);
   });
 
   if (isLoading) return <div className="p-8 text-center text-text-muted">Yükleniyor...</div>;
@@ -306,6 +308,8 @@ export default function AdminUsersPage() {
               <tr>
                 <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı</th>
                 <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kurum (Aile)</th>
+                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı Adı</th>
+                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Mail Adresi</th>
                 <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kayıt Tarihi</th>
                 <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Yetki</th>
                 <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Durum</th>
@@ -317,10 +321,15 @@ export default function AdminUsersPage() {
                 <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
                   <td className="px-5 py-3.5">
                     <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
-                    <div className="text-text-muted text-xs">{u.email}</div>
                   </td>
                   <td className="px-5 py-3.5 text-text-secondary text-sm">
                     {u.tenantName}
+                  </td>
+                  <td className="px-5 py-3.5 text-text-secondary text-sm font-mono">
+                    {u.username ? `@${u.username}` : '-'}
+                  </td>
+                  <td className="px-5 py-3.5 text-text-secondary text-sm">
+                    {u.email}
                   </td>
                   <td className="px-5 py-3.5 text-text-secondary text-sm">
                     {new Date(u.createdAt).toLocaleDateString('tr-TR')}
@@ -395,7 +404,7 @@ export default function AdminUsersPage() {
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-text-muted">
+                  <td colSpan={8} className="px-6 py-12 text-center text-text-muted">
                     Kullanıcı bulunamadı.
                   </td>
                 </tr>
