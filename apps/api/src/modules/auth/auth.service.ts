@@ -547,13 +547,9 @@ export class AuthService {
       const localFilePath = resolve(uploadDir, filename);
       writeFileSync(localFilePath, file.buffer);
 
-      // If file is <= 2MB, store directly as base64 Data URL so that all clients
-      // (web, mobile, Expo, cloud, local) can render it instantly with 0 sync issues!
-      if (file.buffer && file.buffer.length <= 2 * 1024 * 1024) {
-        avatarUrl = `data:${file.mimetype || "image/jpeg"};base64,${file.buffer.toString("base64")}`;
-      } else {
-        avatarUrl = `/api/v1/auth/avatar/${userId}?t=${Date.now()}`;
-      }
+      // Always store as base64 Data URL directly in the database so that all clients
+      // (web, mobile, Expo, cloud, and different developer machines) can render it instantly with 0 sync issues!
+      avatarUrl = `data:${file.mimetype || "image/jpeg"};base64,${file.buffer.toString("base64")}`;
     }
 
     const updatedUser = await this.prisma.user.update({
@@ -625,7 +621,13 @@ export class AuthService {
 
     const uploadDir = resolve("./uploads/avatars", userId);
     if (!existsSync(uploadDir)) {
-      throw new NotFoundException("Profil fotoğrafı dosyası bulunamadı.");
+      const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#1e293b"/><text x="50%" y="54%" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="bold" fill="#94a3b8" text-anchor="middle" dominant-baseline="middle">${initials}</text></svg>`;
+      return {
+        type: "BUFFER",
+        buffer: Buffer.from(svg),
+        mimeType: "image/svg+xml",
+      };
     }
 
     const files = readdirSync(uploadDir)
