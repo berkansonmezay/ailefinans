@@ -1,16 +1,30 @@
-import { Platform, DeviceEventEmitter } from 'react-native';
+import { Platform, DeviceEventEmitter, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const getBaseUrl = () => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
+export const getBaseUrl = () => {
+  // If explicitly configured with a non-localhost URL (e.g. Render or custom LAN IP)
+  if (
+    process.env.EXPO_PUBLIC_API_URL &&
+    !process.env.EXPO_PUBLIC_API_URL.includes('localhost') &&
+    !process.env.EXPO_PUBLIC_API_URL.includes('127.0.0.1')
+  ) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
+
   if (__DEV__) {
-    if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:4000/api/v1';
+    // Dynamically detect host IP from Metro bundle URL (works on real phones, Android emulators, and iOS devices!)
+    const scriptURL = NativeModules?.SourceCode?.scriptURL;
+    if (scriptURL) {
+      const match = scriptURL.match(/^https?:\/\/([^:/]+)/);
+      if (match && match[1] && match[1] !== 'localhost' && match[1] !== '127.0.0.1') {
+        return `http://${match[1]}:4000/api/v1`;
+      }
     }
-    return 'http://localhost:4000/api/v1';
+
+    // Default LAN IP of development machine for Expo Go physical device testing
+    return 'http://192.168.1.8:4000/api/v1';
   }
+
   // Canlı Render.com API adresi
   return 'https://ailefinans-api.onrender.com/api/v1';
 };
@@ -35,7 +49,7 @@ export const getAvatarUrl = (url?: string | null): string | null => {
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
     return url;
   }
-  const apiBase = BASE_URL.replace(/\/api\/v1\/?$/, '');
+  const apiBase = getBaseUrl().replace(/\/api\/v1\/?$/, '');
   return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
@@ -45,7 +59,8 @@ export const fetchApi = async <T,>(
   options: RequestInit = {}
 ): Promise<T> => {
   try {
-    const url = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    const currentBase = getBaseUrl();
+    const url = `${currentBase}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
     const method = (options.method || 'GET').toUpperCase();
     
     // Get token dynamically from storage
