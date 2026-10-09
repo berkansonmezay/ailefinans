@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import toast from 'react-hot-toast';
@@ -18,9 +18,29 @@ interface User {
   username?: string;
   isActive: boolean;
   systemRole: string;
+  disabledMenus?: string[];
   createdAt: string;
   tenantName: string;
 }
+
+const ALL_APP_MENUS = [
+  { key: 'overview', name: 'Kontrol Paneli', description: 'Finansal özet ve grafikler' },
+  { key: 'transactions', name: 'İşlemler', description: 'Gelir ve gider kayıtları' },
+  { key: 'debts', name: 'Taksitli Borçlar', description: 'Borç takipleri ve taksitler' },
+  { key: 'receivables', name: 'Taksitli Alacaklar', description: 'Alacak takipleri ve taksitler' },
+  { key: 'stocks', name: 'Hisselerim', description: 'Borsa ve hisse senedi takibi' },
+  { key: 'crypto', name: 'Kripto Varlıklar', description: 'Kripto para portföyü' },
+  { key: 'savings', name: 'Altın & Döviz', description: 'Kıymetli maden ve döviz birikimleri' },
+  { key: 'accounts', name: 'Hesaplar', description: 'Banka hesapları ve cüzdanlar' },
+  { key: 'subscriptions', name: 'Abonelikler', description: 'Düzenli abonelik ödemeleri' },
+  { key: 'reminders', name: 'Hatırlatıcılar', description: 'Ödeme ve etkinlik bildirimleri' },
+  { key: 'calendar', name: 'Takvim', description: 'Mali takvim ve vadeler' },
+  { key: 'reports', name: 'Raporlar', description: 'Detaylı finansal grafikler' },
+  { key: 'warranties', name: 'Garanti & Fatura', description: 'Ürün garanti takipleri' },
+  { key: 'invoices', name: 'Fatura Tarama (AI)', description: 'Fiş ve fatura okuma' },
+  { key: 'settings', name: 'Ayarlar', description: 'Kurum ve kategori ayarları' },
+  { key: 'guide', name: 'Yardım', description: 'Kullanım rehberi' },
+];
 
 export default function AdminUsersPage() {
   const { confirm } = useConfirm();
@@ -62,6 +82,48 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Menu Permissions Modal State
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [selectedUserForMenus, setSelectedUserForMenus] = useState<User | null>(null);
+  const [menuFormData, setMenuFormData] = useState<string[]>([]);
+  const [isSubmittingMenus, setIsSubmittingMenus] = useState(false);
+
+  const openMenuModal = (user: User) => {
+    setSelectedUserForMenus(user);
+    setMenuFormData(user.disabledMenus || []);
+    setIsMenuModalOpen(true);
+  };
+
+  const closeMenuModal = () => {
+    setIsMenuModalOpen(false);
+    setSelectedUserForMenus(null);
+    setMenuFormData([]);
+  };
+
+  const toggleMenu = (key: string) => {
+    setMenuFormData(prev => 
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  };
+
+  const handleSaveMenus = async () => {
+    if (!selectedUserForMenus) return;
+    try {
+      setIsSubmittingMenus(true);
+      await fetchApi(`/admin/users/${selectedUserForMenus.id}/menus`, {
+        method: 'PUT',
+        body: JSON.stringify({ disabledMenus: menuFormData }),
+      });
+      toast.success(`${selectedUserForMenus.firstName} adlı kullanıcının menü izinleri güncellendi.`);
+      closeMenuModal();
+      loadUsers();
+    } catch (error: any) {
+      toast.error('Menü izinleri kaydedilirken hata oluştu: ' + error.message);
+    } finally {
+      setIsSubmittingMenus(false);
+    }
+  };
 
   const { user: currentUser, startImpersonation } = useAuthStore();
   const router = useRouter();
@@ -389,6 +451,14 @@ export default function AdminUsersPage() {
                         <Key size={16} />
                       </button>
 
+                      <button
+                        onClick={() => openMenuModal(u)}
+                        className="p-1.5 text-text-muted hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
+                        title="Menü Görünürlük Ayarları"
+                      >
+                        <SlidersHorizontal size={16} />
+                      </button>
+
                       {u.systemRole !== 'ADMIN' && (
                         <button
                           onClick={() => deleteUser(u.id)}
@@ -629,6 +699,124 @@ export default function AdminUsersPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Menu Permissions Modal */}
+      {isMenuModalOpen && selectedUserForMenus && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-bg-card w-full max-w-2xl rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-bg-sidebar/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <SlidersHorizontal className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-text-primary">
+                    Menü Görünürlük İzinleri
+                  </h3>
+                  <p className="text-xs text-text-muted">
+                    {selectedUserForMenus.firstName} {selectedUserForMenus.lastName} {selectedUserForMenus.username ? `(@${selectedUserForMenus.username})` : ''} için menü başlıklarını özelleştirin
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={closeMenuModal}
+                className="text-text-muted hover:text-text-primary p-1.5 rounded-lg hover:bg-bg-card transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {/* Quick Actions */}
+              <div className="flex items-center justify-between bg-bg-sidebar/40 p-3 rounded-xl border border-border">
+                <span className="text-xs font-medium text-text-muted">
+                  Açık Menüler: <strong className="text-text-primary">{ALL_APP_MENUS.length - menuFormData.length}</strong> / {ALL_APP_MENUS.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMenuFormData([])}
+                    className="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 rounded-md font-medium transition-colors cursor-pointer"
+                  >
+                    Tümünü Göster
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMenuFormData(ALL_APP_MENUS.map(m => m.key))}
+                    className="text-xs px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 rounded-md font-medium transition-colors cursor-pointer"
+                  >
+                    Tümünü Gizle
+                  </button>
+                </div>
+              </div>
+
+              {/* Menu Items Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {ALL_APP_MENUS.map(menu => {
+                  const isHidden = menuFormData.includes(menu.key);
+                  const isVisible = !isHidden;
+                  return (
+                    <div
+                      key={menu.key}
+                      onClick={() => toggleMenu(menu.key)}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                        isVisible
+                          ? 'bg-bg-card border-border hover:border-emerald-500/50 shadow-xs'
+                          : 'bg-bg-sidebar/50 border-border/60 opacity-60 hover:opacity-85'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          isVisible ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-text-muted'
+                        }`}>
+                          {isVisible ? <CheckCircle size={16} /> : <EyeOff size={16} />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-text-primary truncate">{menu.name}</p>
+                          <p className="text-[11px] text-text-muted truncate">{menu.description}</p>
+                        </div>
+                      </div>
+
+                      {/* Custom Toggle Switch */}
+                      <div
+                        className={`w-11 h-6 flex items-center rounded-full p-1 shrink-0 transition-colors ${
+                          isVisible ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'
+                        }`}
+                      >
+                        <div
+                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                            isVisible ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-border bg-bg-sidebar/50 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeMenuModal}
+                disabled={isSubmittingMenus}
+              >
+                Vazgeç
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveMenus}
+                disabled={isSubmittingMenus}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium cursor-pointer"
+              >
+                {isSubmittingMenus ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+              </Button>
+            </div>
           </div>
         </div>
       )}

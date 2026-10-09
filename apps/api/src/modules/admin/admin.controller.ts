@@ -54,6 +54,16 @@ export class AdminController {
     return { success: true, data: { message: 'Şifre güncellendi' } };
   }
 
+  @Put('users/:id/menus')
+  async updateUserMenus(
+    @CurrentUser('userId') adminId: string,
+    @Param('id') userId: string,
+    @Body('disabledMenus') disabledMenus: string[]
+  ) {
+    const user = await this.adminService.updateUserMenus(adminId, userId, disabledMenus || []);
+    return { success: true, data: user };
+  }
+
   @Post('users/:id/impersonate')
   async impersonateUser(
     @CurrentUser('userId') adminId: string,

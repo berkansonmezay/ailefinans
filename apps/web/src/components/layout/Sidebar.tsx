@@ -30,27 +30,32 @@ import {
 import clsx from 'clsx';
 
 const menuItems = [
-  { name: 'Kontrol Paneli', href: '/', icon: LayoutDashboard },
-  { name: 'İşlemler', href: '/transactions', icon: ArrowLeftRight },
-  { name: 'Taksitli Borçlar', href: '/debts', icon: CreditCard },
-  { name: 'Taksitli Alacaklar', href: '/receivables', icon: Wallet },
-  { name: 'Hisselerim', href: '/stocks', icon: TrendingUp },
-  { name: 'Kripto Varlıklar', href: '/crypto', icon: Bitcoin },
-  { name: 'Altın & Döviz', href: '/savings', icon: Coins },
-  { name: 'Hesaplar', href: '/accounts', icon: Banknote },
-  { name: 'Abonelikler', href: '/subscriptions', icon: Repeat },
-  { name: 'Hatırlatıcılar', href: '/reminders', icon: BellRing },
-  { name: 'Takvim', href: '/calendar', icon: Calendar },
-  { name: 'Raporlar', href: '/reports', icon: BarChart3 },
-  { name: 'Garanti & Fatura', href: '/warranties', icon: ShieldCheck },
-  { name: 'Fatura Tarama (AI)', href: '/fatura', icon: FileText },
-  { name: 'Ayarlar', href: '/settings', icon: Settings },
-  { name: 'Yardım', href: '/guide', icon: HelpCircle },
+  { key: 'overview', name: 'Kontrol Paneli', href: '/', icon: LayoutDashboard },
+  { key: 'transactions', name: 'İşlemler', href: '/transactions', icon: ArrowLeftRight },
+  { key: 'debts', name: 'Taksitli Borçlar', href: '/debts', icon: CreditCard },
+  { key: 'receivables', name: 'Taksitli Alacaklar', href: '/receivables', icon: Wallet },
+  { key: 'stocks', name: 'Hisselerim', href: '/stocks', icon: TrendingUp },
+  { key: 'crypto', name: 'Kripto Varlıklar', href: '/crypto', icon: Bitcoin },
+  { key: 'savings', name: 'Altın & Döviz', href: '/savings', icon: Coins },
+  { key: 'accounts', name: 'Hesaplar', href: '/accounts', icon: Banknote },
+  { key: 'subscriptions', name: 'Abonelikler', href: '/subscriptions', icon: Repeat },
+  { key: 'reminders', name: 'Hatırlatıcılar', href: '/reminders', icon: BellRing },
+  { key: 'calendar', name: 'Takvim', href: '/calendar', icon: Calendar },
+  { key: 'reports', name: 'Raporlar', href: '/reports', icon: BarChart3 },
+  { key: 'warranties', name: 'Garanti & Fatura', href: '/warranties', icon: ShieldCheck },
+  { key: 'invoices', name: 'Fatura Tarama (AI)', href: '/fatura', icon: FileText },
+  { key: 'settings', name: 'Ayarlar', href: '/settings', icon: Settings },
+  { key: 'guide', name: 'Yardım', href: '/guide', icon: HelpCircle },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const user = useAuthStore(state => state.user);
+
+  const visibleMenuItems = menuItems.filter(item => {
+    if (!user?.disabledMenus || user.disabledMenus.length === 0) return true;
+    return !user.disabledMenus.includes(item.key);
+  });
 
   return (
     <aside className="w-[var(--sidebar-width)] bg-bg-sidebar border-r border-border flex-shrink-0 hidden md:flex flex-col h-screen sticky top-0">
@@ -64,7 +69,7 @@ export function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link

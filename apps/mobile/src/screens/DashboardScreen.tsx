@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Image, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,23 @@ import { AuthContext } from '../context/AuthContext';
 const { width } = Dimensions.get('window');
 const CARD_MARGIN = 8;
 const CARD_WIDTH = (width - 32 - CARD_MARGIN * 2) / 2; // 32 is horizontal padding
+
+const MENU_KEYS: Record<string, string> = {
+  '0': 'overview',
+  '1': 'transactions',
+  '2': 'debts',
+  '3': 'receivables',
+  '4': 'stocks',
+  '5': 'crypto',
+  '6': 'savings',
+  '7': 'accounts',
+  '8': 'subscriptions',
+  '9': 'reminders',
+  '10': 'calendar',
+  '11': 'reports',
+  '12': 'warranties',
+  '13': 'invoices',
+};
 
 const MENU_ITEMS = [
   { id: '0', title: 'Kontrol Paneli', icon: 'grid-outline' },
@@ -28,7 +45,22 @@ const MENU_ITEMS = [
 export const DashboardScreen = ({ navigation }: any) => {
   const { user } = useContext(AuthContext);
 
+  const visibleMenuItems = useMemo(() => {
+    if (!user?.disabledMenus || !Array.isArray(user.disabledMenus) || user.disabledMenus.length === 0) {
+      return MENU_ITEMS;
+    }
+    return MENU_ITEMS.filter(item => {
+      const key = MENU_KEYS[item.id];
+      return !key || !user.disabledMenus.includes(key);
+    });
+  }, [user?.disabledMenus]);
+
   const handlePress = (id: string) => {
+    const key = MENU_KEYS[id];
+    if (key && user?.disabledMenus && Array.isArray(user.disabledMenus) && user.disabledMenus.includes(key)) {
+      return;
+    }
+
     const routes: Record<string, string> = {
       '0': 'Overview',
       '1': 'Transactions',
@@ -99,7 +131,7 @@ export const DashboardScreen = ({ navigation }: any) => {
 
         {/* Menu Grid */}
         <View style={styles.gridContainer}>
-          {MENU_ITEMS.map((item) => (
+          {visibleMenuItems.map((item) => (
             <TouchableOpacity 
               key={item.id} 
               style={styles.card} 

@@ -11,6 +11,7 @@ export interface User {
   activeTenantName: string;
   role: string;
   systemRole?: string;
+  disabledMenus?: string[];
   tenants: Array<{ id: string; name: string; role: string }>;
 }
 

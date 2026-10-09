@@ -144,6 +144,7 @@ export class AdminService {
         username: true,
         isActive: true,
         systemRole: true,
+        disabledMenus: true,
         createdAt: true,
         memberships: {
           include: {
@@ -157,6 +158,32 @@ export class AdminService {
       ...u,
       tenantName: u.memberships[0]?.tenant?.name || 'Bilinmiyor'
     }));
+  }
+
+  async updateUserMenus(adminId: string, userId: string, disabledMenus: string[]) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId }
+    });
+
+    if (!admin || !['ADMIN', 'SUPER_ADMIN'].includes(admin.systemRole)) {
+      throw new UnauthorizedException('Bu işlemi yapmaya yetkiniz yok.');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Kullanıcı bulunamadı.');
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { disabledMenus },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        username: true,
+        disabledMenus: true,
+      }
+    });
   }
 
   async approveUser(adminId: string, userId: string) {

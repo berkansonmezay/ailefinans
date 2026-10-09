@@ -171,6 +171,7 @@ export class AuthService {
         activeTenantName: activeMembership.tenant.name,
         role: activeMembership.role,
         systemRole: user.systemRole,
+        disabledMenus: user.disabledMenus || [],
         tenants: user.memberships.map((m) => ({
           id: m.tenantId,
           name: m.tenant.name,
@@ -233,6 +234,7 @@ export class AuthService {
         activeTenantName: activeMembership.tenant.name,
         role: activeMembership.role,
         systemRole: tokenRecord.user.systemRole,
+        disabledMenus: tokenRecord.user.disabledMenus || [],
         tenants: tokenRecord.user.memberships.map((m) => ({
           id: m.tenantId,
           name: m.tenant.name,
@@ -278,6 +280,7 @@ export class AuthService {
       activeTenantName: activeMembership?.tenant.name,
       role: activeMembership?.role,
       systemRole: user.systemRole,
+      disabledMenus: user.disabledMenus || [],
       tenants: user.memberships.map((m) => ({
         id: m.tenantId,
         name: m.tenant.name,
@@ -318,6 +321,7 @@ export class AuthService {
         activeTenantName: membership.tenant.name,
         role: membership.role,
         systemRole: user!.systemRole,
+        disabledMenus: user!.disabledMenus || [],
         tenants: allMemberships.map((m) => ({
           id: m.tenantId,
           name: m.tenant.name,
