@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -23,6 +23,32 @@ export default function ProfilePage() {
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Keep form fields synced when user store updates or hydrates
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username || '');
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+    }
+  }, [user?.username, user?.firstName, user?.lastName]);
+
+  // Reset avatar error when avatarUrl changes
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.avatarUrl]);
+
+  // Fetch latest user data from backend on page mount
+  useEffect(() => {
+    fetchApi<any>('/auth/me')
+      .then((res) => {
+        const freshUser = res?.data || res;
+        if (freshUser && freshUser.id) {
+          setUser({ ...user, ...freshUser });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const compressImageForAvatar = (file: File): Promise<Blob> => {
     return new Promise((resolve) => {
@@ -162,12 +188,13 @@ export default function ProfilePage() {
         body: JSON.stringify(data),
       });
       
-      if (user && res.data) {
+      const updatedUser = res?.data || res;
+      if (user && updatedUser) {
         setUser({
           ...user,
-          username: res.data.username,
-          firstName: res.data.firstName,
-          lastName: res.data.lastName,
+          username: updatedUser.username !== undefined ? updatedUser.username : username,
+          firstName: updatedUser.firstName || firstName,
+          lastName: updatedUser.lastName || lastName,
         });
       }
       
