@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import toast from 'react-hot-toast';
@@ -27,6 +27,35 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Add User Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    username: '',
+    password: '',
+    tenantName: '',
+    systemRole: 'USER',
+    isActive: true,
+  });
+
+  const resetAddForm = () => {
+    setAddFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      username: '',
+      password: '',
+      tenantName: '',
+      systemRole: 'USER',
+      isActive: true,
+    });
+    setShowPassword(false);
+  };
+
   // Password Reset Modal State
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -143,6 +172,34 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleAddUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addFormData.firstName || !addFormData.lastName || !addFormData.email || !addFormData.password) {
+      toast.error('Lütfen tüm zorunlu alanları doldurun.');
+      return;
+    }
+    if (addFormData.password.length < 6) {
+      toast.error('Şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
+    try {
+      setIsSubmittingAdd(true);
+      await fetchApi('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(addFormData),
+      });
+      toast.success(`${addFormData.firstName} ${addFormData.lastName} kullanıcısı başarıyla oluşturuldu.`);
+      setIsAddModalOpen(false);
+      resetAddForm();
+      loadUsers();
+    } catch (error: any) {
+      toast.error(error.message || 'Kullanıcı oluşturulurken bir hata oluştu.');
+    } finally {
+      setIsSubmittingAdd(false);
+    }
+  };
+
   const filteredUsers = users.filter(u => {
     const searchStr = searchTerm.toLowerCase();
     const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
@@ -159,9 +216,18 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary tracking-tight">Sistem Yönetimi</h1>
-        <p className="text-text-muted mt-1 text-sm">Sisteme kayıt olan yeni kullanıcıları onaylayın veya yönetin.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Sistem Yönetimi</h1>
+          <p className="text-text-muted mt-1 text-sm">Sisteme kayıt olan yeni kullanıcıları onaylayın veya yönetin.</p>
+        </div>
+        <Button
+          onClick={() => { resetAddForm(); setIsAddModalOpen(true); }}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center gap-2 rounded-xl px-4 py-2.5 shadow-sm transition-all shrink-0 cursor-pointer"
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>Yeni Kullanıcı Ekle</span>
+        </Button>
       </div>
 
       {/* KPI Cards - border-l-[5px] stili */}
@@ -383,6 +449,174 @@ export default function AdminUsersPage() {
                 </Button>
                 <Button type="submit" disabled={isSubmitting || newPassword.length < 6}>
                   {isSubmitting ? 'Kaydediliyor...' : 'Şifreyi Değiştir'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Yeni Kullanıcı Ekleme Modalı */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-bg-secondary/20">
+              <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                Yeni Kullanıcı Ekle
+              </h3>
+              <button 
+                onClick={() => { setIsAddModalOpen(false); resetAddForm(); }}
+                className="text-text-muted hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-bg-secondary"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddUserSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Ad <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addFormData.firstName}
+                    onChange={(e) => setAddFormData({ ...addFormData, firstName: e.target.value })}
+                    placeholder="Örn: Ahmet"
+                    className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Soyad <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addFormData.lastName}
+                    onChange={(e) => setAddFormData({ ...addFormData, lastName: e.target.value })}
+                    placeholder="Örn: Yılmaz"
+                    className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                  E-Posta Adresi <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={addFormData.email}
+                  onChange={(e) => setAddFormData({ ...addFormData, email: e.target.value })}
+                  placeholder="ahmet@example.com"
+                  className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Kullanıcı Adı <span className="text-text-muted text-[10px] font-normal lowercase">(isteğe bağlı)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addFormData.username}
+                    onChange={(e) => setAddFormData({ ...addFormData, username: e.target.value })}
+                    placeholder="Boşsa e-postadan üretilir"
+                    className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Şifre <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      value={addFormData.password}
+                      onChange={(e) => setAddFormData({ ...addFormData, password: e.target.value })}
+                      placeholder="En az 6 karakter"
+                      className="w-full pl-3.5 pr-10 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                      title={showPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Aile / Kurum Adı <span className="text-text-muted text-[10px] font-normal lowercase">(isteğe bağlı)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={addFormData.tenantName}
+                    onChange={(e) => setAddFormData({ ...addFormData, tenantName: e.target.value })}
+                    placeholder={addFormData.firstName ? `${addFormData.firstName} Ailesi` : "Örn: Yılmaz Ailesi"}
+                    className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Sistem Yetkisi
+                  </label>
+                  <select
+                    value={addFormData.systemRole}
+                    onChange={(e) => setAddFormData({ ...addFormData, systemRole: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                  >
+                    <option value="USER">Standart Kullanıcı (USER)</option>
+                    <option value="ADMIN">Sistem Yöneticisi (ADMIN)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="flex items-start gap-3 cursor-pointer select-none p-3 rounded-xl bg-bg-secondary/30 border border-border hover:bg-bg-secondary/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={addFormData.isActive}
+                    onChange={(e) => setAddFormData({ ...addFormData, isActive: e.target.checked })}
+                    className="w-4 h-4 mt-0.5 text-emerald-600 rounded border-border focus:ring-emerald-500/50"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-text-primary">Doğrudan Onayla & Aktif Et</span>
+                    <p className="text-xs text-text-muted mt-0.5">İşaretlendiğinde kullanıcı yönetici onayı beklemeden hemen giriş yapabilir.</p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-border mt-4">
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={() => { setIsAddModalOpen(false); resetAddForm(); }}
+                >
+                  Vazgeç
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmittingAdd}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center gap-2"
+                >
+                  {isSubmittingAdd ? 'Oluşturuluyor...' : 'Kullanıcıyı Oluştur'}
                 </Button>
               </div>
             </form>

@@ -14,6 +14,15 @@ export class AdminController {
     return { success: true, data: users };
   }
 
+  @Post('users')
+  async createUser(
+    @CurrentUser('userId') adminId: string,
+    @Body() dto: any
+  ) {
+    const user = await this.adminService.createUser(adminId, dto);
+    return { success: true, data: user };
+  }
+
   @Put('users/:id/approve')
   async approveUser(
     @CurrentUser('userId') adminId: string,
