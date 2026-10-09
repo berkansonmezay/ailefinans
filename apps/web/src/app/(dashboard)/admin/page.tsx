@@ -118,6 +118,42 @@ const MENU_PACKAGES = [
 
 const ALL_APP_MENUS = MENU_PACKAGES.flatMap(pkg => pkg.menus);
 
+function UserAvatar({
+  user,
+  className = "w-8 h-8 rounded-full",
+  textClassName = "text-xs font-bold",
+  containerClassName = "",
+  fallbackClassName = "bg-bg-secondary border border-border text-text-muted",
+}: {
+  user: { firstName?: string; lastName?: string; avatarUrl?: string | null };
+  className?: string;
+  textClassName?: string;
+  containerClassName?: string;
+  fallbackClassName?: string;
+}) {
+  const [error, setError] = useState(false);
+  const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
+
+  if (user.avatarUrl && !error) {
+    return (
+      <div className={`${className} overflow-hidden shrink-0 flex items-center justify-center ${containerClassName}`}>
+        <img
+          src={getAvatarUrl(user.avatarUrl)}
+          alt={`${user.firstName || ""} ${user.lastName || ""}`}
+          onError={() => setError(true)}
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${className} overflow-hidden flex items-center justify-center ${textClassName} shrink-0 select-none ${fallbackClassName} ${containerClassName}`}>
+      <span>{initials}</span>
+    </div>
+  );
+}
+
 export default function AdminUsersPage() {
   const { confirm } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
@@ -846,21 +882,19 @@ export default function AdminUsersPage() {
                                 {/* Left Info: Avatar + Details */}
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
                                   {/* Member Avatar */}
-                                  <div className={`w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center font-bold text-xs shrink-0 ${
-                                    u.tenantRole === 'OWNER'
-                                      ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
-                                      : u.tenantRole === 'ADMIN'
-                                      ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
-                                      : u.tenantRole === 'VIEWER'
-                                      ? 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
-                                      : 'bg-blue-500/15 text-blue-500 border border-blue-500/30'
-                                  }`}>
-                                    {u.avatarUrl ? (
-                                      <img src={getAvatarUrl(u.avatarUrl)} alt={`${u.firstName} ${u.lastName}`} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <span>{u.firstName.charAt(0)}{u.lastName.charAt(0)}</span>
-                                    )}
-                                  </div>
+                                  <UserAvatar
+                                    user={u}
+                                    className="w-9 h-9 rounded-xl"
+                                    fallbackClassName={
+                                      u.tenantRole === 'OWNER'
+                                        ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                                        : u.tenantRole === 'ADMIN'
+                                        ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
+                                        : u.tenantRole === 'VIEWER'
+                                        ? 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
+                                        : 'bg-blue-500/15 text-blue-500 border border-blue-500/30'
+                                    }
+                                  />
 
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -1011,13 +1045,7 @@ export default function AdminUsersPage() {
                       <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-bg-secondary border border-border flex items-center justify-center text-xs font-bold text-text-muted shrink-0">
-                              {u.avatarUrl ? (
-                                <img src={getAvatarUrl(u.avatarUrl)} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span>{u.firstName.charAt(0)}{u.lastName.charAt(0)}</span>
-                              )}
-                            </div>
+                            <UserAvatar user={u} className="w-8 h-8 rounded-full" />
                             <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
                           </div>
                         </td>
