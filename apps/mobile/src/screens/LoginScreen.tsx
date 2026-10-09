@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image, ScrollView, Keyboard, TouchableWithoutFeedback, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image, ScrollView, Keyboard, TouchableWithoutFeedback, StatusBar, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { fetchApi } from '../lib/api';
@@ -9,6 +9,33 @@ export const LoginScreen = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Forgot password state
+  const [forgotModalVisible, setForgotModalVisible] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const handleForgotPassword = async () => {
+    Keyboard.dismiss();
+    if (!forgotEmail.trim()) {
+      Alert.alert('Uyarı', 'Lütfen kayıtlı e-posta adresinizi girin.');
+      return;
+    }
+    try {
+      setForgotLoading(true);
+      const res = await fetchApi<any>('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: forgotEmail.trim() }),
+      });
+      setForgotModalVisible(false);
+      setForgotEmail('');
+      Alert.alert('Bilgi', res?.data?.message || res?.message || 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.');
+    } catch (error: any) {
+      Alert.alert('Hata', error.message || 'Şifre sıfırlama talebi iletilemedi.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     Keyboard.dismiss();
@@ -93,7 +120,14 @@ export const LoginScreen = () => {
                 </View>
 
                 <View style={styles.forgotPasswordContainer}>
-                  <TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (identifier.includes('@')) {
+                        setForgotEmail(identifier.trim());
+                      }
+                      setForgotModalVisible(true);
+                    }}
+                  >
                     <Text style={styles.linkText}>Şifrenizi mi unuttunuz?</Text>
                   </TouchableOpacity>
                 </View>
@@ -121,6 +155,58 @@ export const LoginScreen = () => {
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+
+      {/* Şifremi Unuttum Modal */}
+      <Modal
+        visible={forgotModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setForgotModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Şifremi Unuttum</Text>
+              <Text style={styles.modalSubtitle}>
+                Kayıtlı e-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.
+              </Text>
+
+              <TextInput
+                style={styles.modalInput}
+                placeholder="ornek@email.com"
+                placeholderTextColor="#9ca3af"
+                value={forgotEmail}
+                onChangeText={setForgotEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setForgotModalVisible(false)}
+                  disabled={forgotLoading}
+                >
+                  <Text style={styles.modalCancelText}>Vazgeç</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.modalSubmitBtn}
+                  onPress={handleForgotPassword}
+                  disabled={forgotLoading}
+                >
+                  {forgotLoading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.modalSubmitText}>Gönder</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -237,5 +323,82 @@ const styles = StyleSheet.create({
   registerText: {
     fontSize: 14,
     color: '#6b7280'
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center'
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+    textAlign: 'center',
+    marginBottom: 20
+  },
+  modalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 10,
+    backgroundColor: '#f9fafb',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: '#111827',
+    marginBottom: 20
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff'
+  },
+  modalCancelText: {
+    color: '#4b5563',
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  modalSubmitBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#059669' // Emerald
+  },
+  modalSubmitText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600'
   }
 });
