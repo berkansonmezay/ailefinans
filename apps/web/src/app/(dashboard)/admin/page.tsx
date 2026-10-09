@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal, Package, Zap, Crown, Pencil } from 'lucide-react';
+import { 
+  Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, 
+  Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal, 
+  Package, Zap, Crown, Pencil, Home, Building2, Plus, ArrowRight
+} from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import toast from 'react-hot-toast';
@@ -20,7 +24,41 @@ interface User {
   systemRole: string;
   disabledMenus?: string[];
   createdAt: string;
+  tenantId?: string | null;
   tenantName: string;
+  tenantRole?: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
+}
+
+interface TenantMemberInfo {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  username?: string;
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
+  isActive: boolean;
+  joinedAt: string;
+}
+
+interface Tenant {
+  id: string;
+  name: string;
+  currency: string;
+  isActive: boolean;
+  createdAt: string;
+  owner: {
+    id: string;
+    fullName: string;
+    email: string;
+    username?: string;
+  } | null;
+  members: TenantMemberInfo[];
+  stats: {
+    memberCount: number;
+    accountCount: number;
+    transactionCount: number;
+    debtCount: number;
+  };
 }
 
 const MENU_PACKAGES = [
@@ -80,6 +118,8 @@ const ALL_APP_MENUS = MENU_PACKAGES.flatMap(pkg => pkg.menus);
 export default function AdminUsersPage() {
   const { confirm } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [activeTab, setActiveTab] = useState<'users' | 'tenants'>('users');
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -93,7 +133,10 @@ export default function AdminUsersPage() {
     email: '',
     username: '',
     password: '',
+    tenantMode: 'new' as 'new' | 'existing',
     tenantName: '',
+    existingTenantId: '',
+    tenantRole: 'MEMBER' as 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER',
     systemRole: 'USER',
     isActive: true,
   });
@@ -105,11 +148,32 @@ export default function AdminUsersPage() {
       email: '',
       username: '',
       password: '',
+      tenantMode: 'new',
       tenantName: '',
+      existingTenantId: '',
+      tenantRole: 'MEMBER',
       systemRole: 'USER',
       isActive: true,
     });
     setShowPassword(false);
+  };
+
+  const openAddUserForTenant = (tenantId: string) => {
+    resetAddForm();
+    setAddFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      username: '',
+      password: '',
+      tenantMode: 'existing',
+      tenantName: '',
+      existingTenantId: tenantId,
+      tenantRole: 'MEMBER',
+      systemRole: 'USER',
+      isActive: true,
+    });
+    setIsAddModalOpen(true);
   };
 
   // Password Reset Modal State
@@ -189,7 +253,7 @@ export default function AdminUsersPage() {
       });
       toast.success(`${selectedUserForMenus.firstName} adlı kullanıcının menü izinleri güncellendi.`);
       closeMenuModal();
-      loadUsers();
+      loadData();
     } catch (error: any) {
       toast.error('Menü izinleri kaydedilirken hata oluştu: ' + error.message);
     } finally {
@@ -207,6 +271,8 @@ export default function AdminUsersPage() {
     email: '',
     username: '',
     tenantName: '',
+    existingTenantId: '',
+    tenantRole: 'MEMBER' as 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER',
     systemRole: 'USER',
     isActive: true,
   });
@@ -219,6 +285,8 @@ export default function AdminUsersPage() {
       email: user.email || '',
       username: user.username || '',
       tenantName: user.tenantName || '',
+      existingTenantId: user.tenantId || '',
+      tenantRole: user.tenantRole || 'MEMBER',
       systemRole: user.systemRole || 'USER',
       isActive: user.isActive,
     });
@@ -243,7 +311,7 @@ export default function AdminUsersPage() {
 
       toast.success(`${editFormData.firstName} adlı kullanıcının bilgileri güncellendi.`);
       closeEditModal();
-      loadUsers();
+      loadData();
     } catch (error: any) {
       toast.error('Güncelleme başarısız: ' + error.message);
     } finally {
@@ -260,15 +328,19 @@ export default function AdminUsersPage() {
       router.push('/');
       return;
     }
-    loadUsers();
+    loadData();
   }, [currentUser]);
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     try {
-      const res = await fetchApi<User[]>('/admin/users');
-      setUsers(res);
+      const [usersRes, tenantsRes] = await Promise.all([
+        fetchApi<User[]>('/admin/users'),
+        fetchApi<Tenant[]>('/admin/tenants', { cache: 'no-store' }),
+      ]);
+      setUsers(usersRes);
+      setTenants(tenantsRes);
     } catch (error: any) {
-      toast.error('Kullanıcılar yüklenemedi: ' + error.message);
+      toast.error('Veriler yüklenemedi: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -278,7 +350,7 @@ export default function AdminUsersPage() {
     try {
       await fetchApi(`/admin/users/${userId}/approve`, { method: 'PUT' });
       toast.success('Kullanıcı başarıyla onaylandı.');
-      loadUsers();
+      loadData();
     } catch (error: any) {
       toast.error('Onaylanırken hata oluştu: ' + error.message);
     }
@@ -297,7 +369,7 @@ export default function AdminUsersPage() {
     try {
       await fetchApi(`/admin/users/${userId}`, { method: 'DELETE' });
       toast.success('Kullanıcı reddedildi/silindi.');
-      loadUsers();
+      loadData();
     } catch (error: any) {
       toast.error('Silinirken hata oluştu: ' + error.message);
     }
@@ -372,16 +444,43 @@ export default function AdminUsersPage() {
       return;
     }
 
+    if (addFormData.tenantMode === 'existing' && !addFormData.existingTenantId) {
+      toast.error('Lütfen dahil edilecek aile hesabını seçin.');
+      return;
+    }
+
     try {
       setIsSubmittingAdd(true);
+      const payload: any = {
+        firstName: addFormData.firstName,
+        lastName: addFormData.lastName,
+        email: addFormData.email,
+        username: addFormData.username,
+        password: addFormData.password,
+        systemRole: addFormData.systemRole,
+        isActive: addFormData.isActive,
+      };
+
+      if (addFormData.tenantMode === 'existing') {
+        payload.existingTenantId = addFormData.existingTenantId;
+        payload.tenantRole = addFormData.tenantRole;
+      } else {
+        payload.tenantName = addFormData.tenantName;
+      }
+
       await fetchApi('/admin/users', {
         method: 'POST',
-        body: JSON.stringify(addFormData),
+        body: JSON.stringify(payload),
       });
-      toast.success(`${addFormData.firstName} ${addFormData.lastName} kullanıcısı başarıyla oluşturuldu.`);
+
+      toast.success(
+        addFormData.tenantMode === 'existing'
+          ? `${addFormData.firstName} ${addFormData.lastName} aileye başarıyla eklendi.`
+          : `${addFormData.firstName} ${addFormData.lastName} kullanıcısı ve yeni aile hesabı oluşturuldu.`
+      );
       setIsAddModalOpen(false);
       resetAddForm();
-      loadUsers();
+      loadData();
     } catch (error: any) {
       toast.error(error.message || 'Kullanıcı oluşturulurken bir hata oluştu.');
     } finally {
@@ -393,7 +492,16 @@ export default function AdminUsersPage() {
     const searchStr = searchTerm.toLowerCase();
     const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
     const username = (u.username || '').toLowerCase();
-    return fullName.includes(searchStr) || u.email.toLowerCase().includes(searchStr) || username.includes(searchStr);
+    const tenantName = (u.tenantName || '').toLowerCase();
+    return fullName.includes(searchStr) || u.email.toLowerCase().includes(searchStr) || username.includes(searchStr) || tenantName.includes(searchStr);
+  });
+
+  const filteredTenants = tenants.filter(t => {
+    const searchStr = searchTerm.toLowerCase();
+    const nameMatch = t.name.toLowerCase().includes(searchStr);
+    const ownerMatch = (t.owner?.fullName || '').toLowerCase().includes(searchStr) || (t.owner?.email || '').toLowerCase().includes(searchStr);
+    const memberMatch = t.members.some(m => m.fullName.toLowerCase().includes(searchStr) || m.email.toLowerCase().includes(searchStr) || (m.username || '').toLowerCase().includes(searchStr));
+    return nameMatch || ownerMatch || memberMatch;
   });
 
   if (isLoading) return <div className="p-8 text-center text-text-muted">Yükleniyor...</div>;
@@ -409,7 +517,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text-primary tracking-tight">Sistem Yönetimi</h1>
-          <p className="text-text-muted mt-1 text-sm">Sisteme kayıt olan yeni kullanıcıları onaylayın veya yönetin.</p>
+          <p className="text-text-muted mt-1 text-sm">Kullanıcıları, yetkilerini ve aile bütçe hesaplarını yönetin.</p>
         </div>
         <Button
           onClick={() => { resetAddForm(); setIsAddModalOpen(true); }}
@@ -420,203 +528,456 @@ export default function AdminUsersPage() {
         </Button>
       </div>
 
-      {/* KPI Cards - border-l-[5px] stili */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Toplam Kullanıcı - Blue */}
-        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600 transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 shrink-0">
-            <Users className="w-6 h-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Kullanıcı</p>
-            <p className="text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5">{totalUsers}</p>
-            <p className="text-xs text-text-muted mt-0.5 font-medium">Kayıtlı hesap</p>
-          </div>
-        </div>
-
-        {/* Onaylı Hesaplar - Emerald */}
-        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
-            <UserCheck className="w-6 h-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Onaylı Hesaplar</p>
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono mt-0.5">{activeUsers}</p>
-            <p className="text-xs text-text-muted mt-0.5 font-medium">Aktif oturum izni</p>
-          </div>
-        </div>
-
-        {/* Onay Bekleyenler - Amber */}
-        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500 transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 shrink-0">
-            <Clock className="w-6 h-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Onay Bekleyenler</p>
-            <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono mt-0.5">{pendingUsers}</p>
-            <p className="text-xs text-text-muted mt-0.5 font-medium">Onay gerektiren hesap</p>
-          </div>
-        </div>
-
-        {/* Yöneticiler - Purple */}
-        <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500 transition-all hover:shadow-md">
-          <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 shrink-0">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Yöneticiler</p>
-            <p className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight font-mono mt-0.5">{adminUsers}</p>
-            <p className="text-xs text-text-muted mt-0.5 font-medium">Admin & Kurucu</p>
-          </div>
-        </div>
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-2 border-b border-border pb-px">
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex items-center gap-2 pb-3 px-4 font-semibold text-sm border-b-2 transition-all cursor-pointer ${
+            activeTab === 'users'
+              ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-text-muted hover:text-text-primary'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Kullanıcılar</span>
+          <span className={`px-2 py-0.5 text-xs rounded-full font-mono ${
+            activeTab === 'users' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-bg-secondary text-text-muted'
+          }`}>
+            {users.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('tenants')}
+          className={`flex items-center gap-2 pb-3 px-4 font-semibold text-sm border-b-2 transition-all cursor-pointer ${
+            activeTab === 'tenants'
+              ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-text-muted hover:text-text-primary'
+          }`}
+        >
+          <Home className="w-4 h-4" />
+          <span>Aile Hesapları (Tenants)</span>
+          <span className={`px-2 py-0.5 text-xs rounded-full font-mono ${
+            activeTab === 'tenants' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-bg-secondary text-text-muted'
+          }`}>
+            {tenants.length}
+          </span>
+        </button>
       </div>
 
-      {/* Search Toolbar */}
-      <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-          <input
-            type="text"
-            placeholder="İsim veya E-posta ara..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-10 pr-4 py-2 border border-border rounded-xl bg-bg-secondary/60 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-colors"
-          />
+      {activeTab === 'users' ? (
+        <div className="space-y-6">
+          {/* KPI Cards - border-l-[5px] stili */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Toplam Kullanıcı - Blue */}
+            <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600 transition-all hover:shadow-md">
+              <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 shrink-0">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Kullanıcı</p>
+                <p className="text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5">{totalUsers}</p>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">Kayıtlı hesap</p>
+              </div>
+            </div>
+
+            {/* Onaylı Hesaplar - Emerald */}
+            <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
+              <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Onaylı Hesaplar</p>
+                <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono mt-0.5">{activeUsers}</p>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">Aktif oturum izni</p>
+              </div>
+            </div>
+
+            {/* Onay Bekleyenler - Amber */}
+            <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500 transition-all hover:shadow-md">
+              <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 shrink-0">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Onay Bekleyenler</p>
+                <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono mt-0.5">{pendingUsers}</p>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">Onay gerektiren hesap</p>
+              </div>
+            </div>
+
+            {/* Yöneticiler - Purple */}
+            <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500 transition-all hover:shadow-md">
+              <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Yöneticiler</p>
+                <p className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight font-mono mt-0.5">{adminUsers}</p>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">Admin & Kurucu</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Search Toolbar */}
+          <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+              <input
+                type="text"
+                placeholder="İsim, e-posta veya aile adı ara..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-4 py-2 border border-border rounded-xl bg-bg-secondary/60 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-colors"
+              />
+            </div>
+            <p className="text-xs text-text-muted font-medium">
+              {filteredUsers.length} / {totalUsers} kullanıcı gösteriliyor
+            </p>
+          </div>
+
+          {/* User Table */}
+          <div className="bg-bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-bg-sidebar border-b border-border">
+                  <tr>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Hesabı</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Rolü</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı Adı</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Mail Adresi</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kayıt Tarihi</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Yetki</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Durum</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider text-right">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
+                      </td>
+                      <td className="px-5 py-3.5 text-text-secondary text-sm">
+                        <div className="flex items-center gap-1.5 font-medium text-text-primary">
+                          <Home className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span>{u.tenantName}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {u.tenantRole === 'OWNER' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <Crown size={12} /> Kurucu
+                          </span>
+                        ) : u.tenantRole === 'ADMIN' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                            <ShieldCheck size={12} /> Yönetici
+                          </span>
+                        ) : u.tenantRole === 'VIEWER' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                            <Eye size={12} /> İzleyici
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                            <Users size={12} /> Üye
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-text-secondary text-sm font-mono">
+                        {u.username ? `@${u.username}` : '-'}
+                      </td>
+                      <td className="px-5 py-3.5 text-text-secondary text-sm">
+                        {u.email}
+                      </td>
+                      <td className="px-5 py-3.5 text-text-secondary text-sm">
+                        {new Date(u.createdAt).toLocaleDateString('tr-TR')}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {u.systemRole === 'SUPER_ADMIN' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                            Kurucu
+                          </span>
+                        ) : u.systemRole === 'ADMIN' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            Yönetici
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-bg-secondary text-text-muted border border-border">
+                            Kullanıcı
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {u.isActive ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500">
+                            <CheckCircle size={12} /> Onaylı
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500">
+                            <ShieldAlert size={12} /> Bekliyor
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {!u.isActive && (
+                            <button
+                              onClick={() => approveUser(u.id)}
+                              className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 text-xs font-semibold rounded-lg hover:text-white transition-colors cursor-pointer"
+                            >
+                              Onayla
+                            </button>
+                          )}
+                          
+                          {u.isActive && currentUser?.systemRole === 'SUPER_ADMIN' && currentUser.id !== u.id && (
+                            <button
+                              onClick={() => handleImpersonate(u.id, `${u.firstName} ${u.lastName}`)}
+                              className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Bu hesapla giriş yap (Impersonate)"
+                            >
+                              <LogIn size={16} />
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => openEditModal(u)}
+                            className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                            title="Kullanıcı Bilgilerini Düzenle"
+                          >
+                            <Pencil size={16} />
+                          </button>
+
+                          <button
+                            onClick={() => openPasswordModal(u)}
+                            className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+                            title="Şifreyi Sıfırla / Değiştir"
+                          >
+                            <Key size={16} />
+                          </button>
+
+                          <button
+                            onClick={() => openMenuModal(u)}
+                            className="p-1.5 text-text-muted hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors cursor-pointer"
+                            title="Menü Görünürlük Ayarları"
+                          >
+                            <SlidersHorizontal size={16} />
+                          </button>
+
+                          {u.systemRole !== 'ADMIN' && (
+                            <button
+                              onClick={() => deleteUser(u.id)}
+                              className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                              title="Sil / Reddet"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="px-6 py-12 text-center text-text-muted">
+                        Kullanıcı bulunamadı.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-text-muted font-medium">
-          {filteredUsers.length} / {totalUsers} kullanıcı gösteriliyor
-        </p>
-      </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Tenant KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Toplam Aile - Blue */}
+            <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-blue-600 transition-all hover:shadow-md">
+              <div className="p-3 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 shrink-0">
+                <Home className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Aile Hesabı</p>
+                <p className="text-2xl font-black text-text-primary tracking-tight font-mono mt-0.5">{tenants.length}</p>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">Kayıtlı aile bütçesi</p>
+              </div>
+            </div>
 
-      {/* User Table */}
-      <div className="bg-bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-bg-sidebar border-b border-border">
-              <tr>
-                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı</th>
-                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kurum (Aile)</th>
-                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kullanıcı Adı</th>
-                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Mail Adresi</th>
-                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kayıt Tarihi</th>
-                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Yetki</th>
-                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Durum</th>
-                <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider text-right">İşlemler</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredUsers.map((u) => (
-                <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
-                  <td className="px-5 py-3.5">
-                    <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
-                  </td>
-                  <td className="px-5 py-3.5 text-text-secondary text-sm">
-                    {u.tenantName}
-                  </td>
-                  <td className="px-5 py-3.5 text-text-secondary text-sm font-mono">
-                    {u.username ? `@${u.username}` : '-'}
-                  </td>
-                  <td className="px-5 py-3.5 text-text-secondary text-sm">
-                    {u.email}
-                  </td>
-                  <td className="px-5 py-3.5 text-text-secondary text-sm">
-                    {new Date(u.createdAt).toLocaleDateString('tr-TR')}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {u.systemRole === 'SUPER_ADMIN' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                        Kurucu
-                      </span>
-                    ) : u.systemRole === 'ADMIN' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                        Yönetici
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-bg-secondary text-text-muted border border-border">
-                        Kullanıcı
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {u.isActive ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500">
-                        <CheckCircle size={12} /> Onaylı
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-500">
-                        <ShieldAlert size={12} /> Bekliyor
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {!u.isActive && (
-                        <button
-                          onClick={() => approveUser(u.id)}
-                          className="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 text-xs font-semibold rounded-lg hover:text-white transition-colors"
+            {/* Çok Kullanıcılı Aileler - Emerald */}
+            <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-emerald-500 transition-all hover:shadow-md">
+              <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 shrink-0">
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Çok Kullanıcılı Aileler</p>
+                <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono mt-0.5">
+                  {tenants.filter(t => t.stats.memberCount > 1).length}
+                </p>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">Birden fazla birey</p>
+              </div>
+            </div>
+
+            {/* Toplam Aile Bireyi - Amber */}
+            <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-amber-500 transition-all hover:shadow-md">
+              <div className="p-3 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 shrink-0">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Aile Bireyi</p>
+                <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight font-mono mt-0.5">
+                  {tenants.reduce((acc, t) => acc + t.stats.memberCount, 0)}
+                </p>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">Tüm kayıtlı üyeler</p>
+              </div>
+            </div>
+
+            {/* Toplam Finansal İşlem - Purple */}
+            <div className="bg-bg-card border border-border rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border-l-[5px] border-l-purple-500 transition-all hover:shadow-md">
+              <div className="p-3 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 shrink-0">
+                <Zap className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Toplam Finans Kaydı</p>
+                <p className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight font-mono mt-0.5">
+                  {tenants.reduce((acc, t) => acc + t.stats.transactionCount, 0)}
+                </p>
+                <p className="text-xs text-text-muted mt-0.5 font-medium">Gelir ve gider işlemi</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Tenants Search Toolbar */}
+          <div className="bg-bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+              <input
+                type="text"
+                placeholder="Aile adı, kurucu veya üye ara..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-4 py-2 border border-border rounded-xl bg-bg-secondary/60 text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-colors"
+              />
+            </div>
+            <p className="text-xs text-text-muted font-medium">
+              {filteredTenants.length} / {tenants.length} aile hesabı gösteriliyor
+            </p>
+          </div>
+
+          {/* Tenants Table */}
+          <div className="bg-bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-bg-sidebar border-b border-border">
+                  <tr>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Hesabı</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Kurucusu</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Aile Bireyleri</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Finansal Durum</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider">Kayıt Tarihi</th>
+                    <th className="px-5 py-3 text-[12px] font-semibold text-text-muted uppercase tracking-wider text-right">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredTenants.map((t) => (
+                    <tr key={t.id} className="hover:bg-bg-sidebar/40 transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0">
+                            <Home className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-text-primary text-base flex items-center gap-2">
+                              {t.name}
+                              <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-bg-secondary text-text-muted border border-border">
+                                {t.currency}
+                              </span>
+                            </div>
+                            <div className="text-xs text-text-muted mt-0.5 font-mono">
+                              ID: {t.id.slice(0, 8)}...
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {t.owner ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                              <Crown size={14} />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-text-primary text-sm">{t.owner.fullName}</div>
+                              <div className="text-xs text-text-muted">{t.owner.email}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-text-muted">-</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-wrap items-center gap-1.5 max-w-md">
+                          {t.members.map((m) => (
+                            <div
+                              key={m.id}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                                m.role === 'OWNER'
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                  : m.role === 'ADMIN'
+                                  ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                                  : m.role === 'VIEWER'
+                                  ? 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20'
+                                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                              }`}
+                              title={`${m.email} (${m.role})`}
+                            >
+                              <span>{m.fullName}</span>
+                              <span className="text-[10px] opacity-75 font-semibold">
+                                ({m.role === 'OWNER' ? 'Kurucu' : m.role === 'ADMIN' ? 'Yönetici' : m.role === 'VIEWER' ? 'İzleyici' : 'Üye'})
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="px-2 py-1 rounded-md bg-bg-secondary text-text-primary font-medium border border-border">
+                            {t.stats.memberCount} Birey
+                          </span>
+                          <span className="px-2 py-1 rounded-md bg-bg-secondary text-text-primary font-medium border border-border">
+                            {t.stats.accountCount} Hesap
+                          </span>
+                          <span className="px-2 py-1 rounded-md bg-bg-secondary text-text-primary font-medium border border-border">
+                            {t.stats.transactionCount} İşlem
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-text-secondary text-sm">
+                        {new Date(t.createdAt).toLocaleDateString('tr-TR')}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <Button
+                          onClick={() => openAddUserForTenant(t.id)}
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl px-3 py-1.5 transition-all flex items-center gap-1.5 ml-auto cursor-pointer shadow-sm"
                         >
-                          Onayla
-                        </button>
-                      )}
-                      
-                      {u.isActive && currentUser?.systemRole === 'SUPER_ADMIN' && currentUser.id !== u.id && (
-                        <button
-                          onClick={() => handleImpersonate(u.id, `${u.firstName} ${u.lastName}`)}
-                          className="p-1.5 text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                          title="Bu hesapla giriş yap (Impersonate)"
-                        >
-                          <LogIn size={16} />
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => openEditModal(u)}
-                        className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
-                        title="Kullanıcı Bilgilerini Düzenle"
-                      >
-                        <Pencil size={16} />
-                      </button>
-
-                      <button
-                        onClick={() => openPasswordModal(u)}
-                        className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
-                        title="Şifreyi Sıfırla / Değiştir"
-                      >
-                        <Key size={16} />
-                      </button>
-
-                      <button
-                        onClick={() => openMenuModal(u)}
-                        className="p-1.5 text-text-muted hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
-                        title="Menü Görünürlük Ayarları"
-                      >
-                        <SlidersHorizontal size={16} />
-                      </button>
-
-                      {u.systemRole !== 'ADMIN' && (
-                        <button
-                          onClick={() => deleteUser(u.id)}
-                          className="p-1.5 text-text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Sil / Reddet"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredUsers.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-text-muted">
-                    Kullanıcı bulunamadı.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Üye Ekle</span>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredTenants.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-text-muted">
+                        Aile hesabı bulunamadı.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Password Reset Modal */}
       {isPasswordModalOpen && selectedUser && (
@@ -761,7 +1122,50 @@ export default function AdminUsersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-                    Kurum / Aile Adı
+                    Bağlı Olduğu Aile Hesabı
+                  </label>
+                  <select
+                    value={editFormData.existingTenantId}
+                    onChange={(e) => {
+                      const tId = e.target.value;
+                      const foundTenant = tenants.find(t => t.id === tId);
+                      setEditFormData({
+                        ...editFormData,
+                        existingTenantId: tId,
+                        tenantName: foundTenant ? foundTenant.name : editFormData.tenantName,
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-bg-sidebar border border-border rounded-xl text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                  >
+                    {tenants.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.stats.memberCount} Birey)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Aile İçi Rolü
+                  </label>
+                  <select
+                    value={editFormData.tenantRole}
+                    onChange={(e) => setEditFormData({ ...editFormData, tenantRole: e.target.value as any })}
+                    className="w-full px-3.5 py-2.5 bg-bg-sidebar border border-border rounded-xl text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                  >
+                    <option value="OWNER">Kurucu (OWNER)</option>
+                    <option value="ADMIN">Aile Yöneticisi (ADMIN)</option>
+                    <option value="MEMBER">Aile Üyesi (MEMBER)</option>
+                    <option value="VIEWER">İzleyici (VIEWER)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Aile Adını Güncelle <span className="text-text-muted text-[10px] font-normal lowercase">(isteğe bağlı)</span>
                   </label>
                   <input
                     type="text"
@@ -931,34 +1335,138 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-                    Aile / Kurum Adı <span className="text-text-muted text-[10px] font-normal lowercase">(isteğe bağlı)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={addFormData.tenantName}
-                    onChange={(e) => setAddFormData({ ...addFormData, tenantName: e.target.value })}
-                    placeholder={addFormData.firstName ? `${addFormData.firstName} Ailesi` : "Örn: Yılmaz Ailesi"}
-                    className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-                    Sistem Yetkisi
-                  </label>
-                  <select
-                    value={addFormData.systemRole}
-                    onChange={(e) => setAddFormData({ ...addFormData, systemRole: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+              {/* Aile Hesabı Yapılandırması: Yeni vs Mevcut */}
+              <div className="pt-1">
+                <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                  Aile Hesabı Seçimi
+                </label>
+                <div className="p-1 bg-bg-sidebar border border-border rounded-xl grid grid-cols-2 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setAddFormData({ ...addFormData, tenantMode: 'new' })}
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      addFormData.tenantMode === 'new'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-text-muted hover:text-text-primary'
+                    }`}
                   >
-                    <option value="USER">Standart Kullanıcı (USER)</option>
-                    <option value="ADMIN">Sistem Yöneticisi (ADMIN)</option>
-                  </select>
+                    <Home className="w-3.5 h-3.5" />
+                    <span>Yeni Aile Hesabı Aç</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const firstTenantId = addFormData.existingTenantId || (tenants[0]?.id || '');
+                      setAddFormData({
+                        ...addFormData,
+                        tenantMode: 'existing',
+                        existingTenantId: firstTenantId,
+                      });
+                    }}
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      addFormData.tenantMode === 'existing'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-text-muted hover:text-text-primary'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Mevcut Aileye Dahil Et</span>
+                  </button>
                 </div>
               </div>
+
+              {addFormData.tenantMode === 'new' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                      Aile / Kurum Adı <span className="text-text-muted text-[10px] font-normal lowercase">(isteğe bağlı)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={addFormData.tenantName}
+                      onChange={(e) => setAddFormData({ ...addFormData, tenantName: e.target.value })}
+                      placeholder={addFormData.firstName ? `${addFormData.firstName} Ailesi` : "Örn: Yılmaz Ailesi"}
+                      className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                    />
+                    <p className="text-[11px] text-text-muted mt-1">
+                      Kullanıcı yeni ailenin kurucusu (OWNER) olarak atanır.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                      Sistem Yetkisi
+                    </label>
+                    <select
+                      value={addFormData.systemRole}
+                      onChange={(e) => setAddFormData({ ...addFormData, systemRole: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all cursor-pointer"
+                    >
+                      <option value="USER">Standart Kullanıcı (USER)</option>
+                      <option value="ADMIN">Sistem Yöneticisi (ADMIN)</option>
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                        Dahil Edilecek Aile Hesabı <span className="text-rose-500">*</span>
+                      </label>
+                      <select
+                        value={addFormData.existingTenantId}
+                        onChange={(e) => setAddFormData({ ...addFormData, existingTenantId: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all cursor-pointer"
+                        required
+                      >
+                        <option value="">Aile Seçin...</option>
+                        {tenants.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.name} ({t.stats.memberCount} Birey) {t.owner ? `— Kurucu: ${t.owner.fullName}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                        Aile İçi Rolü
+                      </label>
+                      <select
+                        value={addFormData.tenantRole}
+                        onChange={(e) => setAddFormData({ ...addFormData, tenantRole: e.target.value as any })}
+                        className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all cursor-pointer"
+                      >
+                        <option value="MEMBER">Aile Üyesi (MEMBER) - İşlem ekleyebilir</option>
+                        <option value="ADMIN">Aile Yöneticisi (ADMIN) - Tüm bütçeyi yönetebilir</option>
+                        <option value="VIEWER">İzleyici (VIEWER) - Sadece görüntüleme</option>
+                        <option value="OWNER">Eş-Kurucu (OWNER)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                        Sistem Yetkisi
+                      </label>
+                      <select
+                        value={addFormData.systemRole}
+                        onChange={(e) => setAddFormData({ ...addFormData, systemRole: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-bg-secondary/60 border border-border rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all cursor-pointer"
+                      >
+                        <option value="USER">Standart Kullanıcı (USER)</option>
+                        <option value="ADMIN">Sistem Yöneticisi (ADMIN)</option>
+                      </select>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                      <Home className="w-4 h-4 shrink-0" />
+                      <span>Bu kullanıcı seçilen ailenin ortak hesap ve verilerini anında paylaşacaktır.</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-2">
                 <label className="flex items-start gap-3 cursor-pointer select-none p-3 rounded-xl bg-bg-secondary/30 border border-border hover:bg-bg-secondary/50 transition-colors">

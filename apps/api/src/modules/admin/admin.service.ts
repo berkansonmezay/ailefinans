@@ -14,6 +14,8 @@ export class AdminService {
     username?: string;
     password: string;
     tenantName?: string;
+    existingTenantId?: string;
+    tenantRole?: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
     systemRole?: string;
     isActive?: boolean;
   }) {
@@ -37,7 +39,6 @@ export class AdminService {
     const firstName = dto.firstName.trim();
     const lastName = dto.lastName.trim();
     const username = dto.username?.trim() || email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') + Math.floor(100 + Math.random() * 900);
-    const tenantName = dto.tenantName?.trim() || `${firstName} ${lastName} Ailesi`;
     const systemRole = dto.systemRole === 'ADMIN' ? 'ADMIN' : 'USER';
     const isActive = dto.isActive !== undefined ? Boolean(dto.isActive) : true;
 
@@ -73,6 +74,43 @@ export class AdminService {
         }
       });
 
+      // Mevcut bir aileye mi dahil ediliyor, yoksa yeni aile hesabı mı açılıyor?
+      if (dto.existingTenantId) {
+        const existingTenant = await tx.tenant.findUnique({
+          where: { id: dto.existingTenantId }
+        });
+
+        if (!existingTenant) {
+          throw new NotFoundException('Seçilen aile hesabı bulunamadı.');
+        }
+
+        const role = dto.tenantRole || 'MEMBER';
+
+        await tx.tenantMember.create({
+          data: {
+            tenantId: existingTenant.id,
+            userId: user.id,
+            role: role as any,
+          }
+        });
+
+        return {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          username: user.username,
+          isActive: user.isActive,
+          systemRole: user.systemRole,
+          createdAt: user.createdAt,
+          tenantId: existingTenant.id,
+          tenantName: existingTenant.name,
+          tenantRole: role,
+        };
+      }
+
+      // Yeni aile hesabı açılıyor
+      const tenantName = dto.tenantName?.trim() || `${firstName} ${lastName} Ailesi`;
       const tenant = await tx.tenant.create({
         data: {
           name: tenantName,
@@ -120,7 +158,85 @@ export class AdminService {
         isActive: user.isActive,
         systemRole: user.systemRole,
         createdAt: user.createdAt,
+        tenantId: tenant.id,
         tenantName: tenant.name,
+        tenantRole: 'OWNER',
+      };
+    });
+  }
+
+  async getTenants(currentUserId: string) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: currentUserId }
+    });
+
+    if (!admin || !['ADMIN', 'SUPER_ADMIN'].includes(admin.systemRole)) {
+      throw new UnauthorizedException('Bu işlemi yapmaya yetkiniz yok.');
+    }
+
+    const tenants = await this.prisma.tenant.findMany({
+      where: { deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                username: true,
+                isActive: true,
+                systemRole: true,
+              }
+            }
+          },
+          orderBy: { joinedAt: 'asc' }
+        },
+        _count: {
+          select: {
+            members: true,
+            accounts: true,
+            incomes: true,
+            expenses: true,
+            debts: true,
+            receivables: true,
+          }
+        }
+      }
+    });
+
+    return tenants.map(t => {
+      const ownerMember = t.members.find(m => m.role === 'OWNER') || t.members[0];
+      return {
+        id: t.id,
+        name: t.name,
+        currency: t.currency,
+        isActive: t.isActive,
+        createdAt: t.createdAt,
+        owner: ownerMember ? {
+          id: ownerMember.user.id,
+          fullName: `${ownerMember.user.firstName} ${ownerMember.user.lastName}`,
+          email: ownerMember.user.email,
+          username: ownerMember.user.username,
+        } : null,
+        members: t.members.map(m => ({
+          id: m.id,
+          userId: m.user.id,
+          fullName: `${m.user.firstName} ${m.user.lastName}`,
+          email: m.user.email,
+          username: m.user.username,
+          role: m.role,
+          isActive: m.isActive,
+          joinedAt: m.joinedAt,
+        })),
+        stats: {
+          memberCount: t._count.members,
+          accountCount: t._count.accounts,
+          transactionCount: t._count.incomes + t._count.expenses,
+          debtCount: t._count.debts + t._count.receivables,
+        }
       };
     });
   }
@@ -156,7 +272,9 @@ export class AdminService {
 
     return users.map(u => ({
       ...u,
-      tenantName: u.memberships[0]?.tenant?.name || 'Bilinmiyor'
+      tenantId: u.memberships[0]?.tenant?.id || null,
+      tenantName: u.memberships[0]?.tenant?.name || 'Bilinmiyor',
+      tenantRole: u.memberships[0]?.role || 'MEMBER',
     }));
   }
 
@@ -168,6 +286,8 @@ export class AdminService {
     systemRole?: string;
     isActive?: boolean;
     tenantName?: string;
+    existingTenantId?: string;
+    tenantRole?: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
   }) {
     const admin = await this.prisma.user.findUnique({
       where: { id: adminId }
@@ -218,10 +338,42 @@ export class AdminService {
       newSystemRole = dto.systemRole;
     }
 
+    const primaryMembership = targetUser.memberships[0];
+
     return this.prisma.$transaction(async (tx) => {
-      // Kurum adı güncellemesi
-      if (dto.tenantName && dto.tenantName.trim()) {
-        const primaryMembership = targetUser.memberships[0];
+      // 1. Aile Değişimi veya Rol Değişimi
+      if (dto.existingTenantId && dto.existingTenantId !== primaryMembership?.tenantId) {
+        const newTenant = await tx.tenant.findUnique({ where: { id: dto.existingTenantId } });
+        if (!newTenant) {
+          throw new NotFoundException('Seçilen yeni aile hesabı bulunamadı.');
+        }
+
+        if (primaryMembership) {
+          await tx.tenantMember.update({
+            where: { id: primaryMembership.id },
+            data: {
+              tenantId: dto.existingTenantId,
+              role: (dto.tenantRole as any) || primaryMembership.role,
+            }
+          });
+        } else {
+          await tx.tenantMember.create({
+            data: {
+              tenantId: dto.existingTenantId,
+              userId: targetUser.id,
+              role: (dto.tenantRole as any) || 'MEMBER',
+            }
+          });
+        }
+      } else if (dto.tenantRole && primaryMembership && dto.tenantRole !== primaryMembership.role) {
+        await tx.tenantMember.update({
+          where: { id: primaryMembership.id },
+          data: { role: dto.tenantRole as any }
+        });
+      }
+
+      // 2. Aile Adı Güncellemesi (eğer aile değiştirilmediyse ve ad verildiyse)
+      if (!dto.existingTenantId && dto.tenantName && dto.tenantName.trim()) {
         if (primaryMembership?.tenantId) {
           await tx.tenant.update({
             where: { id: primaryMembership.tenantId },
@@ -260,7 +412,9 @@ export class AdminService {
 
       return {
         ...updatedUser,
-        tenantName: updatedUser.memberships[0]?.tenant?.name || 'Bilinmiyor'
+        tenantId: updatedUser.memberships[0]?.tenant?.id || null,
+        tenantName: updatedUser.memberships[0]?.tenant?.name || 'Bilinmiyor',
+        tenantRole: updatedUser.memberships[0]?.role || 'MEMBER',
       };
     });
   }

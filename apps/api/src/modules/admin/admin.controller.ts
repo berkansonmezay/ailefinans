@@ -14,6 +14,12 @@ export class AdminController {
     return { success: true, data: users };
   }
 
+  @Get('tenants')
+  async getTenants(@CurrentUser('userId') userId: string) {
+    const tenants = await this.adminService.getTenants(userId);
+    return { success: true, data: tenants };
+  }
+
   @Post('users')
   async createUser(
     @CurrentUser('userId') adminId: string,
