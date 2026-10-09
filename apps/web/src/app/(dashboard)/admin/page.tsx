@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal, Package, Zap, Crown } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal, Package, Zap, Crown, Pencil } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import toast from 'react-hot-toast';
@@ -194,6 +194,60 @@ export default function AdminUsersPage() {
       toast.error('Menü izinleri kaydedilirken hata oluştu: ' + error.message);
     } finally {
       setIsSubmittingMenus(false);
+    }
+  };
+
+  // Edit User Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    username: '',
+    tenantName: '',
+    systemRole: 'USER',
+    isActive: true,
+  });
+
+  const openEditModal = (user: User) => {
+    setSelectedUserForEdit(user);
+    setEditFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      username: user.username || '',
+      tenantName: user.tenantName || '',
+      systemRole: user.systemRole || 'USER',
+      isActive: user.isActive,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedUserForEdit(null);
+  };
+
+  const handleEditUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUserForEdit) return;
+
+    try {
+      setIsSubmittingEdit(true);
+      await fetchApi(`/admin/users/${selectedUserForEdit.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(editFormData),
+      });
+
+      toast.success(`${editFormData.firstName} adlı kullanıcının bilgileri güncellendi.`);
+      closeEditModal();
+      loadUsers();
+    } catch (error: any) {
+      toast.error('Güncelleme başarısız: ' + error.message);
+    } finally {
+      setIsSubmittingEdit(false);
     }
   };
 
@@ -516,8 +570,16 @@ export default function AdminUsersPage() {
                       )}
 
                       <button
+                        onClick={() => openEditModal(u)}
+                        className="p-1.5 text-text-muted hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                        title="Kullanıcı Bilgilerini Düzenle"
+                      >
+                        <Pencil size={16} />
+                      </button>
+
+                      <button
                         onClick={() => openPasswordModal(u)}
-                        className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                        className="p-1.5 text-text-muted hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
                         title="Şifreyi Sıfırla / Değiştir"
                       >
                         <Key size={16} />
@@ -600,6 +662,165 @@ export default function AdminUsersPage() {
                 </Button>
                 <Button type="submit" disabled={isSubmitting || newPassword.length < 6}>
                   {isSubmitting ? 'Kaydediliyor...' : 'Şifreyi Değiştir'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Kullanıcı Bilgilerini Düzenleme Modalı */}
+      {isEditModalOpen && selectedUserForEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-bg-secondary/20">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500 dark:bg-blue-500/20">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-text-primary">
+                    Kullanıcı Bilgilerini Düzenle
+                  </h3>
+                  <p className="text-xs text-text-muted">
+                    {selectedUserForEdit.firstName} {selectedUserForEdit.lastName} {selectedUserForEdit.username ? `(@${selectedUserForEdit.username})` : ''}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={closeEditModal}
+                className="text-text-muted hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-bg-secondary cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditUserSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Ad <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.firstName}
+                    onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                    placeholder="Örn: Ahmet"
+                    className="w-full px-3.5 py-2.5 bg-bg-sidebar border border-border rounded-xl text-text-primary placeholder:text-text-muted text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Soyad <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.lastName}
+                    onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                    placeholder="Örn: Yılmaz"
+                    className="w-full px-3.5 py-2.5 bg-bg-sidebar border border-border rounded-xl text-text-primary placeholder:text-text-muted text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Kullanıcı Adı
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted text-sm font-medium">@</span>
+                    <input
+                      type="text"
+                      value={editFormData.username}
+                      onChange={(e) => setEditFormData({ ...editFormData, username: e.target.value })}
+                      placeholder="kullaniciadi"
+                      className="w-full pl-8 pr-3.5 py-2.5 bg-bg-sidebar border border-border rounded-xl text-text-primary placeholder:text-text-muted text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    E-posta Adresi <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editFormData.email}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    placeholder="ornek@mail.com"
+                    className="w-full px-3.5 py-2.5 bg-bg-sidebar border border-border rounded-xl text-text-primary placeholder:text-text-muted text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Kurum / Aile Adı
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.tenantName}
+                    onChange={(e) => setEditFormData({ ...editFormData, tenantName: e.target.value })}
+                    placeholder="Örn: Yılmaz Ailesi"
+                    className="w-full px-3.5 py-2.5 bg-bg-sidebar border border-border rounded-xl text-text-primary placeholder:text-text-muted text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+                    Sistem Yetkisi
+                  </label>
+                  <select
+                    value={editFormData.systemRole}
+                    onChange={(e) => setEditFormData({ ...editFormData, systemRole: e.target.value })}
+                    disabled={selectedUserForEdit.systemRole === 'SUPER_ADMIN' && currentUser?.systemRole !== 'SUPER_ADMIN'}
+                    className="w-full px-3.5 py-2.5 bg-bg-sidebar border border-border rounded-xl text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="USER">Kullanıcı (Standart)</option>
+                    <option value="ADMIN">Yönetici (Admin)</option>
+                    {currentUser?.systemRole === 'SUPER_ADMIN' && (
+                      <option value="SUPER_ADMIN">Kurucu (Super Admin)</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="flex items-start gap-3 cursor-pointer select-none p-3 rounded-xl bg-bg-secondary/30 border border-border hover:bg-bg-secondary/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={editFormData.isActive}
+                    onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })}
+                    className="w-4 h-4 mt-0.5 text-blue-600 rounded border-border focus:ring-blue-500/50"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-text-primary">Onaylı & Aktif Hesap</span>
+                    <p className="text-xs text-text-muted mt-0.5">İşaret kaldırıldığında kullanıcı pasife alınır ve giriş yapamaz.</p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-border mt-4">
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={closeEditModal}
+                  disabled={isSubmittingEdit}
+                >
+                  Vazgeç
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmittingEdit}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center gap-2 cursor-pointer"
+                >
+                  {isSubmittingEdit ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
                 </Button>
               </div>
             </form>

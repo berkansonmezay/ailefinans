@@ -23,6 +23,16 @@ export class AdminController {
     return { success: true, data: user };
   }
 
+  @Put('users/:id')
+  async updateUser(
+    @CurrentUser('userId') adminId: string,
+    @Param('id') userId: string,
+    @Body() dto: any
+  ) {
+    const user = await this.adminService.updateUser(adminId, userId, dto);
+    return { success: true, data: user };
+  }
+
   @Put('users/:id/approve')
   async approveUser(
     @CurrentUser('userId') adminId: string,

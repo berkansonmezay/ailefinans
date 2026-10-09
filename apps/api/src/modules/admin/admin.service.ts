@@ -160,6 +160,111 @@ export class AdminService {
     }));
   }
 
+  async updateUser(adminId: string, userId: string, dto: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    username?: string;
+    systemRole?: string;
+    isActive?: boolean;
+    tenantName?: string;
+  }) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId }
+    });
+
+    if (!admin || !['ADMIN', 'SUPER_ADMIN'].includes(admin.systemRole)) {
+      throw new UnauthorizedException('Bu işlemi yapmaya yetkiniz yok.');
+    }
+
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        memberships: {
+          include: { tenant: true }
+        }
+      }
+    });
+
+    if (!targetUser) throw new NotFoundException('Kullanıcı bulunamadı.');
+
+    // E-posta çakışma kontrolü
+    if (dto.email && dto.email !== targetUser.email) {
+      const emailExists = await this.prisma.user.findUnique({
+        where: { email: dto.email }
+      });
+      if (emailExists) {
+        throw new ConflictException('Bu e-posta adresi başka bir kullanıcı tarafından kullanılıyor.');
+      }
+    }
+
+    // Kullanıcı adı çakışma kontrolü
+    const cleanUsername = dto.username ? dto.username.replace(/^@/, '').trim().toLowerCase() : null;
+    if (cleanUsername && cleanUsername !== targetUser.username) {
+      const usernameExists = await this.prisma.user.findUnique({
+        where: { username: cleanUsername }
+      });
+      if (usernameExists) {
+        throw new ConflictException('Bu kullanıcı adı başka bir kullanıcı tarafından kullanılıyor.');
+      }
+    }
+
+    // Rol güvenlik kontrolü
+    let newSystemRole = targetUser.systemRole;
+    if (dto.systemRole && dto.systemRole !== targetUser.systemRole) {
+      if (admin.systemRole !== 'SUPER_ADMIN' && (dto.systemRole === 'SUPER_ADMIN' || targetUser.systemRole === 'SUPER_ADMIN')) {
+        throw new UnauthorizedException('Kurucu (SUPER_ADMIN) rolünü yalnızca bir Kurucu değiştirebilir.');
+      }
+      newSystemRole = dto.systemRole;
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Kurum adı güncellemesi
+      if (dto.tenantName && dto.tenantName.trim()) {
+        const primaryMembership = targetUser.memberships[0];
+        if (primaryMembership?.tenantId) {
+          await tx.tenant.update({
+            where: { id: primaryMembership.tenantId },
+            data: { name: dto.tenantName.trim() }
+          });
+        }
+      }
+
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: {
+          firstName: dto.firstName !== undefined ? dto.firstName.trim() : targetUser.firstName,
+          lastName: dto.lastName !== undefined ? dto.lastName.trim() : targetUser.lastName,
+          email: dto.email !== undefined ? dto.email.trim() : targetUser.email,
+          username: cleanUsername !== null ? cleanUsername : targetUser.username,
+          systemRole: newSystemRole,
+          isActive: dto.isActive !== undefined ? dto.isActive : targetUser.isActive,
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          username: true,
+          isActive: true,
+          systemRole: true,
+          disabledMenus: true,
+          createdAt: true,
+          memberships: {
+            include: {
+              tenant: true
+            }
+          }
+        }
+      });
+
+      return {
+        ...updatedUser,
+        tenantName: updatedUser.memberships[0]?.tenant?.name || 'Bilinmiyor'
+      };
+    });
+  }
+
   async updateUserMenus(adminId: string, userId: string, disabledMenus: string[]) {
     const admin = await this.prisma.user.findUnique({
       where: { id: adminId }
