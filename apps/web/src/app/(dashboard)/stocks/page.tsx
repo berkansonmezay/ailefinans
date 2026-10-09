@@ -13,9 +13,12 @@ import { StockBuyModal } from '@/components/stocks/StockBuyModal';
 import { StockSellModal } from '@/components/stocks/StockSellModal';
 import { StockTransactionsModal } from '@/components/stocks/StockTransactionsModal';
 import { StockEditModal } from '@/components/stocks/StockEditModal';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function StocksPage() {
   const { confirm } = useConfirm();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [stocks, setStocks] = useState<StockItem[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -230,7 +233,8 @@ export default function StocksPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {[
             { id: 'ALL', label: 'Tümü' },
             { id: 'PROFIT', label: 'Kârda Olanlar' },
@@ -239,7 +243,7 @@ export default function StocksPage() {
             <button
               key={f.id}
               onClick={() => setStatusFilter(f.id as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border cursor-pointer ${
                 statusFilter === f.id
                   ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
                   : 'bg-bg-secondary border-border text-text-secondary hover:text-text-primary'
@@ -254,6 +258,7 @@ export default function StocksPage() {
       <StockTable
         stocks={filteredStocks}
         loading={loading}
+        isFitMode={isFitMode}
         onBuy={handleOpenBuy}
         onSell={handleOpenSell}
         onHistory={handleOpenHistory}

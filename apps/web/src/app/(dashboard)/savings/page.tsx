@@ -26,9 +26,12 @@ import {
 import toast from 'react-hot-toast';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function SavingsPage() {
   const { confirm } = useConfirm();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [assets, setAssets] = useState<any[]>([]);
   const [marketRates, setMarketRates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -246,7 +249,8 @@ export default function SavingsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {[
             { id: 'ALL', label: 'Tümü' },
             { id: 'GOLD', label: 'Altın & Değerli Maden' },
@@ -255,7 +259,7 @@ export default function SavingsPage() {
             <button
               key={f.id}
               onClick={() => setTypeFilter(f.id as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border cursor-pointer ${
                 typeFilter === f.id
                   ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
                   : 'bg-bg-secondary border-border text-text-secondary hover:text-text-primary'
@@ -270,17 +274,17 @@ export default function SavingsPage() {
       {/* Varlık Tablosu */}
       <div className="bg-bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+          <table className={`w-full text-left transition-all whitespace-nowrap ${isFitMode ? 'text-xs' : 'text-sm'}`}>
             <thead>
               <tr className="bg-bg-sidebar border-b border-border text-text-secondary">
-                <th className="px-5 py-3 font-semibold">Varlık</th>
-                <th className="px-5 py-3 font-semibold">Banka / Piyasa</th>
-                <th className="px-5 py-3 font-semibold text-right">Miktar</th>
-                <th className="px-5 py-3 font-semibold text-right">Ort. Maliyet</th>
-                <th className="px-5 py-3 font-semibold text-right">Piyasa Alış/Satış</th>
-                <th className="px-5 py-3 font-semibold text-right">Kâr / Zarar</th>
-                <th className="px-5 py-3 font-semibold text-right">Toplam Değer</th>
-                <th className="px-5 py-3 font-semibold text-center">İşlemler</th>
+                <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold`}>Varlık</th>
+                <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold`}>Banka / Piyasa</th>
+                <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Miktar</th>
+                <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Ort. Maliyet</th>
+                <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Piyasa Alış/Satış</th>
+                <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Kâr / Zarar</th>
+                <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Toplam Değer</th>
+                <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-center`}>İşlemler</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -310,19 +314,19 @@ export default function SavingsPage() {
 
                   return (
                     <tr key={asset.id} className="hover:bg-bg-sidebar/50 transition-colors group">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 border ${
+                      <td className={isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}>
+                        <div className={`flex items-center ${isFitMode ? 'gap-2' : 'gap-3'}`}>
+                          <div className={`${isFitMode ? 'w-7 h-7 rounded-lg text-[10px]' : 'w-9 h-9 rounded-xl text-xs'} flex items-center justify-center font-bold shrink-0 border ${
                             asset.type === 'GOLD' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 
                             asset.type === 'SILVER' ? 'bg-slate-400/10 text-slate-400 border-slate-400/20' :
                             asset.type === 'FUND' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
                             'bg-blue-500/10 text-blue-400 border-blue-500/20'
                           }`}>
-                            <Coins className="w-4 h-4" />
+                            <Coins className={isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                           </div>
                           <div>
-                            <div className="font-bold text-text-primary text-sm">{asset.code}</div>
-                            <div className="text-xs text-text-muted">
+                            <div className={`font-bold text-text-primary ${isFitMode ? 'text-xs' : 'text-sm'}`}>{asset.code}</div>
+                            <div className={`${isFitMode ? 'text-[10px]' : 'text-xs'} text-text-muted`}>
                               {asset.type === 'GOLD' ? 'Altın' : 
                                asset.type === 'SILVER' ? 'Gümüş/Platin' :
                                asset.type === 'FUND' ? 'Fon' : 'Döviz'}
@@ -330,38 +334,40 @@ export default function SavingsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-bg-sidebar text-text-secondary border border-border">
+                      <td className={isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}>
+                        <span className={`inline-flex items-center rounded-md font-medium bg-bg-sidebar text-text-secondary border border-border ${isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-xs'}`}>
                           {asset.bank || 'Serbest Piyasa'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-right font-medium text-text-primary">
+                      <td className={`${isFitMode ? 'px-2.5 py-1.5 text-xs' : 'px-5 py-3.5 text-sm'} text-right font-medium text-text-primary`}>
                         {asset.quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
                       </td>
-                      <td className="px-5 py-3.5 text-right font-medium text-text-secondary">
+                      <td className={`${isFitMode ? 'px-2.5 py-1.5 text-xs' : 'px-5 py-3.5 text-sm'} text-right font-medium text-text-secondary`}>
                         {formatCurrency(asset.averageCost)}
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className={isFitMode ? 'px-2.5 py-1.5 text-right' : 'px-5 py-3.5 text-right'}>
                         <div className="flex flex-col items-end">
-                          <span className="text-text-primary font-bold text-sm">
-                            <span className="text-text-muted mr-1 text-[11px] font-normal">A:</span>
+                          <span className={`text-text-primary font-bold ${isFitMode ? 'text-xs' : 'text-sm'}`}>
+                            <span className="text-text-muted mr-1 text-[10px] font-normal">A:</span>
                             {formatCurrency(rateObj?.buying || asset.averageCost)}
                           </span>
                           {rateObj?.selling && (
-                            <span className="text-text-secondary text-xs mt-0.5">
-                              <span className="text-text-muted mr-1 text-[10px]">S:</span>
+                            <span className={`text-text-secondary ${isFitMode ? 'text-[10px]' : 'text-xs mt-0.5'}`}>
+                              <span className="text-text-muted mr-1 text-[9px]">S:</span>
                               {formatCurrency(rateObj.selling)}
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className={isFitMode ? 'px-2.5 py-1.5 text-right' : 'px-5 py-3.5 text-right'}>
                         <div className="flex flex-col items-end">
-                          <span className={`font-bold flex items-center gap-1 ${isProfit ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {isProfit ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                          <span className={`font-bold flex items-center gap-1 ${isProfit ? 'text-emerald-500' : 'text-rose-500'} ${isFitMode ? 'text-xs' : ''}`}>
+                            {isProfit ? <TrendingUp className={isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} /> : <TrendingDown className={isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} />}
                             {isProfit ? '+' : ''}{formatCurrency(profitLoss)}
                           </span>
-                          <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-0.5 ${
+                          <span className={`inline-flex items-center gap-0.5 font-bold rounded-md ${
+                            isFitMode ? 'text-[9px] px-1 py-0.2' : 'text-[10px] px-1.5 py-0.5 mt-0.5'
+                          } ${
                             isProfit 
                               ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
                               : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
@@ -370,48 +376,48 @@ export default function SavingsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-right font-black text-text-primary text-base">
+                      <td className={`${isFitMode ? 'px-2.5 py-1.5 text-xs font-bold' : 'px-5 py-3.5 text-base font-black'} text-right text-text-primary`}>
                         {formatCurrency(currentValue)}
                       </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className={isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}>
+                        <div className={`flex items-center justify-center ${isFitMode ? 'gap-1' : 'gap-1.5'}`}>
                           <button 
                             onClick={() => {
                               setBuyModalAsset(asset);
                               setIsBuyModalOpen(true);
                             }}
-                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-500/20"
+                            className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-500/20 cursor-pointer`}
                             title="Alış Ekle"
                           >
-                            <ArrowRightLeft className="w-3.5 h-3.5" />
+                            <ArrowRightLeft className={isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
                           </button>
                           <button 
                             onClick={() => setSellModalData({ isOpen: true, asset, currentRate })}
-                            className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors border border-amber-500/20"
+                            className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors border border-amber-500/20 cursor-pointer`}
                             title="Satış Yap"
                           >
-                            <ArrowRightLeft className="w-3.5 h-3.5 rotate-180" />
+                            <ArrowRightLeft className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} rotate-180`} />
                           </button>
                           <button 
                             onClick={() => setTxModalData({ isOpen: true, asset })}
-                            className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-text-primary transition-colors border border-border"
+                            className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-text-primary transition-colors border border-border cursor-pointer`}
                             title="İşlem Geçmişi"
                           >
-                            <List className="w-3.5 h-3.5" />
+                            <List className={isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
                           </button>
                           <button 
                             onClick={() => setEditModalData({ isOpen: true, asset })}
-                            className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border"
+                            className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border cursor-pointer`}
                             title="Düzenle"
                           >
-                            <Edit className="w-3.5 h-3.5" />
+                            <Edit className={isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
                           </button>
                           <button 
                             onClick={() => handleDelete(asset.id)}
-                            className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border"
+                            className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border cursor-pointer`}
                             title="Sil"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className={isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
                           </button>
                         </div>
                       </td>

@@ -14,9 +14,12 @@ import { QuickAddModal } from '@/components/shared/QuickAddModal';
 import ExcelJS from 'exceljs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function TransactionsPage() {
   const { confirm } = useConfirm();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -761,6 +764,7 @@ export default function TransactionsPage() {
         </div>
         
         <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           <Button 
             onClick={() => {
               setEditingTx(null);
@@ -802,16 +806,16 @@ export default function TransactionsPage() {
       {/* Table Area */}
       <Card>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className={`w-full text-left transition-all whitespace-nowrap ${isFitMode ? 'text-xs' : 'text-sm'}`}>
             <thead className="bg-bg-sidebar text-text-muted font-medium border-b border-border">
               <tr>
-                <th className="px-4 py-2.5">Tarih</th>
-                <th className="px-4 py-2.5">Harcama Yeri</th>
-                <th className="px-4 py-2.5">Kategori</th>
-                <th className="px-4 py-2.5">Açıklama</th>
-                <th className="px-4 py-2.5 text-center">Gelir</th>
-                <th className="px-4 py-2.5 text-center">Gider</th>
-                <th className="px-4 py-2.5 text-right">İşlem</th>
+                <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-4 py-2.5'}`}>Tarih</th>
+                <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-4 py-2.5'}`}>Harcama Yeri</th>
+                <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-4 py-2.5'}`}>Kategori</th>
+                <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-4 py-2.5'}`}>Açıklama</th>
+                <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-4 py-2.5'} text-center`}>Gelir</th>
+                <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-4 py-2.5'} text-center`}>Gider</th>
+                <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-4 py-2.5'} text-right`}>İşlem</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -833,23 +837,25 @@ export default function TransactionsPage() {
               ) : (
                 paginatedTransactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-bg-sidebar/50 transition-colors">
-                    <td className="px-4 py-2.5 whitespace-nowrap text-text-secondary">
+                    <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-4 py-2.5'} whitespace-nowrap text-text-secondary`}>
                       {new Date(tx.transactionDate || tx.date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
+                    <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-4 py-2.5'} whitespace-nowrap`}>
                       <div className="flex items-center text-text-primary font-medium">
                         {tx.merchant?.name || tx.source || tx.account?.name || '-'}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-bg-sidebar text-text-secondary border border-border">
+                    <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-4 py-2.5'} whitespace-nowrap`}>
+                      <span className={`inline-flex items-center rounded-md font-medium bg-bg-sidebar text-text-secondary border border-border ${
+                        isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+                      }`}>
                         {tx.category?.name || categories.find(c => c.id === tx.categoryId)?.name || 'Kategorisiz'}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-text-secondary max-w-xs truncate">
+                    <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-4 py-2.5'} text-text-secondary max-w-xs truncate`}>
                       {tx.description || '-'}
                     </td>
-                    <td className="px-4 py-2.5 text-center font-semibold">
+                    <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-4 py-2.5'} text-center font-semibold`}>
                       {tx.type === 'INCOME' ? (
                         <span className="text-emerald-500">
                           {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: tx.currency || 'TRY' }).format(tx.amount)}
@@ -858,7 +864,7 @@ export default function TransactionsPage() {
                         <span className="text-emerald-500">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-center font-semibold">
+                    <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-4 py-2.5'} text-center font-semibold`}>
                       {tx.type === 'EXPENSE' ? (
                         <span className="text-rose-500">
                           {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: tx.currency || 'TRY' }).format(tx.amount)}
@@ -867,13 +873,13 @@ export default function TransactionsPage() {
                         <span className="text-rose-500">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2 text-text-muted">
-                        <button onClick={() => handleEdit(tx)} className="p-1.5 hover:text-text-primary hover:bg-bg-sidebar rounded-md transition-colors" title="Düzenle">
-                          <Edit className="w-4 h-4" />
+                    <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-4 py-2.5'} text-right whitespace-nowrap`}>
+                      <div className="flex items-center justify-end gap-1.5 text-text-muted">
+                        <button onClick={() => handleEdit(tx)} className={`${isFitMode ? 'p-1' : 'p-1.5'} hover:text-text-primary hover:bg-bg-sidebar rounded-md transition-colors`} title="Düzenle">
+                          <Edit className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
                         </button>
-                        <button onClick={() => handleDelete(tx.id, tx.type)} className="p-1.5 hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors" title="Sil">
-                          <Trash2 className="w-4 h-4" />
+                        <button onClick={() => handleDelete(tx.id, tx.type)} className={`${isFitMode ? 'p-1' : 'p-1.5'} hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors`} title="Sil">
+                          <Trash2 className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
                         </button>
                       </div>
                     </td>

@@ -22,9 +22,12 @@ import { format, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { SubscriptionSummaryBar } from '@/components/subscriptions/SubscriptionSummaryBar';
 import { SubscriptionModal } from '@/components/subscriptions/SubscriptionModal';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function SubscriptionsPage() {
   const { confirm } = useConfirm();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInfoGuide, setShowInfoGuide] = useState(false);
@@ -195,7 +198,8 @@ export default function SubscriptionsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {[
             { id: 'ALL', label: 'Tümü' },
             { id: 'ACTIVE', label: 'Aktif Olanlar' },
@@ -204,7 +208,7 @@ export default function SubscriptionsPage() {
             <button
               key={f.id}
               onClick={() => setStatusFilter(f.id as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border cursor-pointer ${
                 statusFilter === f.id
                   ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
                   : 'bg-bg-secondary border-border text-text-secondary hover:text-text-primary'
@@ -243,21 +247,21 @@ export default function SubscriptionsPage() {
             </div>
             <div className="bg-bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
+                <table className={`w-full text-left transition-all whitespace-nowrap ${isFitMode ? 'text-xs' : 'text-sm'}`}>
                   <thead className="bg-bg-sidebar border-b border-border text-text-secondary">
                     <tr>
-                      <th className="px-5 py-3 font-semibold">Abonelik Adı</th>
-                      <th className="px-5 py-3 font-semibold">Plan / Sıklık</th>
-                      <th className="px-5 py-3 font-semibold text-right">Tutar</th>
-                      <th className="px-5 py-3 font-semibold">Sonraki Ödeme</th>
-                      <th className="px-5 py-3 font-semibold text-center">Hatırlatıcı</th>
-                      <th className="px-5 py-3 font-semibold text-center">İşlemler</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold`}>Abonelik Adı</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold`}>Plan / Sıklık</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Tutar</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold`}>Sonraki Ödeme</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-center`}>Hatırlatıcı</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-center`}>İşlemler</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {activeSubscriptions.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-5 py-8 text-center text-text-muted">
+                        <td colSpan={6} className={`${isFitMode ? 'px-2.5 py-6' : 'px-5 py-8'} text-center text-text-muted`}>
                           Filtreye uygun aktif abonelik bulunamadı.
                         </td>
                       </tr>
@@ -268,64 +272,72 @@ export default function SubscriptionsPage() {
                         
                         return (
                           <tr key={sub.id} className="hover:bg-bg-sidebar/50 transition-colors group">
-                            <td className="px-5 py-3.5">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold uppercase border border-purple-500/20 group-hover:scale-105 transition-transform">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
+                              <div className={`flex items-center ${isFitMode ? 'gap-2' : 'gap-3'}`}>
+                                <div className={`${isFitMode ? 'w-7 h-7 text-[10px] rounded-lg' : 'w-9 h-9 text-xs rounded-xl'} bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold uppercase border border-purple-500/20 group-hover:scale-105 transition-transform shrink-0`}>
                                   {sub.name.substring(0, 2)}
                                 </div>
-                                <div className="font-bold text-text-primary text-sm">{sub.name}</div>
+                                <div className={`font-bold text-text-primary ${isFitMode ? 'text-xs' : 'text-sm'}`}>{sub.name}</div>
                               </div>
                             </td>
-                            <td className="px-5 py-3.5">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-bg-sidebar text-text-secondary border border-border">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
+                              <span className={`inline-flex items-center rounded-md font-medium bg-bg-sidebar text-text-secondary border border-border ${
+                                isFitMode ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-xs'
+                              }`}>
                                 {isMonthly ? 'Aylık Plan' : `${sub.frequency} Plan`}
                               </span>
                             </td>
-                            <td className="px-5 py-3.5 text-right font-black text-text-primary text-base">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5 text-sm font-bold' : 'px-5 py-3.5 text-base font-black'} text-right text-text-primary`}>
                               {formatCurrency(sub.amount)}
                             </td>
-                            <td className="px-5 py-3.5">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
                               {sub.nextPaymentDate ? (
-                                <div className="flex items-center gap-2">
-                                  <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${daysInfo.bg} ${daysInfo.color}`}>
+                                <div className={`flex items-center ${isFitMode ? 'gap-1.5' : 'gap-2'}`}>
+                                  <span className={`rounded-md font-bold border ${daysInfo.bg} ${daysInfo.color} ${
+                                    isFitMode ? 'px-1.5 py-0.2 text-[10px]' : 'px-2.5 py-0.5 text-xs'
+                                  }`}>
                                     {daysInfo.text}
                                   </span>
-                                  <span className="text-text-muted text-xs">
+                                  <span className={`text-text-muted ${isFitMode ? 'text-[11px]' : 'text-xs'}`}>
                                     {format(new Date(sub.nextPaymentDate), 'd MMM yyyy', { locale: tr })}
                                   </span>
                                 </div>
                               ) : '-'}
                             </td>
-                            <td className="px-5 py-3.5 text-center">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'} text-center`}>
                               {sub.reminderEnabled ? (
-                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                                  <BellRing className="w-3.5 h-3.5 text-emerald-500" />
-                                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                <div className={`inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 ${
+                                  isFitMode ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'
+                                }`}>
+                                  <BellRing className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-emerald-500`} />
+                                  <span className={`${isFitMode ? 'text-[10px]' : 'text-[11px]'} font-semibold text-emerald-600 dark:text-emerald-400`}>
                                     {sub.remindBeforeDays || 3} gün önce
                                   </span>
                                 </div>
                               ) : (
-                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-bg-secondary border border-border">
-                                  <BellOff className="w-3.5 h-3.5 text-text-muted" />
-                                  <span className="text-[11px] font-medium text-text-muted">Kapalı</span>
+                                <div className={`inline-flex items-center rounded-full bg-bg-secondary border border-border ${
+                                  isFitMode ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'
+                                }`}>
+                                  <BellOff className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-text-muted`} />
+                                  <span className={`${isFitMode ? 'text-[10px]' : 'text-[11px]'} font-medium text-text-muted`}>Kapalı</span>
                                 </div>
                               )}
                             </td>
-                            <td className="px-5 py-3.5">
-                              <div className="flex items-center justify-center gap-1.5">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
+                              <div className={`flex items-center justify-center ${isFitMode ? 'gap-1' : 'gap-1.5'}`}>
                                 <button 
                                   onClick={() => { setEditingSub(sub); setIsModalOpen(true); }} 
-                                  className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border" 
+                                  className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border`} 
                                   title="Düzenle"
                                 >
-                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <Edit2 className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                                 </button>
                                 <button 
                                   onClick={() => handleDelete(sub.id)} 
-                                  className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border" 
+                                  className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border`} 
                                   title="Sil"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                                 </button>
                               </div>
                             </td>
@@ -350,41 +362,43 @@ export default function SubscriptionsPage() {
               </div>
               <div className="bg-bg-card rounded-2xl border border-border overflow-hidden opacity-75 shadow-sm">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm whitespace-nowrap">
+                  <table className={`w-full text-left transition-all whitespace-nowrap ${isFitMode ? 'text-xs' : 'text-sm'}`}>
                     <thead className="bg-bg-sidebar border-b border-border text-text-secondary">
                       <tr>
-                        <th className="px-5 py-3 font-semibold">Abonelik Adı</th>
-                        <th className="px-5 py-3 font-semibold">Plan / Sıklık</th>
-                        <th className="px-5 py-3 font-semibold text-right">Tutar</th>
-                        <th className="px-5 py-3 font-semibold text-center">İşlemler</th>
+                        <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold`}>Abonelik Adı</th>
+                        <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold`}>Plan / Sıklık</th>
+                        <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Tutar</th>
+                        <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-center`}>İşlemler</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
                       {inactiveSubscriptions.map(sub => (
                         <tr key={sub.id} className="hover:bg-bg-sidebar/50 transition-colors">
-                          <td className="px-5 py-3.5">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-bg-secondary flex items-center justify-center text-xs font-bold text-text-muted uppercase border border-border">
+                          <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
+                            <div className={`flex items-center ${isFitMode ? 'gap-2' : 'gap-3'}`}>
+                              <div className={`${isFitMode ? 'w-7 h-7 text-[10px] rounded-lg' : 'w-9 h-9 text-xs rounded-xl'} bg-bg-secondary flex items-center justify-center font-bold text-text-muted uppercase border border-border shrink-0`}>
                                 {sub.name.substring(0, 2)}
                               </div>
-                              <div className="font-medium text-text-secondary">{sub.name}</div>
+                              <div className={`font-medium text-text-secondary ${isFitMode ? 'text-xs' : 'text-sm'}`}>{sub.name}</div>
                             </div>
                           </td>
-                          <td className="px-5 py-3.5">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-bg-sidebar text-text-muted border border-border">
+                          <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
+                            <span className={`inline-flex items-center rounded-md font-medium bg-bg-sidebar text-text-muted border border-border ${
+                              isFitMode ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-0.5 text-xs'
+                            }`}>
                               {sub.frequency === 'MONTHLY' ? 'Aylık Plan' : `${sub.frequency} Plan`}
                             </span>
                           </td>
-                          <td className="px-5 py-3.5 text-right font-bold text-text-secondary">
+                          <td className={`${isFitMode ? 'px-2.5 py-1.5 text-xs' : 'px-5 py-3.5 text-sm'} text-right font-bold text-text-secondary`}>
                             {formatCurrency(sub.amount)}
                           </td>
-                          <td className="px-5 py-3.5">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button onClick={() => { setEditingSub(sub); setIsModalOpen(true); }} className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border" title="Düzenle">
-                                <Edit2 className="w-3.5 h-3.5" />
+                          <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
+                            <div className={`flex items-center justify-center ${isFitMode ? 'gap-1' : 'gap-1.5'}`}>
+                              <button onClick={() => { setEditingSub(sub); setIsModalOpen(true); }} className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border`} title="Düzenle">
+                                <Edit2 className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                               </button>
-                              <button onClick={() => handleDelete(sub.id)} className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border" title="Sil">
-                                <Trash2 className="w-3.5 h-3.5" />
+                              <button onClick={() => handleDelete(sub.id)} className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border`} title="Sil">
+                                <Trash2 className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                               </button>
                             </div>
                           </td>

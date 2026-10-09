@@ -21,6 +21,7 @@ export interface StockItem {
 interface StockTableProps {
   stocks: StockItem[];
   loading: boolean;
+  isFitMode?: boolean;
   onBuy: (symbol?: string) => void;
   onSell: (symbol: string, maxQuantity: number) => void;
   onHistory: (symbol: string) => void;
@@ -39,6 +40,7 @@ function formatCurrency(val: number) {
 export function StockTable({ 
   stocks, 
   loading, 
+  isFitMode = false,
   onBuy, 
   onSell, 
   onHistory,
@@ -74,16 +76,16 @@ export function StockTable({
   return (
     <div className="bg-bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm whitespace-nowrap">
+        <table className={`w-full text-left transition-all whitespace-nowrap ${isFitMode ? 'text-xs' : 'text-sm'}`}>
           <thead>
             <tr className="bg-bg-sidebar border-b border-border text-text-secondary">
-              <th className="px-5 py-3 font-semibold">Hisse Senedi</th>
-              <th className="px-5 py-3 font-semibold text-right">Miktar (Lot)</th>
-              <th className="px-5 py-3 font-semibold text-right">Ort. Maliyet</th>
-              <th className="px-5 py-3 font-semibold text-right">Güncel Fiyat</th>
-              <th className="px-5 py-3 font-semibold text-right">Kâr / Zarar</th>
-              <th className="px-5 py-3 font-semibold text-right">Toplam Değer</th>
-              <th className="px-5 py-3 font-semibold text-center">İşlemler</th>
+              <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold`}>Hisse Senedi</th>
+              <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Miktar (Lot)</th>
+              <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Ort. Maliyet</th>
+              <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Güncel Fiyat</th>
+              <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Kâr / Zarar</th>
+              <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>Toplam Değer</th>
+              <th className={`${isFitMode ? 'px-2.5 py-2 text-[11px]' : 'px-5 py-3'} font-semibold text-center`}>İşlemler</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -94,45 +96,45 @@ export function StockTable({
               
               return (
                 <tr key={stock.id} className="hover:bg-bg-sidebar/50 transition-colors group">
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-500/20">
+                  <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
+                    <div className={`flex items-center ${isFitMode ? 'gap-2' : 'gap-3'}`}>
+                      <div className={`${isFitMode ? 'w-7 h-7 text-[10px] rounded-lg' : 'w-9 h-9 text-xs rounded-xl'} bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold shrink-0 border border-blue-500/20`}>
                         {cleanSymbol.substring(0, 3)}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-text-primary text-sm">{cleanSymbol}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`font-bold text-text-primary ${isFitMode ? 'text-xs' : 'text-sm'}`}>{cleanSymbol}</span>
                           {stock.regularMarketChangePercent !== undefined && (
-                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                            <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.2 rounded ${
                               dailyChangePositive 
                                 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
                                 : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
                             }`}>
-                              {dailyChangePositive ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                              %{Math.abs(stock.regularMarketChangePercent).toFixed(2)}
+                              {dailyChangePositive ? <ArrowUpRight size={9} /> : <ArrowDownRight size={9} />}
+                              %{Math.abs(stock.regularMarketChangePercent).toFixed(1)}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-text-muted truncate max-w-[180px]" title={stock.name}>
+                        <p className={`text-text-muted truncate ${isFitMode ? 'text-[11px] max-w-[130px]' : 'text-xs max-w-[180px]'}`} title={stock.name}>
                           {stock.name}
                         </p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-right font-medium text-text-primary">
+                  <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'} text-right font-medium text-text-primary`}>
                     {stock.quantity.toLocaleString('tr-TR')}
                   </td>
-                  <td className="px-5 py-3.5 text-right font-medium text-text-secondary">
+                  <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'} text-right font-medium text-text-secondary`}>
                     {formatCurrency(stock.averageCost)}
                   </td>
-                  <td className="px-5 py-3.5 text-right font-bold text-text-primary">
+                  <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'} text-right font-bold text-text-primary`}>
                     {formatCurrency(stock.currentPrice)}
                   </td>
-                  <td className="px-5 py-3.5 text-right">
+                  <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'} text-right`}>
                     <div className={`font-bold ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                       {isPositive ? '+' : ''}{formatCurrency(stock.pnlAmount)}
                     </div>
-                    <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-0.5 ${
+                    <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.2 rounded mt-0.5 ${
                       isPositive 
                         ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
                         : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
@@ -140,48 +142,48 @@ export function StockTable({
                       {isPositive ? '+' : ''}%{stock.pnlPercentage.toFixed(2)}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-right font-black text-text-primary text-base">
+                  <td className={`${isFitMode ? 'px-2.5 py-1.5 text-sm font-bold' : 'px-5 py-3.5 text-base font-black'} text-right text-text-primary`}>
                     {formatCurrency(stock.totalValue)}
                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center justify-center gap-1.5">
+                  <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3.5'}`}>
+                    <div className={`flex items-center justify-center ${isFitMode ? 'gap-1' : 'gap-1.5'}`}>
                       <button 
                         onClick={() => onBuy(cleanSymbol)}
-                        className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-500/20"
+                        className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-500/20`}
                         title="Hisse Alış Ekle"
                       >
-                        <ArrowRightLeft className="w-3.5 h-3.5" />
+                        <ArrowRightLeft className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                       </button>
                       <button 
                         onClick={() => onSell(stock.symbol, stock.quantity)}
-                        className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors border border-amber-500/20"
+                        className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors border border-amber-500/20`}
                         title="Hisse Satış Yap"
                       >
-                        <ArrowRightLeft className="w-3.5 h-3.5 rotate-180" />
+                        <ArrowRightLeft className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} rotate-180`} />
                       </button>
                       <button 
                         onClick={() => onHistory(stock.symbol)}
-                        className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-text-primary transition-colors border border-border"
+                        className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-text-primary transition-colors border border-border`}
                         title="İşlem Geçmişi"
                       >
-                        <History className="w-3.5 h-3.5" />
+                        <History className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                       </button>
                       {onEdit && (
                         <button 
                           onClick={() => onEdit(stock)}
-                          className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border"
+                          className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-blue-500 transition-colors border border-border`}
                           title="Düzenle"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit2 className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                         </button>
                       )}
                       {onDelete && (
                         <button 
                           onClick={() => onDelete(stock.symbol)}
-                          className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border"
+                          className={`${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg bg-bg-secondary text-text-muted hover:text-rose-500 transition-colors border border-border`}
                           title="Sil"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                         </button>
                       )}
                     </div>

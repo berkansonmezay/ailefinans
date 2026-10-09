@@ -17,6 +17,8 @@ import { useAuthStore } from '@/store/auth';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 interface Reminder {
   id: string;
@@ -32,6 +34,7 @@ interface Reminder {
 
 export default function RemindersPage() {
   const { confirm } = useConfirm();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -270,7 +273,7 @@ export default function RemindersPage() {
 
       {/* Toolbar */}
       <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-2 w-full lg:w-auto">
+        <div className="flex items-center gap-2 w-full lg:w-auto flex-wrap">
           <div className="relative flex-1 lg:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted w-4 h-4" />
             <input
@@ -281,6 +284,7 @@ export default function RemindersPage() {
               className="w-full bg-bg-card border border-border rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
             />
           </div>
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
         </div>
         <div className="flex gap-2 w-full lg:w-auto">
           <button 
@@ -307,48 +311,50 @@ export default function RemindersPage() {
       ) : (
         <div className="bg-bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
+            <table className={`w-full text-left transition-all whitespace-nowrap ${isFitMode ? 'text-xs' : 'text-sm'}`}>
               <thead className="bg-bg-screen/50 text-text-muted">
                 <tr>
-                  <th className="px-6 py-4 font-medium">Durum</th>
-                  <th className="px-6 py-4 font-medium">Başlık & Açıklama</th>
-                  <th className="px-6 py-4 font-medium">Tutar</th>
-                  <th className="px-6 py-4 font-medium">Tarih</th>
-                  <th className="px-6 py-4 font-medium">Tekrar</th>
-                  <th className="px-6 py-4 font-medium text-right">İşlemler</th>
+                  <th className={`${isFitMode ? 'px-3 py-2 text-[11px]' : 'px-6 py-4 text-sm'} font-medium`}>Durum</th>
+                  <th className={`${isFitMode ? 'px-3 py-2 text-[11px]' : 'px-6 py-4 text-sm'} font-medium`}>Başlık & Açıklama</th>
+                  <th className={`${isFitMode ? 'px-3 py-2 text-[11px]' : 'px-6 py-4 text-sm'} font-medium`}>Tutar</th>
+                  <th className={`${isFitMode ? 'px-3 py-2 text-[11px]' : 'px-6 py-4 text-sm'} font-medium`}>Tarih</th>
+                  <th className={`${isFitMode ? 'px-3 py-2 text-[11px]' : 'px-6 py-4 text-sm'} font-medium`}>Tekrar</th>
+                  <th className={`${isFitMode ? 'px-3 py-2 text-[11px]' : 'px-6 py-4 text-sm'} font-medium text-right`}>İşlemler</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredReminders.map(reminder => (
                   <tr key={reminder.id} className={`hover:bg-bg-screen/30 transition-colors ${reminder.status !== 'ACTIVE' ? 'opacity-70' : ''}`}>
-                    <td className="px-6 py-4">
-                      <div className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(reminder.dueDate, reminder.status)}`}>
+                    <td className={`${isFitMode ? 'px-3 py-1.5' : 'px-6 py-4'}`}>
+                      <div className={`inline-flex rounded-full font-semibold border ${
+                        isFitMode ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+                      } ${getStatusColor(reminder.dueDate, reminder.status)}`}>
                         {getStatusText(reminder.dueDate, reminder.status)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 max-w-[300px]">
-                      <div className="font-bold text-text-primary truncate" title={reminder.title}>{reminder.title}</div>
+                    <td className={`${isFitMode ? 'px-3 py-1.5 max-w-[220px]' : 'px-6 py-4 max-w-[300px]'}`}>
+                      <div className={`font-bold text-text-primary truncate ${isFitMode ? 'text-xs' : 'text-sm'}`} title={reminder.title}>{reminder.title}</div>
                       {reminder.description && (
-                        <div className="text-xs text-text-muted truncate mt-0.5" title={reminder.description}>{reminder.description}</div>
+                        <div className={`${isFitMode ? 'text-[10px]' : 'text-xs'} text-text-muted truncate mt-0.5`} title={reminder.description}>{reminder.description}</div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={`${isFitMode ? 'px-3 py-1.5' : 'px-6 py-4'}`}>
                       {reminder.amount ? (
-                        <span className="font-medium text-text-primary">{formatCurrency(reminder.amount, reminder.currency)}</span>
+                        <span className={`font-medium text-text-primary ${isFitMode ? 'text-xs' : 'text-sm'}`}>{formatCurrency(reminder.amount, reminder.currency)}</span>
                       ) : (
                         <span className="text-text-muted">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5 font-medium text-text-primary">
-                        <CalendarDays className="w-3.5 h-3.5 text-emerald-500" />
+                    <td className={`${isFitMode ? 'px-3 py-1.5' : 'px-6 py-4'}`}>
+                      <div className={`flex items-center gap-1.5 font-medium text-text-primary ${isFitMode ? 'text-xs' : 'text-sm'}`}>
+                        <CalendarDays className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-emerald-500`} />
                         <span>{new Date(reminder.dueDate).toLocaleDateString('tr-TR')}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={`${isFitMode ? 'px-3 py-1.5' : 'px-6 py-4'}`}>
                       {reminder.isRecurring ? (
-                        <div className="flex items-center gap-1.5">
-                          <Repeat className="w-3.5 h-3.5 text-purple-500" />
+                        <div className={`flex items-center gap-1.5 ${isFitMode ? 'text-xs' : 'text-sm'}`}>
+                          <Repeat className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-purple-500`} />
                           <span className="font-medium text-text-primary">
                             {reminder.recurrenceRule === 'DAILY' ? 'Günlük' :
                              reminder.recurrenceRule === 'WEEKLY' ? 'Haftalık' :
@@ -360,31 +366,31 @@ export default function RemindersPage() {
                         <span className="text-text-muted">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className={`${isFitMode ? 'px-3 py-1.5' : 'px-6 py-4'} text-right`}>
                       {reminder.status === 'ACTIVE' && (
-                        <div className="flex items-center justify-end gap-2">
+                        <div className={`flex items-center justify-end ${isFitMode ? 'gap-1' : 'gap-2'}`}>
                           <button
                             onClick={() => handleComplete(reminder.id)}
-                            className="p-1.5 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-md transition-colors text-text-muted"
+                            className={`${isFitMode ? 'p-1' : 'p-1.5'} hover:text-emerald-500 hover:bg-emerald-500/10 rounded-md transition-colors text-text-muted`}
                             title={reminder.isRecurring ? 'Sonrakine Geç' : 'Tamamlandı İşaretle'}
                           >
-                            <CheckCircle2 className="w-4 h-4" />
+                            <CheckCircle2 className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
                           </button>
                           <button
                             onClick={() => openEditModal(reminder)}
-                            className="p-1.5 hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors text-text-muted"
+                            className={`${isFitMode ? 'p-1' : 'p-1.5'} hover:text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors text-text-muted`}
                             title="Düzenle"
                           >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
                           <button
                             onClick={() => handleDelete(reminder.id)}
-                            className="p-1.5 hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors text-text-muted"
+                            className={`${isFitMode ? 'p-1' : 'p-1.5'} hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors text-text-muted`}
                             title="Sil"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
                           </button>
                         </div>
                       )}

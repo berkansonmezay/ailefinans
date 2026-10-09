@@ -13,9 +13,12 @@ import { CryptoBuyModal } from '@/components/crypto/CryptoBuyModal';
 import { CryptoSellModal } from '@/components/crypto/CryptoSellModal';
 import { CryptoTransactionsModal } from '@/components/crypto/CryptoTransactionsModal';
 import { CryptoEditModal } from '@/components/crypto/CryptoEditModal';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function CryptosPage() {
   const { confirm } = useConfirm();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [cryptos, setCryptos] = useState<CryptoItem[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -229,7 +232,8 @@ export default function CryptosPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {[
             { id: 'ALL', label: 'Tümü' },
             { id: 'PROFIT', label: 'Kârda Olanlar' },
@@ -238,7 +242,7 @@ export default function CryptosPage() {
             <button
               key={f.id}
               onClick={() => setStatusFilter(f.id as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border cursor-pointer ${
                 statusFilter === f.id
                   ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
                   : 'bg-bg-secondary border-border text-text-secondary hover:text-text-primary'
@@ -253,6 +257,7 @@ export default function CryptosPage() {
       <CryptoTable
         cryptos={filteredCryptos}
         loading={loading}
+        isFitMode={isFitMode}
         onBuy={handleOpenBuy}
         onSell={handleOpenSell}
         onHistory={handleOpenHistory}

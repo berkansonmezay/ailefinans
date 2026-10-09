@@ -42,9 +42,12 @@ import { QuickAddModal } from '@/components/shared/QuickAddModal';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function DebtsPage() {
   const { confirm } = useConfirm();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [items, setItems] = useState<any[]>([]);
   const [debts, setDebts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -892,21 +895,24 @@ export default function DebtsPage() {
           </div>
         </div>
 
-        <div className="flex items-center bg-bg-secondary p-1 rounded-lg">
-          <button
-            onClick={() => setViewMode('plan')}
-            className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'plan' ? 'bg-bg-card shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
-            title="Plan Görünümü (Gruplanmış)"
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-bg-card shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
-            title="Liste Görünümü (Tarihe Göre Sıralı)"
-          >
-            <List className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-2">
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
+          <div className="flex items-center bg-bg-secondary p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('plan')}
+              className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'plan' ? 'bg-bg-card shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
+              title="Plan Görünümü (Gruplanmış)"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-bg-card shadow-sm text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
+              title="Liste Görünümü (Tarihe Göre Sıralı)"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -928,15 +934,15 @@ export default function DebtsPage() {
         ) : viewMode === 'list' ? (
           <div className="bg-bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className={`w-full text-left transition-all whitespace-nowrap ${isFitMode ? 'text-xs' : 'text-sm'}`}>
                   <thead>
                     <tr className="bg-bg-sidebar border-b border-border text-text-secondary">
-                      <th className="px-5 py-3 font-semibold">Taksit Planı</th>
-                      <th className="px-5 py-3 font-semibold">Taksit No</th>
-                      <th className="px-5 py-3 font-semibold">Vade Tarihi</th>
-                      <th className="px-5 py-3 font-semibold">Tutar</th>
-                      <th className="px-5 py-3 font-semibold">Durum</th>
-                      <th className="px-5 py-3 font-semibold text-right">İşlem</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-5 py-3'} font-semibold`}>Taksit Planı</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-5 py-3'} font-semibold`}>Taksit No</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-5 py-3'} font-semibold`}>Vade Tarihi</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-5 py-3'} font-semibold`}>Tutar</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-5 py-3'} font-semibold`}>Durum</th>
+                      <th className={`${isFitMode ? 'px-2.5 py-1.5 text-[11px]' : 'px-5 py-3'} font-semibold text-right`}>İşlem</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -957,18 +963,18 @@ export default function DebtsPage() {
 
                         return (
                           <tr key={inst.id} className="hover:bg-bg-sidebar/50 transition-colors">
-                            <td className="px-5 py-3 font-medium text-text-primary">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3'} font-medium text-text-primary`}>
                               {inst.planName}
                             </td>
-                            <td className="px-5 py-3 font-semibold text-text-primary">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3'} font-semibold text-text-primary`}>
                               {inst.number}. Taksit
                             </td>
-                            <td className="px-5 py-3">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3'}`}>
                               <div className={`flex items-center gap-1.5 ${
                                 isOverdue ? 'text-rose-500 font-bold' : 
                                 isDueSoon ? 'text-amber-500 font-bold' : 'text-text-secondary'
                               }`}>
-                                <CalendarDays className="w-3.5 h-3.5" />
+                                <CalendarDays className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                                 {formatDate(inst.dueDate)}
                               </div>
                               {isOverdue && (
@@ -977,7 +983,7 @@ export default function DebtsPage() {
                                 </div>
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-text-primary">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-6 py-4'} whitespace-nowrap text-right font-bold text-text-primary ${isFitMode ? 'text-xs' : 'text-sm'}`}>
                               <div className="flex flex-col items-end">
                                 <span>{formatCurrency(inst.amount, inst.currency)}</span>
                                 {(inst.paidAmount || 0) > 0 && (inst.paidAmount || 0) < inst.amount && (
@@ -987,32 +993,40 @@ export default function DebtsPage() {
                                 )}
                               </div>
                             </td>
-                            <td className="px-5 py-3">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3'}`}>
                               {isPaid ? (
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-500 w-fit">
-                                    <CheckCircle2 size={12} /> Ödendi
+                                  <span className={`inline-flex items-center gap-1 rounded-md font-medium bg-emerald-500/10 text-emerald-500 w-fit ${
+                                    isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-xs'
+                                  }`}>
+                                    <CheckCircle2 size={isFitMode ? 10 : 12} /> Ödendi
                                   </span>
                                   {inst.paidDate && (
                                     <span className="text-[10px] text-text-muted">{formatDate(inst.paidDate)}</span>
                                   )}
                                 </div>
                               ) : isOverdue ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-rose-500/10 text-rose-500 w-fit">
-                                  <AlertCircle size={12} /> Gecikmiş
+                                <span className={`inline-flex items-center gap-1 rounded-md font-medium bg-rose-500/10 text-rose-500 w-fit ${
+                                  isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-xs'
+                                }`}>
+                                  <AlertCircle size={isFitMode ? 10 : 12} /> Gecikmiş
                                 </span>
                               ) : isDueSoon ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-500/10 text-amber-500 w-fit">
-                                  <Clock size={12} /> Yaklaşıyor
+                                <span className={`inline-flex items-center gap-1 rounded-md font-medium bg-amber-500/10 text-amber-500 w-fit ${
+                                  isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-xs'
+                                }`}>
+                                  <Clock size={isFitMode ? 10 : 12} /> Yaklaşıyor
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-slate-500/10 text-slate-500 w-fit">
+                                <span className={`inline-flex items-center gap-1 rounded-md font-medium bg-slate-500/10 text-slate-500 w-fit ${
+                                  isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-xs'
+                                }`}>
                                   Bekliyor
                                 </span>
                               )}
                             </td>
-                            <td className="px-5 py-3 text-right">
-                              <div className="flex items-center justify-end gap-2">
+                            <td className={`${isFitMode ? 'px-2.5 py-1.5' : 'px-5 py-3'} text-right`}>
+                              <div className="flex items-center justify-end gap-1.5">
                                 {!isPaid && (
                                   <button
                                     onClick={(e) => {
@@ -1021,7 +1035,7 @@ export default function DebtsPage() {
                                       const parentPlan = filteredItems.find(p => p.id === inst.planId);
                                       if (parentPlan) handleToggleReminder(parentPlan);
                                     }}
-                                    className={`px-2 py-1.5 rounded-lg transition-colors border flex items-center justify-center ${
+                                    className={`${isFitMode ? 'px-1.5 py-1' : 'px-2 py-1.5'} rounded-lg transition-colors border flex items-center justify-center ${
                                       (() => {
                                         const parentPlan = filteredItems.find(p => p.id === inst.planId);
                                         return parentPlan?.hasReminder
@@ -1031,12 +1045,12 @@ export default function DebtsPage() {
                                     }`}
                                     title="Tüm plan için hatırlatıcıyı aç/kapat"
                                   >
-                                    <Bell className="w-3.5 h-3.5" />
+                                    <Bell className={`${isFitMode ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
                                   </button>
                                 )}
                                 <button
                                   onClick={() => handleTogglePaid(inst.planId, inst)}
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                                  className={`${isFitMode ? 'px-2 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'} rounded-lg font-medium transition-colors border ${
                                     isPaid 
                                       ? 'border-border text-text-secondary hover:bg-bg-sidebar hover:text-text-primary' 
                                       : 'border-emerald-500/30 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white'
@@ -1055,7 +1069,7 @@ export default function DebtsPage() {
                                       amount: inst.amount - (inst.paidAmount || 0),
                                       description: `${inst.planName} - ${inst.number}. Taksit Kısmi Ödemesi`
                                     })}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-bg-secondary border border-border text-text-primary hover:bg-bg-hover hover:border-emerald-500/30 transition-all"
+                                    className={`${isFitMode ? 'px-2 py-1 text-[11px]' : 'px-3 py-1.5 text-xs'} rounded-lg font-medium bg-bg-secondary border border-border text-text-primary hover:bg-bg-hover hover:border-emerald-500/30 transition-all`}
                                     title="Taksitin bir kısmını öde"
                                   >
                                     Kısmi Öde
@@ -1086,16 +1100,16 @@ export default function DebtsPage() {
               >
                 {/* Plan Header & Progress (Clickable) */}
                 <div 
-                  className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer hover:bg-bg-sidebar/30 transition-colors"
+                  className={`${isFitMode ? 'p-3.5' : 'p-5'} flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer hover:bg-bg-sidebar/30 transition-colors`}
                   onClick={() => toggleExpand(item.id)}
                 >
                   <div className="flex items-start gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CreditCard className="w-6 h-6" />
+                    <div className={`${isFitMode ? 'w-9 h-9 rounded-xl' : 'w-12 h-12 rounded-2xl'} bg-rose-500/10 text-rose-500 flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                      <CreditCard className={`${isFitMode ? 'w-4 h-4' : 'w-6 h-6'}`} />
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-bold text-text-primary">
+                        <h3 className={`${isFitMode ? 'text-base' : 'text-lg'} font-bold text-text-primary`}>
                           {item.description || item.creditor}
                         </h3>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
@@ -1250,14 +1264,14 @@ export default function DebtsPage() {
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className={`w-full text-left transition-all whitespace-nowrap ${isFitMode ? 'text-xs' : 'text-sm'}`}>
                           <thead>
-                            <tr className="text-xs text-text-muted border-b border-border/60">
-                              <th className="pb-2 font-medium">Taksit No</th>
-                              <th className="pb-2 font-medium">Vade Tarihi</th>
-                              <th className="pb-2 font-medium">Tutar</th>
-                              <th className="pb-2 font-medium">Durum</th>
-                              <th className="pb-2 font-medium text-right">İşlem</th>
+                            <tr className={`text-text-muted border-b border-border/60 ${isFitMode ? 'text-[11px]' : 'text-xs'}`}>
+                              <th className={`${isFitMode ? 'pb-1.5' : 'pb-2'} font-medium`}>Taksit No</th>
+                              <th className={`${isFitMode ? 'pb-1.5' : 'pb-2'} font-medium`}>Vade Tarihi</th>
+                              <th className={`${isFitMode ? 'pb-1.5' : 'pb-2'} font-medium`}>Tutar</th>
+                              <th className={`${isFitMode ? 'pb-1.5' : 'pb-2'} font-medium`}>Durum</th>
+                              <th className={`${isFitMode ? 'pb-1.5' : 'pb-2'} font-medium text-right`}>İşlem</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border/40">
@@ -1271,7 +1285,7 @@ export default function DebtsPage() {
 
                               return (
                                 <tr key={inst.id} className="hover:bg-bg-card/50 transition-colors">
-                                  <td className="py-2.5 font-semibold text-text-primary">
+                                  <td className={`${isFitMode ? 'py-1.5' : 'py-2.5'} font-semibold text-text-primary`}>
                                     {inst.number}. Taksit
                                     {inst.description && inst.description !== `Taksit ${inst.number}/${count}` && (
                                       <span className="text-xs font-normal text-text-muted ml-2">
@@ -1279,10 +1293,10 @@ export default function DebtsPage() {
                                       </span>
                                     )}
                                   </td>
-                                  <td className="py-2.5 text-text-secondary">
+                                  <td className={`${isFitMode ? 'py-1.5' : 'py-2.5'} text-text-secondary`}>
                                     {formatDate(inst.dueDate)}
                                   </td>
-                                  <td className="py-2.5 font-bold text-text-primary">
+                                  <td className={`${isFitMode ? 'py-1.5' : 'py-2.5'} font-bold text-text-primary`}>
                                     <div className="flex flex-col">
                                       <span>{formatCurrency(inst.amount, item.currency)}</span>
                                       {(inst.paidAmount || 0) > 0 && (inst.paidAmount || 0) < inst.amount && (
@@ -1292,40 +1306,40 @@ export default function DebtsPage() {
                                       )}
                                     </div>
                                   </td>
-                                  <td className="py-2.5">
+                                  <td className={`${isFitMode ? 'py-1.5' : 'py-2.5'}`}>
                                     {isPaid ? (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                                        <CheckCircle2 className="w-3 h-3" />
+                                      <span className={`inline-flex items-center gap-1 rounded-full font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 ${isFitMode ? 'px-2 py-0.2 text-[10px]' : 'px-2.5 py-0.5 text-xs'}`}>
+                                        <CheckCircle2 className={`${isFitMode ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} />
                                         Ödendi
                                       </span>
                                     ) : (inst.paidAmount || 0) > 0 ? (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                                        <Clock className="w-3 h-3" />
+                                      <span className={`inline-flex items-center gap-1 rounded-full font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20 ${isFitMode ? 'px-2 py-0.2 text-[10px]' : 'px-2.5 py-0.5 text-xs'}`}>
+                                        <Clock className={`${isFitMode ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} />
                                         Kısmi Ödendi
                                       </span>
                                     ) : isOverdue ? (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20">
-                                        <AlertTriangle className="w-3 h-3" />
+                                      <span className={`inline-flex items-center gap-1 rounded-full font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20 ${isFitMode ? 'px-2 py-0.2 text-[10px]' : 'px-2.5 py-0.5 text-xs'}`}>
+                                        <AlertTriangle className={`${isFitMode ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} />
                                         Gecikmiş ({Math.abs(diffDays)} gün)
                                       </span>
                                     ) : isDueSoon ? (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                                        <Clock className="w-3 h-3" />
+                                      <span className={`inline-flex items-center gap-1 rounded-full font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20 ${isFitMode ? 'px-2 py-0.2 text-[10px]' : 'px-2.5 py-0.5 text-xs'}`}>
+                                        <Clock className={`${isFitMode ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} />
                                         {diffDays === 0 ? 'Bugün Vadesi Geldi' : `${diffDays} gün kaldı`}
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-700/30 text-text-muted">
-                                        <Calendar className="w-3 h-3" />
+                                      <span className={`inline-flex items-center gap-1 rounded-full font-medium bg-slate-700/30 text-text-muted ${isFitMode ? 'px-2 py-0.2 text-[10px]' : 'px-2.5 py-0.5 text-xs'}`}>
+                                        <Calendar className={`${isFitMode ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} />
                                         Bekliyor
                                       </span>
                                     )}
                                   </td>
-                                  <td className="py-2.5 text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                  <td className={`${isFitMode ? 'py-1.5' : 'py-2.5'} text-right`}>
+                                    <div className="flex items-center justify-end gap-1.5">
                                       {/* Geri Al / Öde (Tam) Butonu */}
                                       <button
                                         onClick={() => handleTogglePaid(item.id, inst)}
-                                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                                        className={`${isFitMode ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'} rounded-lg font-semibold transition-all ${
                                           isPaid
                                             ? 'bg-bg-secondary text-text-muted hover:text-amber-400 hover:bg-amber-500/10'
                                             : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
@@ -1345,7 +1359,7 @@ export default function DebtsPage() {
                                             amount: inst.amount - (inst.paidAmount || 0),
                                             description: `${inst.number}. Taksit Kısmi Ödemesi`
                                           })}
-                                          className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-bg-secondary border border-border text-text-primary hover:bg-bg-hover hover:border-emerald-500/30 transition-all"
+                                          className={`${isFitMode ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'} rounded-lg font-semibold bg-bg-secondary border border-border text-text-primary hover:bg-bg-hover hover:border-emerald-500/30 transition-all`}
                                           title="Taksitin bir kısmını öde"
                                         >
                                           Kısmi Öde

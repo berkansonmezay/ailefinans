@@ -15,6 +15,8 @@ import {
   ShieldPlus, Zap, History, BellRing, Info, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 // ========================
 // TYPES
@@ -99,6 +101,7 @@ const CLAIM_STATUSES = [
 
 export default function WarrantiesAndInvoicesPage() {
   const { confirm } = useConfirm();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [activeTab, setActiveTab] = useState<'warranties' | 'invoices' | 'services' | 'claims'>('warranties');
   const [stats, setStats] = useState<Stats>({ total: 0, active: 0, expiring: 0, expired: 0, openClaims: 0, totalValue: 0 });
   const [showGuide, setShowGuide] = useState(false);
@@ -684,7 +687,8 @@ export default function WarrantiesAndInvoicesPage() {
           <h1 className="text-3xl font-bold text-text-primary tracking-tight">Garanti & Fatura</h1>
           <p className="text-text-muted mt-1">Ürünlerinizin garantilerini, faturalarını ve servis geçmişlerini yönetin.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2.5 items-center flex-wrap">
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {activeTab === 'invoices' ? (
             <Button onClick={openNewInvoice}>
               <Plus className="w-5 h-5 mr-2" />Fatura Ekle
@@ -830,7 +834,8 @@ export default function WarrantiesAndInvoicesPage() {
                 className="w-full bg-bg-secondary/60 border border-border rounded-xl pl-10 pr-4 py-2 text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
               />
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
+              <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
@@ -872,51 +877,53 @@ export default function WarrantiesAndInvoicesPage() {
                 const StatusIcon = cfg.icon;
 
                 return (
-                  <div key={w.id} className="group border border-border bg-bg-card hover:border-emerald-500/30 transition-all rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div key={w.id} className={`group border border-border bg-bg-card hover:border-emerald-500/30 transition-all rounded-xl ${
+                    isFitMode ? 'p-2.5 gap-2' : 'p-4 gap-4'
+                  } flex flex-col md:flex-row items-start md:items-center justify-between`}>
                     
                     {/* Left: Icon & Info */}
-                    <div className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer" onClick={() => openDetail(w)}>
-                      <div className={`p-2.5 rounded-xl bg-${cfg.color}-500/15 flex-shrink-0`}>
-                        <StatusIcon className={`w-5 h-5 text-${cfg.color}-400`} />
+                    <div className={`flex items-center ${isFitMode ? 'gap-2.5' : 'gap-4'} flex-1 min-w-0 cursor-pointer`} onClick={() => openDetail(w)}>
+                      <div className={`${isFitMode ? 'p-1.5 rounded-lg' : 'p-2.5 rounded-xl'} bg-${cfg.color}-500/15 flex-shrink-0`}>
+                        <StatusIcon className={`${isFitMode ? 'w-4 h-4' : 'w-5 h-5'} text-${cfg.color}-400`} />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-base font-bold text-text-primary leading-tight truncate">{w.productName}</h3>
-                        <p className="text-sm text-text-muted truncate mt-0.5">{[w.brand, w.model].filter(Boolean).join(' ') || 'Marka/Model belirtilmemiş'}</p>
+                        <h3 className={`${isFitMode ? 'text-sm' : 'text-base'} font-bold text-text-primary leading-tight truncate`}>{w.productName}</h3>
+                        <p className={`${isFitMode ? 'text-xs' : 'text-sm'} text-text-muted truncate mt-0.5`}>{[w.brand, w.model].filter(Boolean).join(' ') || 'Marka/Model belirtilmemiş'}</p>
                       </div>
                     </div>
 
                     {/* Middle: Badges & Dates */}
-                    <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-6 flex-shrink-0 w-full md:w-auto">
+                    <div className={`flex flex-wrap md:flex-nowrap items-center ${isFitMode ? 'gap-2 md:gap-4' : 'gap-3 md:gap-6'} flex-shrink-0 w-full md:w-auto`}>
                       {/* Tags */}
-                      <div className="flex items-center gap-2 hidden lg:flex">
+                      <div className="flex items-center gap-1.5 hidden lg:flex">
                         {w.category && (
-                          <span className="text-xs px-2.5 py-1 rounded-full bg-bg-secondary text-text-muted border border-border">{w.category}</span>
+                          <span className={`${isFitMode ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'} rounded-full bg-bg-secondary text-text-muted border border-border`}>{w.category}</span>
                         )}
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-bg-secondary text-text-muted border border-border">
+                        <span className={`${isFitMode ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'} rounded-full bg-bg-secondary text-text-muted border border-border`}>
                           {WARRANTY_TYPES.find(t => t.value === w.warrantyType)?.label || w.warrantyType}
                         </span>
                       </div>
                       
                       {/* Dates & Status */}
-                      <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+                      <div className={`flex items-center justify-between md:justify-end ${isFitMode ? 'gap-2 md:gap-3' : 'gap-4'} w-full md:w-auto`}>
                         <div className="text-left md:text-right hidden sm:block">
-                          <p className="text-xs text-text-muted">Bitiş Tarihi</p>
-                          <p className="text-sm font-medium text-text-primary">{new Date(w.warrantyEndDate).toLocaleDateString('tr-TR')}</p>
+                          <p className="text-[10px] text-text-muted">Bitiş Tarihi</p>
+                          <p className={`${isFitMode ? 'text-xs font-semibold' : 'text-sm font-medium'} text-text-primary`}>{new Date(w.warrantyEndDate).toLocaleDateString('tr-TR')}</p>
                         </div>
-                        <span className={`px-3 py-1.5 bg-${cfg.color}-500/15 text-${cfg.color}-400 text-sm rounded-full font-bold whitespace-nowrap`}>
+                        <span className={`${isFitMode ? 'px-2 py-0.5 text-xs' : 'px-3 py-1.5 text-sm'} bg-${cfg.color}-500/15 text-${cfg.color}-400 rounded-full font-bold whitespace-nowrap`}>
                           {days <= 0 ? 'Süresi Doldu' : `${days} gün kaldı`}
                         </span>
                       </div>
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 pt-3 md:pt-0 border-t md:border-0 border-border w-full md:w-auto justify-end">
-                      <button onClick={() => openExtendModal(w)} className="text-text-muted hover:text-violet-400 p-1.5 rounded-lg hover:bg-violet-500/10" title="Garanti Uzat"><ShieldPlus className="w-4 h-4" /></button>
-                      <button onClick={() => openClaimModal(w)} className="text-text-muted hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-500/10" title="Talep Aç"><ClipboardList className="w-4 h-4" /></button>
-                      <button onClick={() => openServiceModal(w)} className="text-text-muted hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10" title="Servis Ekle"><Wrench className="w-4 h-4" /></button>
-                      <button onClick={() => editWarranty(w)} className="text-text-muted hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10" title="Düzenle"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => openReminderModal('WARRANTY', w.id, w.productName)} className="text-text-muted hover:text-cyan-400 p-1.5 rounded-lg hover:bg-cyan-500/10" title="Hatırlatıcı Ekle"><BellRing className="w-4 h-4" /></button>
-                      <button onClick={() => deleteWarranty(w.id)} className="text-text-muted hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10" title="Sil"><Trash2 className="w-4 h-4" /></button>
+                    <div className={`flex gap-1 ${isFitMode ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100'} transition-opacity flex-shrink-0 pt-2 md:pt-0 border-t md:border-0 border-border w-full md:w-auto justify-end`}>
+                      <button onClick={() => openExtendModal(w)} className={`text-text-muted hover:text-violet-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-violet-500/10`} title="Garanti Uzat"><ShieldPlus className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
+                      <button onClick={() => openClaimModal(w)} className={`text-text-muted hover:text-blue-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-blue-500/10`} title="Talep Aç"><ClipboardList className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
+                      <button onClick={() => openServiceModal(w)} className={`text-text-muted hover:text-amber-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-amber-500/10`} title="Servis Ekle"><Wrench className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
+                      <button onClick={() => editWarranty(w)} className={`text-text-muted hover:text-emerald-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-emerald-500/10`} title="Düzenle"><Edit2 className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
+                      <button onClick={() => openReminderModal('WARRANTY', w.id, w.productName)} className={`text-text-muted hover:text-cyan-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-cyan-500/10`} title="Hatırlatıcı Ekle"><BellRing className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
+                      <button onClick={() => deleteWarranty(w.id)} className={`text-text-muted hover:text-red-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-red-500/10`} title="Sil"><Trash2 className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
                     </div>
 
                   </div>
@@ -943,34 +950,36 @@ export default function WarrantiesAndInvoicesPage() {
             </div>
           ) : (
             invoices.map(inv => (
-              <div key={inv.id} className="group border border-border bg-bg-card hover:border-emerald-500/30 transition-all rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div key={inv.id} className={`group border border-border bg-bg-card hover:border-emerald-500/30 transition-all rounded-xl ${
+                isFitMode ? 'p-2.5 gap-2' : 'p-4 gap-4'
+              } flex flex-col md:flex-row items-start md:items-center justify-between`}>
                 
                 {/* Left: Icon & Info */}
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className={`p-2.5 rounded-xl flex-shrink-0 ${inv.status === 'PAID' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                    <FileText className="w-5 h-5" />
+                <div className={`flex items-center ${isFitMode ? 'gap-2.5' : 'gap-4'} flex-1 min-w-0`}>
+                  <div className={`${isFitMode ? 'p-1.5 rounded-lg' : 'p-2.5 rounded-xl'} flex-shrink-0 ${inv.status === 'PAID' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                    <FileText className={`${isFitMode ? 'w-4 h-4' : 'w-5 h-5'}`} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-base font-bold text-text-primary leading-tight truncate">{inv.provider}</h3>
-                    {inv.invoiceNumber && <p className="text-sm text-text-muted truncate mt-0.5">No: {inv.invoiceNumber}</p>}
+                    <h3 className={`${isFitMode ? 'text-sm' : 'text-base'} font-bold text-text-primary leading-tight truncate`}>{inv.provider}</h3>
+                    {inv.invoiceNumber && <p className={`${isFitMode ? 'text-xs' : 'text-sm'} text-text-muted truncate mt-0.5`}>No: {inv.invoiceNumber}</p>}
                   </div>
                 </div>
 
                 {/* Middle: Amount & Status */}
-                <div className="flex flex-wrap md:flex-nowrap items-center gap-3 md:gap-6 flex-shrink-0 w-full md:w-auto">
+                <div className={`flex flex-wrap md:flex-nowrap items-center ${isFitMode ? 'gap-2 md:gap-4' : 'gap-3 md:gap-6'} flex-shrink-0 w-full md:w-auto`}>
                   
                   {/* Amount */}
                   <div className="flex items-end gap-1.5 hidden sm:flex">
-                    <span className="text-xl font-bold text-text-primary">{inv.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
-                    <span className="text-text-muted pb-0.5 text-sm">{inv.currency}</span>
+                    <span className={`${isFitMode ? 'text-base font-bold' : 'text-xl font-bold'} text-text-primary`}>{inv.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                    <span className={`text-text-muted pb-0.5 ${isFitMode ? 'text-xs' : 'text-sm'}`}>{inv.currency}</span>
                   </div>
 
                   {/* Dates & Status */}
-                  <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+                  <div className={`flex items-center justify-between md:justify-end ${isFitMode ? 'gap-2 md:gap-3' : 'gap-4'} w-full md:w-auto`}>
                     {inv.dueDate && (
                       <div className="text-left md:text-right hidden sm:block">
-                        <p className="text-xs text-text-muted">Son Ödeme</p>
-                        <p className="text-sm font-medium text-text-primary">{new Date(inv.dueDate).toLocaleDateString('tr-TR')}</p>
+                        <p className="text-[10px] text-text-muted">Son Ödeme</p>
+                        <p className={`${isFitMode ? 'text-xs font-semibold' : 'text-sm font-medium'} text-text-primary`}>{new Date(inv.dueDate).toLocaleDateString('tr-TR')}</p>
                       </div>
                     )}
                     {getInvoiceStatusBadge(inv.status)}
@@ -978,26 +987,26 @@ export default function WarrantiesAndInvoicesPage() {
                 </div>
 
                 {/* Right: Actions */}
-                <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0 pt-3 md:pt-0 border-t md:border-0 border-border w-full md:w-auto justify-end items-center">
+                <div className={`flex gap-1 ${isFitMode ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100'} transition-opacity flex-shrink-0 pt-2 md:pt-0 border-t md:border-0 border-border w-full md:w-auto justify-end items-center`}>
                   {inv.status !== 'PAID' && inv.status !== 'CANCELLED' && (
-                    <Button variant="ghost" size="sm" className="h-8 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 hidden md:flex mr-2" onClick={() => markInvoiceAsPaid(inv.id)}>
-                      <CheckCircle className="w-4 h-4 mr-1.5" /> Ödendi
+                    <Button variant="ghost" size="sm" className={`${isFitMode ? 'h-7 text-xs px-2' : 'h-8 text-sm'} text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 hidden md:flex mr-1`} onClick={() => markInvoiceAsPaid(inv.id)}>
+                      <CheckCircle className={`${isFitMode ? 'w-3.5 h-3.5 mr-1' : 'w-4 h-4 mr-1.5'}`} /> Ödendi
                     </Button>
                   )}
-                  <button onClick={() => openReminderModal('INVOICE', inv.id, inv.provider)} className="text-text-muted hover:text-cyan-400 p-1.5 rounded-lg hover:bg-cyan-500/10" title="Hatırlatıcı Ekle"><BellRing className="w-4 h-4" /></button>
-                  <button onClick={() => editInvoice(inv)} className="text-text-muted hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-500/10" title="Düzenle"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => deleteInvoice(inv.id)} className="text-text-muted hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10" title="Sil"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => openReminderModal('INVOICE', inv.id, inv.provider)} className={`text-text-muted hover:text-cyan-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-cyan-500/10`} title="Hatırlatıcı Ekle"><BellRing className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
+                  <button onClick={() => editInvoice(inv)} className={`text-text-muted hover:text-emerald-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-emerald-500/10`} title="Düzenle"><Edit2 className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
+                  <button onClick={() => deleteInvoice(inv.id)} className={`text-text-muted hover:text-red-400 ${isFitMode ? 'p-1' : 'p-1.5'} rounded-lg hover:bg-red-500/10`} title="Sil"><Trash2 className={`${isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} /></button>
                 </div>
 
                 {/* Mobile Amount & Pay Button */}
                 <div className="w-full flex items-center justify-between md:hidden">
                   <div className="flex items-end gap-1.5 sm:hidden">
-                    <span className="text-xl font-bold text-text-primary">{inv.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
-                    <span className="text-text-muted pb-0.5 text-sm">{inv.currency}</span>
+                    <span className={`${isFitMode ? 'text-base font-bold' : 'text-xl font-bold'} text-text-primary`}>{inv.amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-text-muted pb-0.5 text-xs">{inv.currency}</span>
                   </div>
                   {inv.status !== 'PAID' && inv.status !== 'CANCELLED' && (
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-sm h-8" onClick={() => markInvoiceAsPaid(inv.id)}>
-                      <CheckCircle className="w-4 h-4 mr-2" /> Ödendi
+                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-xs h-7" onClick={() => markInvoiceAsPaid(inv.id)}>
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" /> Ödendi
                     </Button>
                   )}
                 </div>
