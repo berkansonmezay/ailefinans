@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Trash2, ShieldAlert, Key, Search, X, LogIn, Users, UserCheck, Clock, ShieldCheck, UserPlus, Eye, EyeOff, SlidersHorizontal, Package, Zap, Crown } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import toast from 'react-hot-toast';
@@ -23,24 +23,59 @@ interface User {
   tenantName: string;
 }
 
-const ALL_APP_MENUS = [
-  { key: 'overview', name: 'Kontrol Paneli', description: 'Finansal özet ve grafikler' },
-  { key: 'transactions', name: 'İşlemler', description: 'Gelir ve gider kayıtları' },
-  { key: 'debts', name: 'Taksitli Borçlar', description: 'Borç takipleri ve taksitler' },
-  { key: 'receivables', name: 'Taksitli Alacaklar', description: 'Alacak takipleri ve taksitler' },
-  { key: 'stocks', name: 'Hisselerim', description: 'Borsa ve hisse senedi takibi' },
-  { key: 'crypto', name: 'Kripto Varlıklar', description: 'Kripto para portföyü' },
-  { key: 'savings', name: 'Altın & Döviz', description: 'Kıymetli maden ve döviz birikimleri' },
-  { key: 'accounts', name: 'Hesaplar', description: 'Banka hesapları ve cüzdanlar' },
-  { key: 'subscriptions', name: 'Abonelikler', description: 'Düzenli abonelik ödemeleri' },
-  { key: 'reminders', name: 'Hatırlatıcılar', description: 'Ödeme ve etkinlik bildirimleri' },
-  { key: 'calendar', name: 'Takvim', description: 'Mali takvim ve vadeler' },
-  { key: 'reports', name: 'Raporlar', description: 'Detaylı finansal grafikler' },
-  { key: 'warranties', name: 'Garanti & Fatura', description: 'Ürün garanti takipleri' },
-  { key: 'invoices', name: 'Fatura Tarama (AI)', description: 'Fiş ve fatura okuma' },
-  { key: 'settings', name: 'Ayarlar', description: 'Kurum ve kategori ayarları' },
-  { key: 'guide', name: 'Yardım', description: 'Kullanım rehberi' },
+const MENU_PACKAGES = [
+  {
+    id: 'basic',
+    name: 'Temel Paket',
+    badge: 'Temel',
+    badgeClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20',
+    icon: Package,
+    iconColor: 'text-blue-500 bg-blue-500/10',
+    description: 'Günlük gelir-gider kayıtları, nakit hesaplar ve takvim yönetimi',
+    menus: [
+      { key: 'overview', name: 'Kontrol Paneli', description: 'Finansal özet ve grafikler' },
+      { key: 'transactions', name: 'İşlemler', description: 'Gelir ve gider kayıtları' },
+      { key: 'accounts', name: 'Hesaplar', description: 'Banka hesapları ve cüzdanlar' },
+      { key: 'calendar', name: 'Takvim', description: 'Mali takvim ve vadeler' },
+      { key: 'settings', name: 'Ayarlar', description: 'Kurum ve kategori ayarları' },
+      { key: 'guide', name: 'Yardım', description: 'Kullanım rehberi' },
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro Paket',
+    badge: 'Pro',
+    badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20',
+    icon: Zap,
+    iconColor: 'text-purple-500 bg-purple-500/10',
+    description: 'Taksitli borç/alacaklar, abonelikler, hatırlatıcılar ve detaylı raporlar',
+    menus: [
+      { key: 'debts', name: 'Taksitli Borçlar', description: 'Borç takipleri ve taksitler' },
+      { key: 'receivables', name: 'Taksitli Alacaklar', description: 'Alacak takipleri ve taksitler' },
+      { key: 'subscriptions', name: 'Abonelikler', description: 'Düzenli abonelik ödemeleri' },
+      { key: 'reminders', name: 'Hatırlatıcılar', description: 'Ödeme ve etkinlik bildirimleri' },
+      { key: 'reports', name: 'Raporlar', description: 'Detaylı finansal grafikler' },
+      { key: 'warranties', name: 'Garanti & Fatura', description: 'Ürün garanti takipleri' },
+    ],
+  },
+  {
+    id: 'premium',
+    name: 'Premium Paket',
+    badge: 'Premium',
+    badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+    icon: Crown,
+    iconColor: 'text-amber-500 bg-amber-500/10',
+    description: 'Yatırım portföyleri (Hisse, Kripto, Döviz/Altın) ve AI Fatura Tarama',
+    menus: [
+      { key: 'savings', name: 'Altın & Döviz', description: 'Kıymetli maden ve döviz birikimleri' },
+      { key: 'stocks', name: 'Hisselerim', description: 'Borsa ve hisse senedi takibi' },
+      { key: 'crypto', name: 'Kripto Varlıklar', description: 'Kripto para portföyü' },
+      { key: 'invoices', name: 'Fatura Tarama (AI)', description: 'Fiş ve fatura okuma (Yapay Zeka)' },
+    ],
+  },
 ];
+
+const ALL_APP_MENUS = MENU_PACKAGES.flatMap(pkg => pkg.menus);
 
 export default function AdminUsersPage() {
   const { confirm } = useConfirm();
@@ -105,6 +140,43 @@ export default function AdminUsersPage() {
     setMenuFormData(prev => 
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
+  };
+
+  const applyPreset = (preset: 'basic' | 'pro' | 'premium' | 'none') => {
+    if (preset === 'none') {
+      // Tümünü gizle
+      setMenuFormData(ALL_APP_MENUS.map(m => m.key));
+    } else if (preset === 'basic') {
+      // Yalnızca Temel Paket açık (Pro ve Premium kapalı)
+      const basicKeys = MENU_PACKAGES.find(p => p.id === 'basic')!.menus.map(m => m.key);
+      const disabled = ALL_APP_MENUS.map(m => m.key).filter(k => !basicKeys.includes(k));
+      setMenuFormData(disabled);
+    } else if (preset === 'pro') {
+      // Temel + Pro açık (Premium kapalı)
+      const allowedKeys = [
+        ...MENU_PACKAGES.find(p => p.id === 'basic')!.menus.map(m => m.key),
+        ...MENU_PACKAGES.find(p => p.id === 'pro')!.menus.map(m => m.key),
+      ];
+      const disabled = ALL_APP_MENUS.map(m => m.key).filter(k => !allowedKeys.includes(k));
+      setMenuFormData(disabled);
+    } else if (preset === 'premium') {
+      // Tüm menüler açık
+      setMenuFormData([]);
+    }
+  };
+
+  const togglePackageMenus = (packageId: string, enableAll: boolean) => {
+    const pkg = MENU_PACKAGES.find(p => p.id === packageId);
+    if (!pkg) return;
+    const pkgKeys = pkg.menus.map(m => m.key);
+    
+    if (enableAll) {
+      // Paketteki tüm menüleri aç (disabled listesinden çıkar)
+      setMenuFormData(prev => prev.filter(k => !pkgKeys.includes(k)));
+    } else {
+      // Paketteki tüm menüleri gizle (disabled listesine ekle)
+      setMenuFormData(prev => Array.from(new Set([...prev, ...pkgKeys])));
+    }
   };
 
   const handleSaveMenus = async () => {
@@ -706,7 +778,7 @@ export default function AdminUsersPage() {
       {/* Menu Permissions Modal */}
       {isMenuModalOpen && selectedUserForMenus && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-bg-card w-full max-w-2xl rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="bg-bg-card w-full max-w-3xl rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[90vh] flex flex-col">
             <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-bg-sidebar/50">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
@@ -723,79 +795,152 @@ export default function AdminUsersPage() {
               </div>
               <button 
                 onClick={closeMenuModal}
-                className="text-text-muted hover:text-text-primary p-1.5 rounded-lg hover:bg-bg-card transition-colors"
+                className="text-text-muted hover:text-text-primary p-1.5 rounded-lg hover:bg-bg-card transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
-              {/* Quick Actions */}
-              <div className="flex items-center justify-between bg-bg-sidebar/40 p-3 rounded-xl border border-border">
-                <span className="text-xs font-medium text-text-muted">
-                  Açık Menüler: <strong className="text-text-primary">{ALL_APP_MENUS.length - menuFormData.length}</strong> / {ALL_APP_MENUS.length}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMenuFormData([])}
-                    className="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 rounded-md font-medium transition-colors cursor-pointer"
-                  >
-                    Tümünü Göster
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMenuFormData(ALL_APP_MENUS.map(m => m.key))}
-                    className="text-xs px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 rounded-md font-medium transition-colors cursor-pointer"
-                  >
-                    Tümünü Gizle
-                  </button>
+            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+              {/* Quick Actions & Package Presets */}
+              <div className="bg-bg-sidebar/40 p-3.5 rounded-xl border border-border space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs font-semibold text-text-primary mr-1">Paket Şablonları:</span>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset('basic')}
+                      className="text-xs px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 rounded-lg font-medium transition-colors cursor-pointer border border-blue-500/20"
+                    >
+                      📦 Temel Paket
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset('pro')}
+                      className="text-xs px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 rounded-lg font-medium transition-colors cursor-pointer border border-purple-500/20"
+                    >
+                      ⚡ Temel + Pro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset('premium')}
+                      className="text-xs px-2.5 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 rounded-lg font-medium transition-colors cursor-pointer border border-amber-500/20"
+                    >
+                      👑 Tam Paket (Premium)
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-text-muted">
+                      Açık: <strong className="text-text-primary">{ALL_APP_MENUS.length - menuFormData.length}</strong> / {ALL_APP_MENUS.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset('none')}
+                      className="text-xs px-2.5 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 rounded-lg font-medium transition-colors cursor-pointer border border-rose-500/20"
+                    >
+                      Tümünü Gizle
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Menu Items Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {ALL_APP_MENUS.map(menu => {
-                  const isHidden = menuFormData.includes(menu.key);
-                  const isVisible = !isHidden;
-                  return (
-                    <div
-                      key={menu.key}
-                      onClick={() => toggleMenu(menu.key)}
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
-                        isVisible
-                          ? 'bg-bg-card border-border hover:border-emerald-500/50 shadow-xs'
-                          : 'bg-bg-sidebar/50 border-border/60 opacity-60 hover:opacity-85'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0 pr-2">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          isVisible ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-text-muted'
-                        }`}>
-                          {isVisible ? <CheckCircle size={16} /> : <EyeOff size={16} />}
+              {/* Categorized Package Sections */}
+              {MENU_PACKAGES.map(pkg => {
+                const pkgKeys = pkg.menus.map(m => m.key);
+                const activeCountInPkg = pkgKeys.filter(k => !menuFormData.includes(k)).length;
+                const isAllActiveInPkg = activeCountInPkg === pkgKeys.length;
+                const PkgIcon = pkg.icon;
+
+                return (
+                  <div key={pkg.id} className="space-y-3">
+                    {/* Package Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${pkg.iconColor}`}>
+                          <PkgIcon size={18} />
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-text-primary truncate">{menu.name}</p>
-                          <p className="text-[11px] text-text-muted truncate">{menu.description}</p>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-text-primary">{pkg.name}</h4>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${pkg.badgeClass}`}>
+                              {pkg.badge}
+                            </span>
+                            <span className="text-xs text-text-muted font-medium">
+                              ({activeCountInPkg} / {pkgKeys.length} açık)
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-text-muted">{pkg.description}</p>
                         </div>
                       </div>
 
-                      {/* Custom Toggle Switch */}
-                      <div
-                        className={`w-11 h-6 flex items-center rounded-full p-1 shrink-0 transition-colors ${
-                          isVisible ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'
-                        }`}
-                      >
-                        <div
-                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                            isVisible ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
+                      {/* Package Quick Toggle Buttons */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => togglePackageMenus(pkg.id, true)}
+                          disabled={isAllActiveInPkg}
+                          className="text-xs px-2 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 rounded-md font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Paketi Aç
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => togglePackageMenus(pkg.id, false)}
+                          disabled={activeCountInPkg === 0}
+                          className="text-xs px-2 py-1 bg-gray-500/10 text-text-muted hover:bg-gray-500/20 rounded-md font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Paketi Gizle
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {/* Menus Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {pkg.menus.map(menu => {
+                        const isHidden = menuFormData.includes(menu.key);
+                        const isVisible = !isHidden;
+                        return (
+                          <div
+                            key={menu.key}
+                            onClick={() => toggleMenu(menu.key)}
+                            className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                              isVisible
+                                ? 'bg-bg-card border-border hover:border-emerald-500/50 shadow-xs'
+                                : 'bg-bg-sidebar/50 border-border/60 opacity-60 hover:opacity-85'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 pr-2">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                isVisible ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-text-muted'
+                              }`}>
+                                {isVisible ? <CheckCircle size={16} /> : <EyeOff size={16} />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-text-primary truncate">{menu.name}</p>
+                                <p className="text-[11px] text-text-muted truncate">{menu.description}</p>
+                              </div>
+                            </div>
+
+                            {/* Custom Toggle Switch */}
+                            <div
+                              className={`w-11 h-6 flex items-center rounded-full p-1 shrink-0 transition-colors ${
+                                isVisible ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'
+                              }`}
+                            >
+                              <div
+                                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                  isVisible ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Modal Footer */}
