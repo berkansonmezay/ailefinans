@@ -258,6 +258,7 @@ export class AdminService {
         lastName: true,
         email: true,
         username: true,
+        avatarUrl: true,
         isActive: true,
         systemRole: true,
         disabledMenus: true,

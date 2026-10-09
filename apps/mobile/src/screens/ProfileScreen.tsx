@@ -1,7 +1,9 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
 import { fetchApi } from '../lib/api';
 
@@ -16,6 +18,125 @@ export const ProfileScreen = ({ navigation }: any) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const uploadAvatarAsset = async (asset: ImagePicker.ImagePickerAsset) => {
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        name: asset.fileName || `avatar_${Date.now()}.jpg`,
+        type: asset.mimeType || 'image/jpeg',
+      } as any);
+
+      const res = await fetchApi<any>('/auth/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const newAvatarUrl = res?.data?.avatarUrl || res?.avatarUrl;
+      if (newAvatarUrl && user) {
+        const updatedUser = { ...user, avatarUrl: newAvatarUrl };
+        setUser(updatedUser);
+        await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+        Alert.alert('Başarılı', 'Profil fotoğrafınız güncellendi.');
+      }
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      Alert.alert('Hata', error.message || 'Profil fotoğrafı yüklenemedi.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handlePickFromCamera = async () => {
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('İzin Gerekli', 'Kamera ile fotoğraf çekebilmek için kamera erişim izni vermeniz gerekmektedir.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadAvatarAsset(result.assets[0]);
+      }
+    } catch (err: any) {
+      console.error('Camera error:', err);
+      Alert.alert('Hata', 'Kamera açılırken bir sorun oluştu.');
+    }
+  };
+
+  const handlePickFromGallery = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('İzin Gerekli', 'Galeriden fotoğraf seçebilmek için fotoğraf kitaplığına erişim izni vermeniz gerekmektedir.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadAvatarAsset(result.assets[0]);
+      }
+    } catch (err: any) {
+      console.error('Gallery error:', err);
+      Alert.alert('Hata', 'Galeri açılırken bir sorun oluştu.');
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    Alert.alert(
+      'Fotoğrafı Kaldır',
+      'Mevcut profil fotoğrafınızı kaldırmak istediğinize emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Kaldır',
+          style: 'destructive',
+          onPress: async () => {
+            setUploadingAvatar(true);
+            try {
+              await fetchApi('/auth/avatar', { method: 'DELETE' });
+              if (user) {
+                const updatedUser = { ...user, avatarUrl: null };
+                setUser(updatedUser);
+                await AsyncStorage.setItem('userData', JSON.stringify(updatedUser));
+                Alert.alert('Başarılı', 'Profil fotoğrafınız kaldırıldı.');
+              }
+            } catch (err: any) {
+              Alert.alert('Hata', err.message || 'Fotoğraf kaldırılamadı.');
+            } finally {
+              setUploadingAvatar(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const showAvatarOptions = () => {
+    if (uploadingAvatar) return;
+    const buttons: any[] = [
+      { text: '📷 Kamera ile Çek', onPress: handlePickFromCamera },
+      { text: '🖼️ Galeriden Seç', onPress: handlePickFromGallery },
+    ];
+    if (user?.avatarUrl) {
+      buttons.push({ text: '🗑️ Fotoğrafı Kaldır', onPress: handleRemoveAvatar, style: 'destructive' });
+    }
+    buttons.push({ text: 'İptal', style: 'cancel' });
+
+    Alert.alert('Profil Fotoğrafı', 'Profil fotoğrafınızı güncellemek için bir seçenek seçin:', buttons);
+  };
 
   useEffect(() => {
     if (user) {
@@ -120,11 +241,42 @@ export const ProfileScreen = ({ navigation }: any) => {
           >
             {/* Header Area */}
             <View style={styles.pageInfo}>
-              <View style={styles.avatarLarge}>
-                <Text style={styles.avatarLargeText}>
-                  {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
+              <TouchableOpacity 
+                style={styles.avatarWrapper} 
+                onPress={showAvatarOptions}
+                activeOpacity={0.8}
+                disabled={uploadingAvatar}
+              >
+                <View style={styles.avatarLarge}>
+                  {user?.avatarUrl ? (
+                    <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarLargeText}>
+                      {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
+                    </Text>
+                  )}
+                  {uploadingAvatar && (
+                    <View style={styles.avatarLoadingOverlay}>
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.cameraBadge}>
+                  <Ionicons name="camera" size={13} color="#ffffff" />
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.changePhotoButton}
+                onPress={showAvatarOptions}
+                disabled={uploadingAvatar}
+              >
+                <Ionicons name="camera-outline" size={15} color="#4f46e5" />
+                <Text style={styles.changePhotoText}>
+                  {user?.avatarUrl ? 'Fotoğrafı Değiştir' : 'Fotoğraf Ekle'}
                 </Text>
-              </View>
+              </TouchableOpacity>
+
               {user?.username ? (
                 <Text style={styles.pageInfoUsername}>@{user.username}</Text>
               ) : null}
@@ -304,20 +456,68 @@ const styles = StyleSheet.create({
   },
   pageInfo: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     marginTop: 8,
   },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: 8,
+  },
   avatarLarge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: '#e0e7ff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#c7d2fe',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#4f46e5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  changePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#eef2ff',
+    marginBottom: 10,
+  },
+  changePhotoText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4f46e5',
   },
   avatarLargeText: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
     color: '#4f46e5',
   },

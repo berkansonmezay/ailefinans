@@ -276,8 +276,22 @@ export function Header() {
           <div className="hidden md:block text-right">
             {/* Ad ve rol Profil sayfasına taşındı */}
           </div>
-          <button onClick={() => router.push('/profile')} className="w-9 h-9 rounded-full bg-accent-light text-accent flex items-center justify-center border border-accent/20 hover:bg-accent hover:text-text-primary transition-colors" title="Profilim">
-            <UserIcon size={18} />
+          <button 
+            onClick={() => router.push('/profile')} 
+            className="w-9 h-9 rounded-full bg-accent-light text-accent flex items-center justify-center border border-accent/20 hover:border-accent transition-all overflow-hidden cursor-pointer" 
+            title="Profilim"
+          >
+            {user?.avatarUrl ? (
+              <img 
+                src={user.avatarUrl} 
+                alt={`${user.firstName} ${user.lastName}`} 
+                className="w-full h-full object-cover" 
+              />
+            ) : (
+              <span className="font-bold text-xs">
+                {(user?.firstName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
+              </span>
+            )}
           </button>
           <button 
             onClick={handleLogout}

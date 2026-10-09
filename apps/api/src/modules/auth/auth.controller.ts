@@ -2,14 +2,22 @@ import {
   Controller,
   Post,
   Put,
+  Delete,
   Get,
+  Param,
+  Res,
   Body,
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   Request,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
+import { Response } from "express";
 import { AuthService } from "./auth.service";
 import { Public, CurrentUser } from "../../common/decorators";
 import { success } from "../../common/helpers";
@@ -86,10 +94,47 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async updateProfile(
     @CurrentUser() user: any,
-    @Body() dto: { firstName?: string; lastName?: string; password?: string; username?: string },
+    @Body() dto: { firstName?: string; lastName?: string; password?: string; username?: string; avatarUrl?: string | null },
   ) {
     const result = await this.authService.updateProfile(user.userId, dto);
     return success(result, "Profil başarıyla güncellendi.");
+  }
+
+  @UseGuards(AuthGuard("jwt"))
+  @Post("avatar")
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(
+    FileInterceptor("file", {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    }),
+  )
+  async uploadAvatar(
+    @CurrentUser() user: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const result = await this.authService.uploadAvatar(user.userId, file);
+    return success(result, "Profil fotoğrafı başarıyla yüklendi.");
+  }
+
+  @UseGuards(AuthGuard("jwt"))
+  @Delete("avatar")
+  @HttpCode(HttpStatus.OK)
+  async removeAvatar(@CurrentUser() user: any) {
+    const result = await this.authService.removeAvatar(user.userId);
+    return success(result, "Profil fotoğrafı kaldırıldı.");
+  }
+
+  @Public()
+  @Get("avatar/:userId")
+  async getAvatar(@Param("userId") userId: string, @Res() res: Response) {
+    const fileResult = await this.authService.getAvatarFile(userId);
+    if (fileResult.type === "REDIRECT") {
+      return res.redirect(fileResult.url!);
+    }
+    res.setHeader("Content-Type", fileResult.mimeType || "image/jpeg");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    fileResult.stream!.pipe(res);
   }
 
   @Public()

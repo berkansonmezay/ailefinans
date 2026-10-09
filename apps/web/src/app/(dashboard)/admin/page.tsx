@@ -21,6 +21,7 @@ interface User {
   lastName: string;
   email: string;
   username?: string;
+  avatarUrl?: string | null;
   isActive: boolean;
   systemRole: string;
   disabledMenus?: string[];
@@ -843,8 +844,8 @@ export default function AdminUsersPage() {
                                 
                                 {/* Left Info: Avatar + Details */}
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                                  {/* Member Initials Avatar */}
-                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                                  {/* Member Avatar */}
+                                  <div className={`w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center font-bold text-xs shrink-0 ${
                                     u.tenantRole === 'OWNER'
                                       ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
                                       : u.tenantRole === 'ADMIN'
@@ -853,7 +854,11 @@ export default function AdminUsersPage() {
                                       ? 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
                                       : 'bg-blue-500/15 text-blue-500 border border-blue-500/30'
                                   }`}>
-                                    {u.firstName.charAt(0)}{u.lastName.charAt(0)}
+                                    {u.avatarUrl ? (
+                                      <img src={u.avatarUrl} alt={`${u.firstName} ${u.lastName}`} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span>{u.firstName.charAt(0)}{u.lastName.charAt(0)}</span>
+                                    )}
                                   </div>
 
                                   <div className="min-w-0 flex-1">
@@ -1004,7 +1009,16 @@ export default function AdminUsersPage() {
                     {filteredUsers.map((u) => (
                       <tr key={u.id} className="hover:bg-bg-sidebar/40 transition-colors">
                         <td className="px-5 py-3.5">
-                          <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-bg-secondary border border-border flex items-center justify-center text-xs font-bold text-text-muted shrink-0">
+                              {u.avatarUrl ? (
+                                <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span>{u.firstName.charAt(0)}{u.lastName.charAt(0)}</span>
+                              )}
+                            </div>
+                            <div className="font-semibold text-text-primary">{u.firstName} {u.lastName}</div>
+                          </div>
                         </td>
                         <td className="px-5 py-3.5 text-text-secondary text-sm">
                           <div className="flex items-center gap-1.5 font-medium text-text-primary">

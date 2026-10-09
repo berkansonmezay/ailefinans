@@ -11,6 +11,8 @@ import { v4 as uuid } from "uuid";
 import { PrismaService } from "../../prisma/prisma.service";
 import { MailService } from "./mail.service";
 import * as crypto from "crypto";
+import { extname, resolve } from "path";
+import { existsSync, writeFileSync, mkdirSync, readdirSync, createReadStream } from "fs";
 
 @Injectable()
 export class AuthService {
@@ -167,6 +169,7 @@ export class AuthService {
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        avatarUrl: user.avatarUrl,
         activeTenantId: activeMembership.tenantId,
         activeTenantName: activeMembership.tenant.name,
         role: activeMembership.role,
@@ -230,6 +233,7 @@ export class AuthService {
         username: tokenRecord.user.username,
         firstName: tokenRecord.user.firstName,
         lastName: tokenRecord.user.lastName,
+        avatarUrl: tokenRecord.user.avatarUrl,
         activeTenantId: activeMembership.tenantId,
         activeTenantName: activeMembership.tenant.name,
         role: activeMembership.role,
@@ -276,6 +280,7 @@ export class AuthService {
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
+      avatarUrl: user.avatarUrl,
       activeTenantId: activeMembership?.tenantId,
       activeTenantName: activeMembership?.tenant.name,
       role: activeMembership?.role,
@@ -365,10 +370,11 @@ export class AuthService {
     };
   }
 
-  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; password?: string; username?: string }) {
+  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; password?: string; username?: string; avatarUrl?: string | null }) {
     const updateData: any = {};
     if (data.firstName) updateData.firstName = data.firstName;
     if (data.lastName) updateData.lastName = data.lastName;
+    if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
     
     if (data.username) {
       // Check if username is taken by another user
@@ -394,6 +400,7 @@ export class AuthService {
         username: true,
         firstName: true,
         lastName: true,
+        avatarUrl: true,
       }
     });
     
@@ -447,5 +454,136 @@ export class AuthService {
     });
 
     return { message: "Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz." };
+  }
+
+  private getSupabaseConfig() {
+    const url = process.env.SUPABASE_URL?.trim();
+    const key = process.env.SUPABASE_KEY?.trim();
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET?.trim() || "documents";
+    if (!url || !key) return null;
+    return { url, key, bucket };
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException("Lütfen bir resim dosyası seçin.");
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic"];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException("Yalnızca resim dosyaları (JPEG, PNG, WEBP, GIF) yüklenebilir.");
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException("Kullanıcı bulunamadı.");
+    }
+
+    let avatarUrl = "";
+    const ext = extname(file.originalname) || ".jpg";
+    const filename = `${uuid()}${ext}`;
+    const filePath = `avatars/${userId}/${filename}`;
+
+    // 1. Supabase Storage
+    const supabase = this.getSupabaseConfig();
+    if (supabase) {
+      try {
+        const uploadUrl = `${supabase.url}/storage/v1/object/${supabase.bucket}/${filePath}`;
+        const uploadRes = await fetch(uploadUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${supabase.key}`,
+            apikey: supabase.key,
+            "Content-Type": file.mimetype || "image/jpeg",
+          },
+          body: file.buffer as any,
+        });
+
+        if (uploadRes.ok) {
+          avatarUrl = `${supabase.url}/storage/v1/object/public/${supabase.bucket}/${filePath}`;
+        }
+      } catch (err) {
+        console.error("Supabase avatar upload failed, falling back to local storage:", err);
+      }
+    }
+
+    // 2. Local fallback storage
+    if (!avatarUrl) {
+      const uploadDir = resolve("./uploads/avatars", userId);
+      if (!existsSync(uploadDir)) {
+        mkdirSync(uploadDir, { recursive: true });
+      }
+      const localFilePath = resolve(uploadDir, filename);
+      writeFileSync(localFilePath, file.buffer);
+      avatarUrl = `/api/v1/auth/avatar/${userId}?t=${Date.now()}`;
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+      },
+    });
+
+    return {
+      avatarUrl: updatedUser.avatarUrl,
+      user: updatedUser,
+    };
+  }
+
+  async removeAvatar(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException("Kullanıcı bulunamadı.");
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: null },
+    });
+
+    return { message: "Profil fotoğrafı kaldırıldı.", avatarUrl: null };
+  }
+
+  async getAvatarFile(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.avatarUrl) {
+      throw new NotFoundException("Profil fotoğrafı bulunamadı.");
+    }
+
+    if (user.avatarUrl.startsWith("http://") || user.avatarUrl.startsWith("https://")) {
+      return { type: "REDIRECT", url: user.avatarUrl };
+    }
+
+    const uploadDir = resolve("./uploads/avatars", userId);
+    if (!existsSync(uploadDir)) {
+      throw new NotFoundException("Profil fotoğrafı dosyası bulunamadı.");
+    }
+
+    const files = readdirSync(uploadDir);
+    if (files.length === 0) {
+      throw new NotFoundException("Profil fotoğrafı bulunamadı.");
+    }
+
+    const latestFile = files[files.length - 1];
+    const filePath = resolve(uploadDir, latestFile);
+    const ext = extname(latestFile).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".webp": "image/webp",
+      ".gif": "image/gif",
+    };
+
+    return {
+      type: "STREAM",
+      stream: createReadStream(filePath),
+      mimeType: mimeMap[ext] || "image/jpeg",
+    };
   }
 }

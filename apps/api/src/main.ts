@@ -2,12 +2,24 @@ import 'dotenv/config';
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import helmet from "helmet";
+import * as express from "express";
+import * as path from "path";
+import * as fs from "fs";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Ensure uploads directory exists
+  const uploadsDir = path.resolve("./uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  app.use("/uploads", express.static(uploadsDir));
+
   // Security
-  app.use(helmet());
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  }));
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);

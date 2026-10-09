@@ -98,7 +98,11 @@ export const DashboardScreen = ({ navigation }: any) => {
           onPress={() => navigation.navigate('Profile')}
         >
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>{initial}</Text>
+            {user?.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{initial}</Text>
+            )}
           </View>
         </TouchableOpacity>
         
@@ -200,6 +204,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ede9fe',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   avatarText: {
     color: '#7c3aed',

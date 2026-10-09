@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, FlatList, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, FlatList, StatusBar, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
@@ -245,8 +245,12 @@ export const SettingsScreen = ({ navigation }: any) => {
           <Text style={styles.cardTitle}>Kurum Üyeleri</Text>
           {members.map((m, idx) => (
             <View key={idx} style={styles.memberRow}>
-              <View style={styles.avatarMini}>
-                <Text style={styles.avatarMiniText}>{(m.user?.firstName?.[0] || 'U').toUpperCase()}</Text>
+              <View style={[styles.avatarMini, { overflow: 'hidden' }]}>
+                {m.user?.avatarUrl ? (
+                  <Image source={{ uri: m.user.avatarUrl }} style={{ width: '100%', height: '100%' }} />
+                ) : (
+                  <Text style={styles.avatarMiniText}>{(m.user?.firstName?.[0] || 'U').toUpperCase()}</Text>
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.memberName}>{m.user?.firstName} {m.user?.lastName}</Text>
