@@ -58,6 +58,52 @@ export const OverviewScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const currentYear = new Date().getFullYear();
+  const currentMonthIdx = new Date().getMonth(); // 0-indexed
+  const [selectedMonth, setSelectedMonth] = useState<string>('all'); // 'all' or '0'..'11'
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+
+  const { startDate, endDate } = useMemo(() => {
+    if (selectedMonth === 'all') {
+      return {
+        startDate: new Date(selectedYear, 0, 1).toISOString(),
+        endDate: new Date(selectedYear, 11, 31, 23, 59, 59).toISOString(),
+      };
+    }
+    const m = parseInt(selectedMonth, 10);
+    return {
+      startDate: new Date(selectedYear, m, 1).toISOString(),
+      endDate: new Date(selectedYear, m + 1, 0, 23, 59, 59).toISOString(),
+    };
+  }, [selectedMonth, selectedYear]);
+
+  const periodLabel = useMemo(() => {
+    if (selectedMonth === 'all') {
+      return `${selectedYear} Yılı Geneli`;
+    }
+    const mIdx = parseInt(selectedMonth, 10);
+    return `${MONTH_NAMES[mIdx]} ${selectedYear}`;
+  }, [selectedMonth, selectedYear]);
+
+  const kpiLabels = useMemo(() => {
+    if (selectedMonth === 'all') {
+      return {
+        income: 'YILLIK GELİR',
+        expense: 'YILLIK GİDER',
+        netFlow: 'YILLIK NET AKIŞ',
+        debt: 'TOPLAM BORÇ',
+      };
+    }
+    const mIdx = parseInt(selectedMonth, 10);
+    const mName = (MONTH_NAMES[mIdx] || '').toUpperCase();
+    return {
+      income: `${mName} GELİRİ`,
+      expense: `${mName} GİDERİ`,
+      netFlow: `${mName} NET AKIŞ`,
+      debt: 'TOPLAM BORÇ',
+    };
+  }, [selectedMonth]);
+
   const [kpis, setKpis] = useState<KpiData>({
     totalIncome: 0,
     totalExpense: 0,
@@ -93,9 +139,9 @@ export const OverviewScreen = ({ navigation }: any) => {
         savingsRes,
         marketRes,
       ] = await Promise.allSettled([
-        fetchApi<any>('/dashboard/kpis'),
+        fetchApi<any>(`/dashboard/kpis?startDate=${startDate}&endDate=${endDate}`),
         fetchApi<any[]>('/dashboard/monthly-chart?months=6'),
-        fetchApi<any[]>('/dashboard/category-breakdown?type=EXPENSE'),
+        fetchApi<any[]>(`/dashboard/category-breakdown?startDate=${startDate}&endDate=${endDate}&type=EXPENSE`),
         fetchApi<any>('/accounts?pageSize=100'),
         fetchApi<any>('/stocks/summary'),
         fetchApi<any>('/crypto/summary'),
@@ -181,7 +227,7 @@ export const OverviewScreen = ({ navigation }: any) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     loadData();
@@ -290,8 +336,86 @@ export const OverviewScreen = ({ navigation }: any) => {
         >
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Finansal Özet</Text>
-            <Text style={styles.sectionSubtitle}>Aylık nakit akışı ve durumunuz.</Text>
+            <Text style={styles.sectionSubtitle}>
+              {selectedMonth === 'all'
+                ? `${selectedYear} yılı genel nakit akışı ve durumunuz.`
+                : `${periodLabel} dönemi nakit akışı ve durumunuz.`}
+            </Text>
           </View>
+
+          {/* Dönem Filtresi (Chips) */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterContainer}
+            style={styles.filterScrollView}
+          >
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                selectedMonth === 'all' && styles.filterChipActive,
+              ]}
+              onPress={() => setSelectedMonth('all')}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="calendar"
+                size={12}
+                color={selectedMonth === 'all' ? '#ffffff' : '#64748b'}
+              />
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedMonth === 'all' && styles.filterChipTextActive,
+                ]}
+              >
+                Tüm Yıl ({selectedYear})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                selectedMonth === String(currentMonthIdx) && styles.filterChipActive,
+              ]}
+              onPress={() => setSelectedMonth(String(currentMonthIdx))}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedMonth === String(currentMonthIdx) && styles.filterChipTextActive,
+                ]}
+              >
+                Bu Ay ({MONTH_NAMES[currentMonthIdx]})
+              </Text>
+            </TouchableOpacity>
+
+            {MONTH_NAMES.map((name, idx) => {
+              if (idx === currentMonthIdx) return null;
+              const isSelected = selectedMonth === String(idx);
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  style={[
+                    styles.filterChip,
+                    isSelected && styles.filterChipActive,
+                  ]}
+                  onPress={() => setSelectedMonth(String(idx))}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      isSelected && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
           {/* KPI Cards */}
           <View style={styles.kpiGrid}>
@@ -304,7 +428,7 @@ export const OverviewScreen = ({ navigation }: any) => {
               <View style={styles.kpiIconWrapper}>
                 <Ionicons name="arrow-up-outline" size={20} color="#10b981" />
               </View>
-              <Text style={styles.kpiLabel}>TOPLAM GELİR</Text>
+              <Text style={styles.kpiLabel}>{kpiLabels.income}</Text>
               <Text style={styles.kpiValue}>{formatCurrency(kpis.totalIncome)}</Text>
             </TouchableOpacity>
 
@@ -317,7 +441,7 @@ export const OverviewScreen = ({ navigation }: any) => {
               <View style={styles.kpiIconWrapper}>
                 <Ionicons name="arrow-down-outline" size={20} color="#f43f5e" />
               </View>
-              <Text style={styles.kpiLabel}>TOPLAM GİDER</Text>
+              <Text style={styles.kpiLabel}>{kpiLabels.expense}</Text>
               <Text style={styles.kpiValue}>{formatCurrency(kpis.totalExpense)}</Text>
             </TouchableOpacity>
 
@@ -326,7 +450,7 @@ export const OverviewScreen = ({ navigation }: any) => {
               <View style={styles.kpiIconWrapper}>
                 <Ionicons name="wallet-outline" size={20} color="#3b82f6" />
               </View>
-              <Text style={styles.kpiLabel}>NET NAKİT AKIŞI</Text>
+              <Text style={styles.kpiLabel}>{kpiLabels.netFlow}</Text>
               <Text
                 style={[
                   styles.kpiValue,
@@ -346,7 +470,7 @@ export const OverviewScreen = ({ navigation }: any) => {
               <View style={styles.kpiIconWrapper}>
                 <Ionicons name="card-outline" size={20} color="#f59e0b" />
               </View>
-              <Text style={styles.kpiLabel}>TOPLAM BORÇ</Text>
+              <Text style={styles.kpiLabel}>{kpiLabels.debt}</Text>
               <Text style={styles.kpiValue}>{formatCurrency(kpis.totalDebt)}</Text>
             </TouchableOpacity>
           </View>
@@ -559,9 +683,46 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  sectionHeader: { marginBottom: 16, marginTop: 8 },
+  sectionHeader: { marginBottom: 12, marginTop: 8 },
   sectionTitle: { fontSize: 20, fontWeight: '800', color: '#0f172a' },
   sectionSubtitle: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  filterScrollView: {
+    marginBottom: 16,
+  },
+  filterContainer: {
+    paddingHorizontal: 0,
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  filterChipActive: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  filterChipTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
