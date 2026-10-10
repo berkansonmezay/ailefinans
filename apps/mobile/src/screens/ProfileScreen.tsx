@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,8 +8,11 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { AuthContext } from '../context/AuthContext';
 import { fetchApi, getAvatarUrl } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 export const ProfileScreen = ({ navigation }: any) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const { user, setUser, logout } = useContext(AuthContext);
 
   const [username, setUsername] = useState(user?.username || '');
@@ -289,7 +292,7 @@ export const ProfileScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profilim</Text>
         <View style={styles.backButton} />
@@ -363,7 +366,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                   value={username}
                   onChangeText={setUsername}
                   placeholder="Kullanıcı adınızı girin"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.textMuted}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
@@ -377,7 +380,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                     value={firstName}
                     onChangeText={setFirstName}
                     placeholder="Ad"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
@@ -387,7 +390,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                     value={lastName}
                     onChangeText={setLastName}
                     placeholder="Soyad"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
               </View>
@@ -399,7 +402,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                   value={user?.email || ''}
                   editable={false}
                   placeholder="E-posta"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
               
@@ -418,7 +421,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Değiştirmek istemiyorsanız boş bırakın"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.textMuted}
                   secureTextEntry
                   autoCapitalize="none"
                 />
@@ -431,7 +434,7 @@ export const ProfileScreen = ({ navigation }: any) => {
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Tekrar girin"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor={colors.textMuted}
                   secureTextEntry
                   autoCapitalize="none"
                 />
@@ -488,10 +491,10 @@ export const ProfileScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgPrimary,
   },
   header: {
     flexDirection: 'row',
@@ -499,9 +502,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
@@ -511,7 +514,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
   },
   scrollView: {
     flex: 1,
@@ -533,12 +536,12 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: '#e0e7ff',
+    backgroundColor: isDark ? colors.bgSecondary : '#e0e7ff',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#c7d2fe',
+    borderColor: isDark ? colors.border : '#c7d2fe',
   },
   avatarImage: {
     width: '100%',
@@ -565,7 +568,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: colors.bgCard,
   },
   changePhotoButton: {
     flexDirection: 'row',
@@ -574,13 +577,13 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 12,
     borderRadius: 16,
-    backgroundColor: '#eef2ff',
+    backgroundColor: isDark ? 'rgba(79, 70, 229, 0.2)' : '#eef2ff',
     marginBottom: 10,
   },
   changePhotoText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4f46e5',
+    color: isDark ? '#818cf8' : '#4f46e5',
   },
   avatarLargeText: {
     fontSize: 32,
@@ -590,25 +593,27 @@ const styles = StyleSheet.create({
   pageInfoUsername: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 4,
     textAlign: 'center',
   },
   pageInfoSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.3 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -618,7 +623,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.textPrimary,
     marginLeft: 8,
   },
   inputGroup: {
@@ -627,22 +632,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#374151',
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 14,
     fontSize: 15,
-    color: '#111827',
-    backgroundColor: '#ffffff',
+    color: colors.textPrimary,
+    backgroundColor: isDark ? colors.bgSecondary : '#ffffff',
   },
   disabledInput: {
-    backgroundColor: '#f3f4f6',
-    color: '#6b7280',
+    backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#f3f4f6',
+    color: colors.textMuted,
   },
   rowInputs: {
     flexDirection: 'row',
@@ -650,7 +655,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.border,
     marginVertical: 12,
   },
   saveButton: {
@@ -666,16 +671,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   roleBox: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: isDark ? colors.bgSecondary : '#f8fafc',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
   },
   roleBoxLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textMuted,
     marginBottom: 8,
   },
   roleBoxContent: {
@@ -686,7 +691,7 @@ const styles = StyleSheet.create({
   roleBoxValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   roleBadge: {
     paddingHorizontal: 10,
@@ -699,8 +704,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245, 158, 11, 0.2)',
   },
   roleBadgeStandard: {
-    backgroundColor: '#f1f5f9',
-    borderColor: '#e2e8f0',
+    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f1f5f9',
+    borderColor: colors.border,
   },
   roleBadgeText: {
     fontSize: 11,
@@ -710,11 +715,11 @@ const styles = StyleSheet.create({
     color: '#d97706',
   },
   roleBadgeTextStandard: {
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   roleBoxDesc: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textSecondary,
     marginTop: 12,
     lineHeight: 18,
   },
@@ -722,9 +727,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fef2f2',
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
     borderWidth: 1,
-    borderColor: '#fee2e2',
+    borderColor: isDark ? 'rgba(239, 68, 68, 0.3)' : '#fee2e2',
     paddingVertical: 14,
     borderRadius: 12,
     marginTop: 8,

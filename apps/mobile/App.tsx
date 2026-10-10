@@ -1,10 +1,11 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { NotificationProvider } from './src/context/NotificationContext';
 import { InAppNotificationBanner } from './src/components/InAppNotificationBanner';
@@ -34,17 +35,23 @@ const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
   const { token, isLoading } = useContext(AuthContext);
+  const { colors } = useTheme();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgPrimary }}>
         <ActivityIndicator size="small" color="#6366f1" />
       </View>
     );
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.bgPrimary }
+      }}
+    >
       {token == null ? (
         // Giriş Yapmamış Kullanıcı
         <Stack.Screen name="Login" component={LoginScreen} />
@@ -75,33 +82,58 @@ const AppNavigator = () => {
   );
 };
 
+const MainApp = () => {
+  const { isDark, colors } = useTheme();
+
+  const navigationTheme = useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: colors.bgPrimary,
+        card: colors.bgCard,
+        text: colors.textPrimary,
+        border: colors.border,
+        primary: colors.accent,
+      },
+    };
+  }, [isDark, colors]);
+
+  return (
+    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <AppNavigator />
+      <InAppNotificationBanner
+        onPressNotification={(item) => {
+          if (navigationRef.isReady()) {
+            const routes: Record<string, string> = {
+              'INSTALLMENT_DUE': 'Debts',
+              'INSTALLMENT_OVERDUE': 'Debts',
+              'SUBSCRIPTION_RENEWAL': 'Subscriptions',
+              'PAYMENT_REMINDER': 'Reminders',
+              'REMINDER': 'Reminders',
+              'WARRANTY_EXPIRING': 'Warranties',
+            };
+            const target = routes[item.type] || 'Notifications';
+            navigationRef.navigate(target);
+          }
+        }}
+      />
+    </NavigationContainer>
+  );
+};
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <NavigationContainer ref={navigationRef}>
-            <StatusBar style="dark" />
-            <AppNavigator />
-            <InAppNotificationBanner
-              onPressNotification={(item) => {
-                if (navigationRef.isReady()) {
-                  const routes: Record<string, string> = {
-                    'INSTALLMENT_DUE': 'Debts',
-                    'INSTALLMENT_OVERDUE': 'Debts',
-                    'SUBSCRIPTION_RENEWAL': 'Subscriptions',
-                    'PAYMENT_REMINDER': 'Reminders',
-                    'REMINDER': 'Reminders',
-                    'WARRANTY_EXPIRING': 'Warranties',
-                  };
-                  const target = routes[item.type] || 'Notifications';
-                  navigationRef.navigate(target);
-                }
-              }}
-            />
-          </NavigationContainer>
-        </NotificationProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <MainApp />
+          </NotificationProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Dimensions, Image, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -17,6 +18,9 @@ interface SelectedFileAsset {
 }
 
 export const InvoiceScannerScreen = ({ navigation }: any) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [documentType, setDocumentType] = useState<'invoice' | 'warranty'>('invoice');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -488,7 +492,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Fatura & Belge AI Tarayıcı</Text>
@@ -510,7 +514,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
               setSelectedAsset(null);
             }}
           >
-            <Ionicons name="receipt" size={18} color={documentType === 'invoice' ? '#6366f1' : '#64748b'} />
+            <Ionicons name="receipt" size={18} color={documentType === 'invoice' ? '#6366f1' : colors.textSecondary} />
             <Text style={[styles.typeBtnText, documentType === 'invoice' && styles.typeBtnTextActive]}>
               Fatura / Fiş
             </Text>
@@ -524,7 +528,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
               setSelectedAsset(null);
             }}
           >
-            <Ionicons name="shield-checkmark" size={18} color={documentType === 'warranty' ? '#6366f1' : '#64748b'} />
+            <Ionicons name="shield-checkmark" size={18} color={documentType === 'warranty' ? '#6366f1' : colors.textSecondary} />
             <Text style={[styles.typeBtnText, documentType === 'warranty' && styles.typeBtnTextActive]}>
               Garanti Belgesi
             </Text>
@@ -755,7 +759,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                           <Ionicons 
                             name={p.icon as any} 
                             size={14} 
-                            color={paymentMethod === p.id ? '#6366f1' : '#64748b'} 
+                            color={paymentMethod === p.id ? '#6366f1' : colors.textSecondary} 
                           />
                           <Text style={[styles.paymentBtnText, paymentMethod === p.id && styles.paymentBtnTextActive]}>
                             {p.label}
@@ -807,7 +811,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                       value={extractedData.productName}
                       onChangeText={(val) => setExtractedData({ ...extractedData, productName: val })}
                       placeholder="Örn: Televizyon, Kahve Makinesi..."
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                     />
                   </View>
 
@@ -819,7 +823,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                         value={extractedData.brand}
                         onChangeText={(val) => setExtractedData({ ...extractedData, brand: val })}
                         placeholder="Örn: Samsung"
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.textMuted}
                       />
                     </View>
                     <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -829,7 +833,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                         value={extractedData.model}
                         onChangeText={(val) => setExtractedData({ ...extractedData, model: val })}
                         placeholder="Örn: OLED 55"
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.textMuted}
                       />
                     </View>
                   </View>
@@ -842,7 +846,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                         value={extractedData.purchaseDate}
                         onChangeText={(val) => setExtractedData({ ...extractedData, purchaseDate: val })}
                         placeholder="YYYY-AA-GG"
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.textMuted}
                       />
                     </View>
                     <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -852,7 +856,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                         value={extractedData.warrantyEndDate}
                         onChangeText={(val) => setExtractedData({ ...extractedData, warrantyEndDate: val })}
                         placeholder="YYYY-AA-GG"
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.textMuted}
                       />
                     </View>
                   </View>
@@ -866,7 +870,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                         onChangeText={(val) => setExtractedData({ ...extractedData, purchasePrice: val })}
                         keyboardType="decimal-pad"
                         placeholder="0.00"
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.textMuted}
                       />
                     </View>
                     <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -876,7 +880,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                         value={extractedData.purchasePlace}
                         onChangeText={(val) => setExtractedData({ ...extractedData, purchasePlace: val })}
                         placeholder="Örn: Vatan Bilgisayar"
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.textMuted}
                       />
                     </View>
                   </View>
@@ -888,7 +892,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
                       value={extractedData.serialNumber}
                       onChangeText={(val) => setExtractedData({ ...extractedData, serialNumber: val })}
                       placeholder="Örn: SN-98124578"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                     />
                   </View>
 
@@ -915,7 +919,7 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
         {/* History / Previous Invoices */}
         <View style={styles.historySection}>
           <View style={styles.historyHeader}>
-            <Ionicons name="time" size={18} color="#0f172a" />
+            <Ionicons name="time" size={18} color={colors.textPrimary} />
             <Text style={styles.historyTitle}>Son Kaydedilen Faturalar</Text>
           </View>
 
@@ -945,9 +949,12 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.bgPrimary,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -955,14 +962,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: isDark ? 0.2 : 0.03,
     shadowRadius: 8,
     elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     zIndex: 10,
   },
   backButton: { padding: 4 },
@@ -971,9 +980,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
   betaBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
     borderColor: '#f59e0b',
     borderWidth: 0.8,
     borderRadius: 6,
@@ -990,12 +999,12 @@ const styles = StyleSheet.create({
 
   typeSelector: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 14,
     padding: 4,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   typeBtn: {
     flex: 1,
@@ -1007,12 +1016,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   typeBtnActive: {
-    backgroundColor: '#eef2ff',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff',
   },
   typeBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   typeBtnTextActive: {
     color: '#6366f1',
@@ -1020,24 +1029,24 @@ const styles = StyleSheet.create({
   },
 
   scanHeroCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 20,
     padding: 20,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#6366f1',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: isDark ? 0.2 : 0.06,
     shadowRadius: 10,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#e0e7ff',
+    borderColor: colors.border,
   },
   scanIconCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#eef2ff',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -1045,13 +1054,13 @@ const styles = StyleSheet.create({
   scanHeroTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.textPrimary,
     marginBottom: 4,
     textAlign: 'center',
   },
   scanHeroDesc: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 17,
@@ -1061,7 +1070,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.bgSecondary,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
@@ -1070,7 +1079,7 @@ const styles = StyleSheet.create({
   },
   selectedFileName: {
     fontSize: 12,
-    color: '#334155',
+    color: colors.textPrimary,
     fontWeight: '600',
     flex: 1,
   },
@@ -1103,12 +1112,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eef2ff',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff',
     paddingVertical: 12,
     borderRadius: 12,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#c7d2fe',
+    borderColor: isDark ? '#6366f1' : '#c7d2fe',
   },
   secondaryScanBtnText: {
     fontSize: 13,
@@ -1120,12 +1129,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f0f9ff',
+    backgroundColor: isDark ? 'rgba(2, 132, 199, 0.15)' : '#f0f9ff',
     paddingVertical: 12,
     borderRadius: 12,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#bae6fd',
+    borderColor: isDark ? '#0284c7' : '#bae6fd',
   },
   documentScanBtnText: {
     fontSize: 13,
@@ -1141,15 +1150,15 @@ const styles = StyleSheet.create({
   },
   sampleLabel: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
   sampleChip: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   sampleChipText: {
     fontSize: 11,
@@ -1170,21 +1179,21 @@ const styles = StyleSheet.create({
   },
   processingSubText: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
 
   resultCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   resultHeader: {
     flexDirection: 'row',
@@ -1193,12 +1202,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   resultTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   formGroup: {
     gap: 12,
@@ -1213,33 +1222,33 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   formInput: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 9,
     fontSize: 13,
-    color: '#0f172a',
-    backgroundColor: '#f8fafc',
+    color: colors.textPrimary,
+    backgroundColor: colors.bgSecondary,
   },
   miniChip: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   miniChipActive: {
-    backgroundColor: '#eef2ff',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.25)' : '#eef2ff',
     borderColor: '#6366f1',
   },
   miniChipText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   miniChipTextActive: {
@@ -1258,18 +1267,18 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   paymentBtnActive: {
-    backgroundColor: '#eef2ff',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.25)' : '#eef2ff',
     borderColor: '#6366f1',
   },
   paymentBtnText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   paymentBtnTextActive: {
     color: '#6366f1',
@@ -1291,16 +1300,16 @@ const styles = StyleSheet.create({
   },
 
   historySection: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
+    shadowOpacity: isDark ? 0.2 : 0.04,
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: colors.border,
   },
   historyHeader: {
     flexDirection: 'row',
@@ -1311,20 +1320,20 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   historyCard: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f8fafc',
+    borderBottomColor: colors.border,
   },
   historyIconBox: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#eef2ff',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -1332,21 +1341,21 @@ const styles = StyleSheet.create({
   historyVendor: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1e293b',
+    color: colors.textPrimary,
   },
   historyDate: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   historyAmount: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   emptyHistoryText: {
     textAlign: 'center',
-    color: '#94a3b8',
+    color: colors.textMuted,
     paddingVertical: 16,
     fontSize: 12,
   },

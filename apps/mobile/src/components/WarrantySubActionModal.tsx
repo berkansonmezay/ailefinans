@@ -5,6 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { useTheme } from '../context/ThemeContext';
 
 export type WarrantySubActionType = 'EXTEND' | 'SERVICE' | 'CLAIM';
 
@@ -19,6 +20,9 @@ interface WarrantySubActionModalProps {
 export const WarrantySubActionModal = ({ 
   visible, type, warranty, onClose, onSuccess 
 }: WarrantySubActionModalProps) => {
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [loading, setLoading] = useState(false);
 
   // Extend fields
@@ -170,7 +174,7 @@ export const WarrantySubActionModal = ({
         return {
           title: 'Garanti Süresini Uzat',
           icon: 'shield-outline',
-          iconBg: '#eff6ff',
+          iconBg: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff',
           iconColor: '#3b82f6',
           btnColor: '#3b82f6',
           btnText: 'Garantiyi Uzat',
@@ -179,7 +183,7 @@ export const WarrantySubActionModal = ({
         return {
           title: 'Servis / Bakım Kaydı Ekle',
           icon: 'build-outline',
-          iconBg: '#fffbeb',
+          iconBg: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fffbeb',
           iconColor: '#f59e0b',
           btnColor: '#f59e0b',
           btnText: 'Servis Kaydını Kaydet',
@@ -188,7 +192,7 @@ export const WarrantySubActionModal = ({
         return {
           title: 'Hasar / Arıza Talebi Aç',
           icon: 'clipboard-outline',
-          iconBg: '#fdf2f8',
+          iconBg: isDark ? 'rgba(236, 72, 153, 0.2)' : '#fdf2f8',
           iconColor: '#ec4899',
           btnColor: '#ec4899',
           btnText: 'Talebi Oluştur',
@@ -220,7 +224,7 @@ export const WarrantySubActionModal = ({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={22} color="#64748b" />
+              <Ionicons name="close" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -240,7 +244,7 @@ export const WarrantySubActionModal = ({
                     placeholder="Örn: MediaMarkt Koruma, Sigorta Şirketi..."
                     value={extendProvider}
                     onChangeText={setExtendProvider}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
 
@@ -253,7 +257,7 @@ export const WarrantySubActionModal = ({
                       value={extensionMonths}
                       onChangeText={handleMonthsChange}
                       keyboardType="number-pad"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                     />
                   </View>
 
@@ -265,7 +269,7 @@ export const WarrantySubActionModal = ({
                       value={extendCost}
                       onChangeText={setExtendCost}
                       keyboardType="decimal-pad"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                     />
                   </View>
                 </View>
@@ -278,7 +282,7 @@ export const WarrantySubActionModal = ({
                       placeholder="YYYY-AA-GG"
                       value={extendEndDate}
                       onChangeText={setExtendEndDate}
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                     />
                   </View>
 
@@ -289,7 +293,7 @@ export const WarrantySubActionModal = ({
                       placeholder="Opsiyonel"
                       value={policyNumber}
                       onChangeText={setPolicyNumber}
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                     />
                   </View>
                 </View>
@@ -302,7 +306,7 @@ export const WarrantySubActionModal = ({
                     value={extendNotes}
                     onChangeText={setExtendNotes}
                     multiline
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
               </>
@@ -319,7 +323,7 @@ export const WarrantySubActionModal = ({
                       placeholder="YYYY-AA-GG"
                       value={serviceDate}
                       onChangeText={setServiceDate}
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                     />
                   </View>
 
@@ -331,7 +335,7 @@ export const WarrantySubActionModal = ({
                       value={serviceCost}
                       onChangeText={setServiceCost}
                       keyboardType="decimal-pad"
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                     />
                   </View>
                 </View>
@@ -343,7 +347,7 @@ export const WarrantySubActionModal = ({
                     placeholder="Örn: Apple Yetkili Servisi, KVK, Bosch Teknik Servis..."
                     value={serviceProvider}
                     onChangeText={setServiceProvider}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
 
@@ -355,7 +359,7 @@ export const WarrantySubActionModal = ({
                     value={serviceDescription}
                     onChangeText={setServiceDescription}
                     multiline
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
 
@@ -366,7 +370,7 @@ export const WarrantySubActionModal = ({
                     placeholder="Örn: Batarya, Ekran camı..."
                     value={partsReplaced}
                     onChangeText={setPartsReplaced}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
               </>
@@ -383,7 +387,7 @@ export const WarrantySubActionModal = ({
                     value={issueDescription}
                     onChangeText={setIssueDescription}
                     multiline
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
 
@@ -394,7 +398,7 @@ export const WarrantySubActionModal = ({
                     placeholder="Örn: RMA-8912457"
                     value={rmaNumber}
                     onChangeText={setRmaNumber}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
 
@@ -406,7 +410,7 @@ export const WarrantySubActionModal = ({
                     value={claimNotes}
                     onChangeText={setClaimNotes}
                     multiline
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                   />
                 </View>
               </>
@@ -441,16 +445,20 @@ export const WarrantySubActionModal = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
     maxHeight: '90%',
     paddingBottom: Platform.OS === 'ios' ? 30 : 20,
   },
@@ -460,7 +468,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   iconCircle: {
     width: 36,
@@ -472,17 +480,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   subTitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textSecondary,
     marginTop: 1,
   },
   closeButton: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: isDark ? colors.bgSecondary : '#f8fafc',
   },
   formScroll: {
     paddingHorizontal: 20,
@@ -498,18 +506,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   footer: {
     flexDirection: 'row',
@@ -517,19 +525,19 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9',
     alignItems: 'center',
   },
   cancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   submitButton: {
     flex: 2,

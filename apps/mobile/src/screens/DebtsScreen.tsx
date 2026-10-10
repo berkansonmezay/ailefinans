@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 export const DebtsScreen = ({ navigation }: any) => {
+  const { isDark, colors } = useTheme();
   const [debts, setDebts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
@@ -247,39 +249,39 @@ export const DebtsScreen = ({ navigation }: any) => {
     const { width } = Dimensions.get('window');
 
     return (
-      <View style={styles.planCard}>
+      <View style={[styles.planCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
         {/* Plan Header */}
         <TouchableOpacity style={styles.planHeader} onPress={() => toggleExpand(item.id)}>
           <View style={styles.planHeaderTop}>
             <View style={styles.planHeaderLeft}>
-              <View style={styles.iconContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
                 <Ionicons name="card" size={24} color="#f43f5e" />
               </View>
               <View style={{ paddingRight: 4 }}>
-                <Text style={styles.planTitle}>{title}</Text>
-                <Text style={styles.planSubtitle}>{item.installmentCount || 1} Taksit • {formatCurrency(totalAmount, item.currency)}</Text>
+                <Text style={[styles.planTitle, { color: colors.textPrimary }]}>{title}</Text>
+                <Text style={[styles.planSubtitle, { color: colors.textMuted }]}>{item.installmentCount || 1} Taksit • {formatCurrency(totalAmount, item.currency)}</Text>
               </View>
             </View>
-            <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#94a3b8" />
+            <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.textMuted} />
           </View>
           
           <View style={styles.progressContainer}>
-            <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarBg, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
               <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
             </View>
             <View style={styles.progressTextRow}>
-              <Text style={styles.progressText}>Ödenen: {formatCurrency(paidAmount, item.currency)}</Text>
-              <Text style={styles.progressText}>Kalan: {formatCurrency(totalAmount - paidAmount, item.currency)}</Text>
+              <Text style={[styles.progressText, { color: colors.textMuted }]}>Ödenen: {formatCurrency(paidAmount, item.currency)}</Text>
+              <Text style={[styles.progressText, { color: colors.textMuted }]}>Kalan: {formatCurrency(totalAmount - paidAmount, item.currency)}</Text>
             </View>
           </View>
 
-          <View style={styles.planActionsRow}>
+          <View style={[styles.planActionsRow, { borderTopColor: colors.border }]}>
             <TouchableOpacity 
               style={[styles.actionBtn, item.hasReminder ? styles.actionBtnActive : null]}
               onPress={() => handleToggleReminder(item)}
             >
-              <Ionicons name={item.hasReminder ? "notifications" : "notifications-outline"} size={16} color={item.hasReminder ? "#f59e0b" : "#64748b"} />
-              <Text style={[styles.actionBtnText, item.hasReminder ? { color: '#f59e0b' } : null]}>Hatırlatıcı</Text>
+              <Ionicons name={item.hasReminder ? "notifications" : "notifications-outline"} size={16} color={item.hasReminder ? "#f59e0b" : colors.textMuted} />
+              <Text style={[styles.actionBtnText, item.hasReminder ? { color: '#f59e0b' } : { color: colors.textMuted }]}>Hatırlatıcı</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeletePlan(item)}>
@@ -291,7 +293,7 @@ export const DebtsScreen = ({ navigation }: any) => {
 
         {/* Expanded Installments List */}
         {isExpanded && item.installments && (
-          <View style={styles.installmentsList}>
+          <View style={[styles.installmentsList, { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc', borderTopColor: colors.border }]}>
             {item.installments.map((inst: any, idx: number) => {
               const isPaid = inst.status === 'PAID';
               const isOverdue = inst.status === 'OVERDUE' || (new Date(inst.transactionDate || inst.dueDate) < new Date() && !isPaid);
@@ -302,15 +304,15 @@ export const DebtsScreen = ({ navigation }: any) => {
               else if (isOverdue) { statusColor = '#f43f5e'; statusText = 'Gecikti'; }
 
               return (
-                <View key={inst.id || idx} style={styles.instRow}>
+                <View key={inst.id || idx} style={[styles.instRow, { backgroundColor: isDark ? colors.bgCard : '#fff' }]}>
                   <View style={styles.instInfo}>
-                    <Text style={styles.instNum}>{inst.number || idx + 1}. Taksit</Text>
-                    <Text style={styles.instDate}>{formatDate(inst.transactionDate || inst.dueDate)}</Text>
+                    <Text style={[styles.instNum, { color: colors.textPrimary }]}>{inst.number || idx + 1}. Taksit</Text>
+                    <Text style={[styles.instDate, { color: colors.textMuted }]}>{formatDate(inst.transactionDate || inst.dueDate)}</Text>
                   </View>
                   
                   <View style={styles.instRight}>
                     <View style={styles.instAmountWrapper}>
-                      <Text style={styles.instAmount}>{formatCurrency(inst.amount, item.currency)}</Text>
+                      <Text style={[styles.instAmount, { color: colors.textPrimary }]}>{formatCurrency(inst.amount, item.currency)}</Text>
                       <View style={[styles.badge, { backgroundColor: statusColor + '20' }]}>
                         <Text style={[styles.badgeText, { color: statusColor }]}>{statusText}</Text>
                       </View>
@@ -318,15 +320,15 @@ export const DebtsScreen = ({ navigation }: any) => {
                     
                     <View style={styles.instActions}>
                       <TouchableOpacity 
-                        style={[styles.instActionBtn, isPaid ? styles.instActionBtnPaid : styles.instActionBtnPrimary]}
+                        style={[styles.instActionBtn, isPaid ? [styles.instActionBtnPaid, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }] : styles.instActionBtnPrimary]}
                         onPress={() => handleTogglePaid(item.id, inst)}
                       >
-                        <Text style={[styles.instActionBtnText, isPaid ? { color: '#64748b' } : { color: '#fff' }]}>
+                        <Text style={[styles.instActionBtnText, isPaid ? { color: colors.textMuted } : { color: '#fff' }]}>
                           {isPaid ? 'İptal' : 'Öde'}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity style={styles.instDeleteBtn} onPress={() => handleDeleteInstallment(inst)}>
-                        <Ionicons name="trash-outline" size={18} color="#94a3b8" />
+                        <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -349,15 +351,15 @@ export const DebtsScreen = ({ navigation }: any) => {
     else if (isOverdue) { statusColor = '#f43f5e'; statusText = 'Gecikti'; }
 
     return (
-      <View style={styles.planCard}>
+      <View style={[styles.planCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
         <View style={styles.listRowHeader}>
           <View style={styles.planHeaderLeft}>
-            <View style={styles.iconContainer}>
+            <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
               <Ionicons name="card" size={24} color="#f43f5e" />
             </View>
             <View>
-              <Text style={styles.planTitle}>{item.planTitle}</Text>
-              <Text style={styles.planSubtitle}>{item.number}. Taksit • {formatDate(item.transactionDate || item.dueDate)}</Text>
+              <Text style={[styles.planTitle, { color: colors.textPrimary }]}>{item.planTitle}</Text>
+              <Text style={[styles.planSubtitle, { color: colors.textMuted }]}>{item.number}. Taksit • {formatDate(item.transactionDate || item.dueDate)}</Text>
             </View>
           </View>
           <View style={[styles.badge, { backgroundColor: statusColor + '20' }]}>
@@ -366,19 +368,19 @@ export const DebtsScreen = ({ navigation }: any) => {
         </View>
 
         <View style={[styles.instRight, { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }]}>
-          <Text style={[styles.instAmount, { fontSize: 18 }]}>{formatCurrency(item.amount, item.currency)}</Text>
+          <Text style={[styles.instAmount, { fontSize: 18, color: colors.textPrimary }]}>{formatCurrency(item.amount, item.currency)}</Text>
           
           <View style={styles.instActions}>
             <TouchableOpacity 
-              style={[styles.instActionBtn, isPaid ? styles.instActionBtnPaid : styles.instActionBtnPrimary]}
+              style={[styles.instActionBtn, isPaid ? [styles.instActionBtnPaid, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }] : styles.instActionBtnPrimary]}
               onPress={() => handleTogglePaid(item.planId, item)}
             >
-              <Text style={[styles.instActionBtnText, isPaid ? { color: '#64748b' } : { color: '#fff' }]}>
+              <Text style={[styles.instActionBtnText, isPaid ? { color: colors.textMuted } : { color: '#fff' }]}>
                 {isPaid ? 'İptal' : 'Öde'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.instDeleteBtn} onPress={() => handleDeleteInstallment(item)}>
-              <Ionicons name="trash-outline" size={18} color="#94a3b8" />
+              <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
@@ -387,17 +389,17 @@ export const DebtsScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
+      <View style={[styles.header, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Taksitli Borçlar</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Taksitli Borçlar</Text>
         <TouchableOpacity 
-          style={styles.toggleBtn}
+          style={[styles.toggleBtn, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}
           onPress={() => setViewMode(prev => prev === 'plan' ? 'list' : 'plan')}
         >
-          <Ionicons name={viewMode === 'plan' ? "list" : "albums"} size={22} color="#1e293b" />
+          <Ionicons name={viewMode === 'plan' ? "list" : "albums"} size={22} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -413,43 +415,43 @@ export const DebtsScreen = ({ navigation }: any) => {
           contentContainerStyle={styles.listContent}
           renderItem={viewMode === 'plan' ? renderPlanItem : renderListItem}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>Henüz bir taksitli borç bulunmuyor.</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>Henüz bir taksitli borç bulunmuyor.</Text>
           }
           ListHeaderComponent={
             <>
               <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
                 <View style={styles.kpiGrid}>
                   {/* TOPLAM TUTAR */}
-                  <View style={[styles.kpiCard, { borderLeftColor: '#3b82f6', borderLeftWidth: 4 }]}>
-                    <Text style={styles.kpiLabel}>TOPLAM TUTAR</Text>
+                  <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#3b82f6', borderLeftWidth: 4 }]}>
+                    <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>TOPLAM TUTAR</Text>
                     <Text style={[styles.kpiValue, { color: '#3b82f6' }]}>{formatCurrency(stats.totalAmount)}</Text>
-                    <Text style={styles.kpiSubText}>{stats.totalInstallmentsCount} taksit</Text>
+                    <Text style={[styles.kpiSubText, { color: colors.textMuted }]}>{stats.totalInstallmentsCount} taksit</Text>
                   </View>
                   
                   {/* BEKLEYEN */}
-                  <View style={[styles.kpiCard, { borderLeftColor: '#f59e0b', borderLeftWidth: 4 }]}>
-                    <Text style={styles.kpiLabel}>BEKLEYEN</Text>
+                  <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#f59e0b', borderLeftWidth: 4 }]}>
+                    <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>BEKLEYEN</Text>
                     <Text style={[styles.kpiValue, { color: '#f59e0b' }]}>{formatCurrency(stats.pendingAmount)}</Text>
-                    <Text style={styles.kpiSubText}>{stats.pendingCount} taksit</Text>
+                    <Text style={[styles.kpiSubText, { color: colors.textMuted }]}>{stats.pendingCount} taksit</Text>
                   </View>
                   
                   {/* GECİKMİŞ */}
-                  <View style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
-                    <Text style={styles.kpiLabel}>GECİKMİŞ</Text>
+                  <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
+                    <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>GECİKMİŞ</Text>
                     <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(stats.overdueAmount)}</Text>
-                    <Text style={styles.kpiSubText}>{stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}</Text>
+                    <Text style={[styles.kpiSubText, { color: colors.textMuted }]}>{stats.overdueCount} taksit {stats.overdueAvgDays > 0 ? `· ort. ${stats.overdueAvgDays} gün` : ''}</Text>
                   </View>
                   
                   {/* ÖDENEN */}
-                  <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
-                    <Text style={styles.kpiLabel}>ÖDENEN</Text>
+                  <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
+                    <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>ÖDENEN</Text>
                     <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(stats.paidAmount)}</Text>
-                    <Text style={styles.kpiSubText}>{stats.paidCount} taksit</Text>
+                    <Text style={[styles.kpiSubText, { color: colors.textMuted }]}>{stats.paidCount} taksit</Text>
                   </View>
 
                   {/* PERFORMANS */}
-                  <View style={[styles.kpiCard, { borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
-                    <Text style={styles.kpiLabel}>PERFORMANS</Text>
+                  <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
+                    <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>PERFORMANS</Text>
                     <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>%{stats.performanceRate}</Text>
                     <Text style={[styles.kpiSubText, { color: '#10b981', fontWeight: '600' }]}>↑ Ödeme Oranı</Text>
                   </View>
@@ -467,7 +469,7 @@ export const DebtsScreen = ({ navigation }: any) => {
                     <Text style={[styles.infoBoxTitle, { color: stats.overdueCount > 0 ? '#f43f5e' : '#10b981' }]}>
                       {stats.overdueCount > 0 ? 'Gecikmiş Borç Hatırlatması' : 'Taksitli Borç Durumu İyi'}
                     </Text>
-                    <Text style={styles.infoBoxText}>
+                    <Text style={[styles.infoBoxText, { color: colors.textSecondary }]}>
                       {stats.overdueCount > 0 ? (
                         `Şu anda vadesi geçmiş toplam ${stats.overdueCount} taksit (${formatCurrency(stats.overdueAmount)}) bulunmaktadır (ortalama gecikme: ${stats.overdueAvgDays} gün). Bu ödemeleri en kısa sürede tamamlamanız tavsiye edilir.`
                       ) : (
@@ -479,17 +481,18 @@ export const DebtsScreen = ({ navigation }: any) => {
               </View>
 
               <View style={styles.searchContainer}>
-                <View style={styles.searchBox}>
-                  <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+                <View style={[styles.searchBox, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+                  <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
                   <TextInput 
-                    style={styles.searchInput}
+                    style={[styles.searchInput, { color: colors.textPrimary }]}
                     placeholder="Borç adı veya kişi ara..."
+                    placeholderTextColor={colors.textMuted}
                     value={filters.search}
                     onChangeText={(t) => setFilters(prev => ({ ...prev, search: t }))}
                   />
                 </View>
-                <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFiltersOpen(true)}>
-                  <Ionicons name="filter" size={20} color={activeFiltersCount > 0 ? '#4f46e5' : '#64748b'} />
+                <TouchableOpacity style={[styles.filterBtn, { backgroundColor: colors.bgCard, borderColor: colors.border }]} onPress={() => setIsFiltersOpen(true)}>
+                  <Ionicons name="filter" size={20} color={activeFiltersCount > 0 ? colors.accent : colors.textMuted} />
                   {activeFiltersCount > 0 && (
                     <View style={styles.filterBadge}>
                       <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
@@ -510,15 +513,15 @@ export const DebtsScreen = ({ navigation }: any) => {
         onRequestClose={() => setIsFiltersOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filtrele</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Filtrele</Text>
               <TouchableOpacity onPress={() => setIsFiltersOpen(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.filterSectionTitle}>Durum</Text>
+            <Text style={[styles.filterSectionTitle, { color: colors.textMuted }]}>Durum</Text>
             <View style={styles.filterOptions}>
               {['ALL', 'ACTIVE', 'OVERDUE', 'PAID'].map(status => {
                 const isSelected = filters.status === status;
@@ -526,10 +529,14 @@ export const DebtsScreen = ({ navigation }: any) => {
                 return (
                   <TouchableOpacity
                     key={status}
-                    style={[styles.filterChip, isSelected && styles.filterChipActive]}
+                    style={[
+                      styles.filterChip, 
+                      { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', borderColor: isDark ? colors.border : 'transparent' },
+                      isSelected && styles.filterChipActive
+                    ]}
                     onPress={() => setFilters(prev => ({ ...prev, status }))}
                   >
-                    <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                    <Text style={[styles.filterChipText, { color: isSelected ? colors.accent : colors.textSecondary }, isSelected && styles.filterChipTextActive]}>
                       {labels[status]}
                     </Text>
                   </TouchableOpacity>
@@ -539,10 +546,10 @@ export const DebtsScreen = ({ navigation }: any) => {
 
             <View style={styles.modalFooter}>
               <TouchableOpacity 
-                style={styles.modalBtnClear}
+                style={[styles.modalBtnClear, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}
                 onPress={() => setFilters(prev => ({ ...prev, status: 'ALL' }))}
               >
-                <Text style={styles.modalBtnClearText}>Temizle</Text>
+                <Text style={[styles.modalBtnClearText, { color: colors.textMuted }]}>Temizle</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.modalBtnApply}

@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -57,6 +58,7 @@ const formatCurrency = (val: number) => {
 };
 
 export const OverviewScreen = ({ navigation }: any) => {
+  const { isDark, colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -326,22 +328,24 @@ export const OverviewScreen = ({ navigation }: any) => {
   }, [pieData]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bgPrimary }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+
       {/* Custom Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bgCard, borderBottomColor: colors.border, borderBottomWidth: isDark ? 1 : 0 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Kontrol Paneli</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Kontrol Paneli</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.backButton}>
-          <Ionicons name="settings-outline" size={22} color="#1f2937" />
+          <Ionicons name="settings-outline" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Finansal veriler yükleniyor...</Text>
+          <Text style={[styles.loadingText, { color: colors.textMuted }]}>Finansal veriler yükleniyor...</Text>
         </View>
       ) : (
         <ScrollView
@@ -358,8 +362,8 @@ export const OverviewScreen = ({ navigation }: any) => {
           }
         >
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Finansal Özet</Text>
-            <Text style={styles.sectionSubtitle}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Finansal Özet</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
               {selectedMonth === 'all'
                 ? `${selectedYear} yılı genel nakit akışı ve durumunuz.`
                 : `${periodLabel} dönemi nakit akışı ve durumunuz.`}
@@ -376,6 +380,7 @@ export const OverviewScreen = ({ navigation }: any) => {
             <TouchableOpacity
               style={[
                 styles.filterChip,
+                { backgroundColor: colors.bgCard, borderColor: colors.border },
                 selectedMonth === 'all' && styles.filterChipActive,
               ]}
               onPress={() => {
@@ -395,6 +400,7 @@ export const OverviewScreen = ({ navigation }: any) => {
               <Text
                 style={[
                   styles.filterChipText,
+                  { color: colors.textSecondary },
                   selectedMonth === 'all' && styles.filterChipTextActive,
                 ]}
               >
@@ -407,7 +413,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                 <Ionicons
                   name="chevron-down"
                   size={13}
-                  color={selectedMonth === 'all' ? '#ffffff' : '#64748b'}
+                  color={selectedMonth === 'all' ? '#ffffff' : colors.textMuted}
                   style={{ marginLeft: 1 }}
                 />
               </TouchableOpacity>
@@ -418,6 +424,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                 <TouchableOpacity
                   style={[
                     styles.filterChip,
+                    { backgroundColor: colors.bgCard, borderColor: colors.border },
                     selectedMonth === String(currentMonthIdx) && styles.filterChipActive,
                   ]}
                   onPress={() => setSelectedMonth(String(currentMonthIdx))}
@@ -426,6 +433,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                   <Text
                     style={[
                       styles.filterChipText,
+                      { color: colors.textSecondary },
                       selectedMonth === String(currentMonthIdx) && styles.filterChipTextActive,
                     ]}
                   >
@@ -441,6 +449,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                       key={idx}
                       style={[
                         styles.filterChip,
+                        { backgroundColor: colors.bgCard, borderColor: colors.border },
                         isSelected && styles.filterChipActive,
                       ]}
                       onPress={() => setSelectedMonth(String(idx))}
@@ -449,6 +458,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                       <Text
                         style={[
                           styles.filterChipText,
+                          { color: colors.textSecondary },
                           isSelected && styles.filterChipTextActive,
                         ]}
                       >
@@ -466,6 +476,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                     key={idx}
                     style={[
                       styles.filterChip,
+                      { backgroundColor: colors.bgCard, borderColor: colors.border },
                       isSelected && styles.filterChipActive,
                     ]}
                     onPress={() => setSelectedMonth(String(idx))}
@@ -474,6 +485,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                     <Text
                       style={[
                         styles.filterChipText,
+                        { color: colors.textSecondary },
                         isSelected && styles.filterChipTextActive,
                       ]}
                     >
@@ -491,34 +503,34 @@ export const OverviewScreen = ({ navigation }: any) => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Transactions')}
-              style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}
+              style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0, borderLeftColor: '#10b981', borderLeftWidth: 4 }]}
             >
-              <View style={styles.kpiIconWrapper}>
+              <View style={[styles.kpiIconWrapper, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
                 <Ionicons name="arrow-up-outline" size={20} color="#10b981" />
               </View>
-              <Text style={styles.kpiLabel}>{kpiLabels.income}</Text>
-              <Text style={styles.kpiValue}>{formatCurrency(kpis.totalIncome)}</Text>
+              <Text style={[styles.kpiLabel, { color: colors.textSecondary }]}>{kpiLabels.income}</Text>
+              <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(kpis.totalIncome)}</Text>
             </TouchableOpacity>
 
             {/* Expense */}
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Transactions')}
-              style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}
+              style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0, borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}
             >
-              <View style={styles.kpiIconWrapper}>
+              <View style={[styles.kpiIconWrapper, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
                 <Ionicons name="arrow-down-outline" size={20} color="#f43f5e" />
               </View>
-              <Text style={styles.kpiLabel}>{kpiLabels.expense}</Text>
-              <Text style={styles.kpiValue}>{formatCurrency(kpis.totalExpense)}</Text>
+              <Text style={[styles.kpiLabel, { color: colors.textSecondary }]}>{kpiLabels.expense}</Text>
+              <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(kpis.totalExpense)}</Text>
             </TouchableOpacity>
 
             {/* Net Flow */}
-            <View style={[styles.kpiCard, { borderLeftColor: '#3b82f6', borderLeftWidth: 4 }]}>
-              <View style={styles.kpiIconWrapper}>
+            <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0, borderLeftColor: '#3b82f6', borderLeftWidth: 4 }]}>
+              <View style={[styles.kpiIconWrapper, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
                 <Ionicons name="wallet-outline" size={20} color="#3b82f6" />
               </View>
-              <Text style={styles.kpiLabel}>{kpiLabels.netFlow}</Text>
+              <Text style={[styles.kpiLabel, { color: colors.textSecondary }]}>{kpiLabels.netFlow}</Text>
               <Text
                 style={[
                   styles.kpiValue,
@@ -533,21 +545,21 @@ export const OverviewScreen = ({ navigation }: any) => {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Debts')}
-              style={[styles.kpiCard, { borderLeftColor: '#f59e0b', borderLeftWidth: 4 }]}
+              style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0, borderLeftColor: '#f59e0b', borderLeftWidth: 4 }]}
             >
-              <View style={styles.kpiIconWrapper}>
+              <View style={[styles.kpiIconWrapper, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
                 <Ionicons name="card-outline" size={20} color="#f59e0b" />
               </View>
-              <Text style={styles.kpiLabel}>{kpiLabels.debt}</Text>
-              <Text style={styles.kpiValue}>{formatCurrency(kpis.totalDebt)}</Text>
+              <Text style={[styles.kpiLabel, { color: colors.textSecondary }]}>{kpiLabels.debt}</Text>
+              <Text style={[styles.kpiValue, { color: '#f59e0b' }]}>{formatCurrency(kpis.totalDebt)}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Charts */}
-          <View style={styles.chartContainer}>
+          <View style={[styles.chartContainer, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
             <View style={styles.chartHeaderRow}>
-              <Text style={styles.chartTitle}>Aylık Gelir & Gider Analizi</Text>
-              <Text style={styles.chartSubtitle}>
+              <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Aylık Gelir & Gider Analizi</Text>
+              <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}>
                 {selectedYear === currentYear ? 'Son 12 Ay' : `${selectedYear} Yılı`}
               </Text>
             </View>
@@ -559,13 +571,13 @@ export const OverviewScreen = ({ navigation }: any) => {
               roundedBottom={false}
               xAxisThickness={0}
               yAxisThickness={0}
-              yAxisTextStyle={{ color: '#94a3b8', fontSize: 10 }}
+              yAxisTextStyle={{ color: colors.textMuted, fontSize: 10 }}
               noOfSections={4}
               maxValue={maxBarValue}
               yAxisLabelPrefix="₺"
               yAxisLabelSuffix="k"
               initialSpacing={10}
-              rulesColor="#f1f5f9"
+              rulesColor={isDark ? colors.border : '#f1f5f9'}
               dashWidth={4}
               dashGap={4}
               hideRules={false}
@@ -574,17 +586,17 @@ export const OverviewScreen = ({ navigation }: any) => {
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 16, gap: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#10b981' }} />
-                <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '500' }}>Gelir</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '500' }}>Gelir</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#f43f5e' }} />
-                <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '500' }}>Gider</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '500' }}>Gider</Text>
               </View>
             </View>
             {maxRawValue === 0 && (
-              <View style={styles.chartEmptyNote}>
-                <Ionicons name="information-circle-outline" size={15} color="#94a3b8" />
-                <Text style={styles.chartEmptyNoteText}>
+              <View style={[styles.chartEmptyNote, { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc' }]}>
+                <Ionicons name="information-circle-outline" size={15} color={colors.textMuted} />
+                <Text style={[styles.chartEmptyNoteText, { color: colors.textMuted }]}>
                   {selectedYear === currentYear
                     ? 'Bu döneme ait henüz finansal işlem kaydı bulunmuyor.'
                     : `${selectedYear} yılına ait henüz finansal işlem kaydı bulunmuyor.`}
@@ -594,15 +606,15 @@ export const OverviewScreen = ({ navigation }: any) => {
           </View>
 
           {/* Category Pie Chart */}
-          <View style={styles.chartContainer}>
-            <Text style={styles.chartTitle}>Gider Dağılımı</Text>
+          <View style={[styles.chartContainer, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
+            <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Gider Dağılımı</Text>
             {pieData.length === 0 ? (
               <View style={styles.emptyChartState}>
-                <View style={styles.emptyIconCircle}>
-                  <Ionicons name="pie-chart-outline" size={32} color="#94a3b8" />
+                <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
+                  <Ionicons name="pie-chart-outline" size={32} color={colors.textMuted} />
                 </View>
-                <Text style={styles.emptyStateTitle}>Harcama Kaydı Yok</Text>
-                <Text style={styles.emptyStateSubtitle}>
+                <Text style={[styles.emptyStateTitle, { color: colors.textPrimary }]}>Harcama Kaydı Yok</Text>
+                <Text style={[styles.emptyStateSubtitle, { color: colors.textSecondary }]}>
                   Bu ay için henüz kategorize edilmiş bir gider işlemi bulunmuyor.
                 </Text>
               </View>
@@ -615,10 +627,10 @@ export const OverviewScreen = ({ navigation }: any) => {
                   radius={80}
                   centerLabelComponent={() => (
                     <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 15, color: '#1e293b', fontWeight: 'bold' }}>
+                      <Text style={{ fontSize: 15, color: colors.textPrimary, fontWeight: 'bold' }}>
                         {formatCurrency(totalCategoryExpense)}
                       </Text>
-                      <Text style={{ fontSize: 10, color: '#64748b' }}>Toplam Gider</Text>
+                      <Text style={{ fontSize: 10, color: colors.textSecondary }}>Toplam Gider</Text>
                     </View>
                   )}
                 />
@@ -627,17 +639,17 @@ export const OverviewScreen = ({ navigation }: any) => {
                     <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
                         <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: item.color }} />
-                        <Text style={{ fontSize: 12, color: '#475569', fontWeight: '600' }} numberOfLines={1}>
+                        <Text style={{ fontSize: 12, color: colors.textPrimary, fontWeight: '600' }} numberOfLines={1}>
                           {item.text}
                         </Text>
                       </View>
-                      <Text style={{ fontSize: 11, color: '#64748b', fontWeight: '600', marginLeft: 8 }}>
+                      <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', marginLeft: 8 }}>
                         {formatCurrency(item.value)}
                       </Text>
                     </View>
                   ))}
                   {pieData.length > 5 && (
-                    <Text style={{ fontSize: 11, color: '#94a3b8', textAlign: 'right' }}>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: 'right' }}>
                       +{pieData.length - 5} diğer kategori
                     </Text>
                   )}
@@ -648,68 +660,68 @@ export const OverviewScreen = ({ navigation }: any) => {
 
           {/* Asset Cards */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Varlık & Portföy Durumu</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Varlık & Portföy Durumu</Text>
           </View>
 
           <View style={styles.assetList}>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Accounts')}
-              style={styles.assetCard}
+              style={[styles.assetCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}
             >
-              <View style={[styles.assetIcon, { backgroundColor: '#d1fae5' }]}>
+              <View style={[styles.assetIcon, { backgroundColor: isDark ? '#064e3b' : '#d1fae5' }]}>
                 <Ionicons name="business-outline" size={24} color="#10b981" />
               </View>
               <View style={styles.assetInfo}>
-                <Text style={styles.assetTitle}>HESAPLARIM</Text>
-                <Text style={styles.assetValue}>{formatCurrency(assets.accounts)}</Text>
+                <Text style={[styles.assetTitle, { color: colors.textSecondary }]}>HESAPLARIM</Text>
+                <Text style={[styles.assetValue, { color: colors.textPrimary }]}>{formatCurrency(assets.accounts)}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Stocks')}
-              style={styles.assetCard}
+              style={[styles.assetCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}
             >
-              <View style={[styles.assetIcon, { backgroundColor: '#dbeafe' }]}>
+              <View style={[styles.assetIcon, { backgroundColor: isDark ? '#1e3a8a' : '#dbeafe' }]}>
                 <Ionicons name="trending-up-outline" size={24} color="#3b82f6" />
               </View>
               <View style={styles.assetInfo}>
-                <Text style={styles.assetTitle}>HİSSE SENETLERİM</Text>
-                <Text style={styles.assetValue}>{formatCurrency(assets.stocks)}</Text>
+                <Text style={[styles.assetTitle, { color: colors.textSecondary }]}>HİSSE SENETLERİM</Text>
+                <Text style={[styles.assetValue, { color: colors.textPrimary }]}>{formatCurrency(assets.stocks)}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Crypto')}
-              style={styles.assetCard}
+              style={[styles.assetCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}
             >
-              <View style={[styles.assetIcon, { backgroundColor: '#f3e8ff' }]}>
+              <View style={[styles.assetIcon, { backgroundColor: isDark ? '#581c87' : '#f3e8ff' }]}>
                 <Ionicons name="logo-bitcoin" size={24} color="#8b5cf6" />
               </View>
               <View style={styles.assetInfo}>
-                <Text style={styles.assetTitle}>KRİPTO VARLIKLAR</Text>
-                <Text style={styles.assetValue}>{formatCurrency(assets.crypto)}</Text>
+                <Text style={[styles.assetTitle, { color: colors.textSecondary }]}>KRİPTO VARLIKLAR</Text>
+                <Text style={[styles.assetValue, { color: colors.textPrimary }]}>{formatCurrency(assets.crypto)}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Savings')}
-              style={styles.assetCard}
+              style={[styles.assetCard, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}
             >
-              <View style={[styles.assetIcon, { backgroundColor: '#fef3c7' }]}>
+              <View style={[styles.assetIcon, { backgroundColor: isDark ? '#78350f' : '#fef3c7' }]}>
                 <Ionicons name="cash-outline" size={24} color="#f59e0b" />
               </View>
               <View style={styles.assetInfo}>
-                <Text style={styles.assetTitle}>ALTIN & DÖVİZ</Text>
-                <Text style={styles.assetValue}>{formatCurrency(assets.gold)}</Text>
+                <Text style={[styles.assetTitle, { color: colors.textSecondary }]}>ALTIN & DÖVİZ</Text>
+                <Text style={[styles.assetValue, { color: colors.textPrimary }]}>{formatCurrency(assets.gold)}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -723,25 +735,25 @@ export const OverviewScreen = ({ navigation }: any) => {
         onRequestClose={() => setIsYearPickerVisible(false)}
       >
         <Pressable
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}
           onPress={() => setIsYearPickerVisible(false)}
         >
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.modalContent, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderLeft}>
-                <View style={styles.modalHeaderIconContainer}>
+                <View style={[styles.modalHeaderIconContainer, { backgroundColor: isDark ? colors.bgSecondary : '#eff6ff' }]}>
                   <Ionicons name="calendar" size={18} color="#3b82f6" />
                 </View>
                 <View>
-                  <Text style={styles.modalTitle}>Yıl Seçimi</Text>
-                  <Text style={styles.modalSubtitle}>Veritabanında tanımlı yıllar</Text>
+                  <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Yıl Seçimi</Text>
+                  <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>Veritabanında tanımlı yıllar</Text>
                 </View>
               </View>
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setIsYearPickerVisible(false)}
               >
-                <Ionicons name="close" size={20} color="#64748b" />
+                <Ionicons name="close" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -755,6 +767,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                     key={year}
                     style={[
                       styles.yearOptionCard,
+                      { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc', borderColor: colors.border },
                       isSelected && styles.yearOptionCardActive,
                     ]}
                     onPress={() => {
@@ -768,6 +781,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                       <View
                         style={[
                           styles.yearIconContainer,
+                          { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe' },
                           isSelected && styles.yearIconContainerActive,
                         ]}
                       >
@@ -781,6 +795,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                         <Text
                           style={[
                             styles.yearOptionText,
+                            { color: colors.textPrimary },
                             isSelected && styles.yearOptionTextActive,
                           ]}
                         >
@@ -797,7 +812,7 @@ export const OverviewScreen = ({ navigation }: any) => {
                     {isSelected ? (
                       <Ionicons name="checkmark-circle" size={22} color="#3b82f6" />
                     ) : (
-                      <View style={styles.radioEmpty} />
+                      <View style={[styles.radioEmpty, { borderColor: colors.border }]} />
                     )}
                   </TouchableOpacity>
                 );

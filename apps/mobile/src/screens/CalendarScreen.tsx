@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const CELL_SIZE = (width - 40) / 7;
@@ -45,6 +46,8 @@ function formatDateKey(d: Date): string {
 }
 
 export const CalendarScreen = ({ navigation }: any) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -195,28 +198,28 @@ export const CalendarScreen = ({ navigation }: any) => {
 
   const getItemTypeConfig = (type: string) => {
     if (type === 'DEBT_INSTALLMENT') {
-      return { label: 'Borç Taksiti', color: '#ef4444', bg: '#fef2f2', icon: 'trending-down' };
+      return { label: 'Borç Taksiti', color: '#ef4444', bg: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fef2f2', icon: 'trending-down' };
     }
     if (type === 'RECEIVABLE_INSTALLMENT') {
-      return { label: 'Alacak Taksiti', color: '#10b981', bg: '#ecfdf5', icon: 'trending-up' };
+      return { label: 'Alacak Taksiti', color: '#10b981', bg: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5', icon: 'trending-up' };
     }
-    return { label: 'Hatırlatıcı', color: '#8b5cf6', bg: '#f3e8ff', icon: 'notifications' };
+    return { label: 'Hatırlatıcı', color: '#8b5cf6', bg: isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3e8ff', icon: 'notifications' };
   };
 
   const getStatusBadgeConfig = (status: string) => {
     switch (status) {
       case 'OVERDUE':
-        return { label: 'Gecikmiş', color: '#f43f5e', bg: '#fee2e2', icon: 'alert-circle' };
+        return { label: 'Gecikmiş', color: '#f43f5e', bg: isDark ? 'rgba(244, 63, 94, 0.2)' : '#fee2e2', icon: 'alert-circle' };
       case 'DUE_TODAY':
-        return { label: 'Bugün Vadeli', color: '#f59e0b', bg: '#fef3c7', icon: 'time' };
+        return { label: 'Bugün Vadeli', color: '#f59e0b', bg: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7', icon: 'time' };
       case 'PAID':
-        return { label: 'Ödendi', color: '#10b981', bg: '#dcfce7', icon: 'checkmark-circle' };
+        return { label: 'Ödendi', color: '#10b981', bg: isDark ? 'rgba(16, 185, 129, 0.2)' : '#dcfce7', icon: 'checkmark-circle' };
       case 'COLLECTED':
-        return { label: 'Tahsil Edildi', color: '#10b981', bg: '#dcfce7', icon: 'checkmark-circle' };
+        return { label: 'Tahsil Edildi', color: '#10b981', bg: isDark ? 'rgba(16, 185, 129, 0.2)' : '#dcfce7', icon: 'checkmark-circle' };
       case 'PLANNED':
-        return { label: 'Planlı', color: '#3b82f6', bg: '#eff6ff', icon: 'calendar-outline' };
+        return { label: 'Planlı', color: '#3b82f6', bg: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff', icon: 'calendar-outline' };
       case 'ACTIVE':
-        return { label: 'Aktif', color: '#8b5cf6', bg: '#f3e8ff', icon: 'notifications-outline' };
+        return { label: 'Aktif', color: '#8b5cf6', bg: isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3e8ff', icon: 'notifications-outline' };
       default:
         return null;
     }
@@ -264,7 +267,7 @@ export const CalendarScreen = ({ navigation }: any) => {
             <Ionicons name="alert-circle" size={14} color="#f43f5e" />
           </View>
           <Text style={[styles.kpiValue, { color: '#f43f5e' }]} numberOfLines={1}>
-            {summary?.overdueCount || 0} <Text style={{ fontSize: 11, fontWeight: 'normal', color: '#64748b' }}>kalem</Text>
+            {summary?.overdueCount || 0} <Text style={{ fontSize: 11, fontWeight: 'normal', color: colors.textSecondary }}>kalem</Text>
           </Text>
           <Text style={styles.kpiSubText}>
             {(summary?.dueTodayCount || 0) > 0 ? `+ ${summary?.dueTodayCount} bugün vadeli` : 'Kritik gecikme yok'}
@@ -278,7 +281,7 @@ export const CalendarScreen = ({ navigation }: any) => {
             <Ionicons name="notifications" size={14} color="#8b5cf6" />
           </View>
           <Text style={[styles.kpiValue, { color: '#8b5cf6' }]} numberOfLines={1}>
-            {summary?.activeReminderCount || 0} <Text style={{ fontSize: 11, fontWeight: 'normal', color: '#64748b' }}>adet</Text>
+            {summary?.activeReminderCount || 0} <Text style={{ fontSize: 11, fontWeight: 'normal', color: colors.textSecondary }}>adet</Text>
           </Text>
           <Text style={styles.kpiSubText}>Zamanlanmış bildirim</Text>
         </View>
@@ -287,7 +290,7 @@ export const CalendarScreen = ({ navigation }: any) => {
       {/* Month Navigator */}
       <View style={styles.monthNav}>
         <TouchableOpacity style={styles.navBtn} onPress={prevMonth}>
-          <Ionicons name="chevron-back" size={20} color="#0f172a" />
+          <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
 
         <View style={styles.monthTitleWrapper}>
@@ -300,46 +303,46 @@ export const CalendarScreen = ({ navigation }: any) => {
         </View>
 
         <TouchableOpacity style={styles.navBtn} onPress={nextMonth}>
-          <Ionicons name="chevron-forward" size={20} color="#0f172a" />
+          <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
       {/* Filter Toggle Pills */}
       <View style={styles.filterRow}>
         <TouchableOpacity 
-          style={[styles.filterChip, filters.debts && { backgroundColor: '#fee2e2', borderColor: '#fca5a5' }]}
+          style={[styles.filterChip, filters.debts && { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2', borderColor: '#ef4444' }]}
           onPress={() => setFilters(f => ({ ...f, debts: !f.debts }))}
         >
           <View style={[styles.chipDot, { backgroundColor: '#ef4444' }]} />
           <Text style={[styles.chipText, filters.debts && { color: '#ef4444', fontWeight: '700' }]}>Borçlar</Text>
           {filterCounts.debts > 0 && (
-            <View style={[styles.chipBadge, { backgroundColor: filters.debts ? '#ef4444' : '#94a3b8' }]}>
+            <View style={[styles.chipBadge, { backgroundColor: filters.debts ? '#ef4444' : colors.textMuted }]}>
               <Text style={styles.chipBadgeText}>{filterCounts.debts}</Text>
             </View>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.filterChip, filters.receivables && { backgroundColor: '#dcfce7', borderColor: '#86efac' }]}
+          style={[styles.filterChip, filters.receivables && { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#dcfce7', borderColor: '#10b981' }]}
           onPress={() => setFilters(f => ({ ...f, receivables: !f.receivables }))}
         >
           <View style={[styles.chipDot, { backgroundColor: '#10b981' }]} />
           <Text style={[styles.chipText, filters.receivables && { color: '#10b981', fontWeight: '700' }]}>Alacaklar</Text>
           {filterCounts.receivables > 0 && (
-            <View style={[styles.chipBadge, { backgroundColor: filters.receivables ? '#10b981' : '#94a3b8' }]}>
+            <View style={[styles.chipBadge, { backgroundColor: filters.receivables ? '#10b981' : colors.textMuted }]}>
               <Text style={styles.chipBadgeText}>{filterCounts.receivables}</Text>
             </View>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.filterChip, filters.reminders && { backgroundColor: '#f3e8ff', borderColor: '#d8b4fe' }]}
+          style={[styles.filterChip, filters.reminders && { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3e8ff', borderColor: '#8b5cf6' }]}
           onPress={() => setFilters(f => ({ ...f, reminders: !f.reminders }))}
         >
           <View style={[styles.chipDot, { backgroundColor: '#8b5cf6' }]} />
           <Text style={[styles.chipText, filters.reminders && { color: '#8b5cf6', fontWeight: '700' }]}>Hatırlatıcı</Text>
           {filterCounts.reminders > 0 && (
-            <View style={[styles.chipBadge, { backgroundColor: filters.reminders ? '#8b5cf6' : '#94a3b8' }]}>
+            <View style={[styles.chipBadge, { backgroundColor: filters.reminders ? '#8b5cf6' : colors.textMuted }]}>
               <Text style={styles.chipBadgeText}>{filterCounts.reminders}</Text>
             </View>
           )}
@@ -406,7 +409,7 @@ export const CalendarScreen = ({ navigation }: any) => {
       <View style={styles.sectionHeader}>
         <View style={{ flex: 1, paddingRight: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="calendar-outline" size={18} color="#0f172a" />
+            <Ionicons name="calendar-outline" size={18} color={colors.textPrimary} />
             <Text style={styles.sectionTitle} numberOfLines={1}>
               {viewMode === 'calendar' 
                 ? `${selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'short' })} Olayları`
@@ -447,7 +450,7 @@ export const CalendarScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Takvim & Ödemeler</Text>
         <TouchableOpacity 
@@ -455,7 +458,7 @@ export const CalendarScreen = ({ navigation }: any) => {
           onPress={() => setViewMode(v => v === 'calendar' ? 'list' : 'calendar')}
           activeOpacity={0.7}
         >
-          <Ionicons name={viewMode === 'calendar' ? "list" : "calendar"} size={20} color="#0f172a" />
+          <Ionicons name={viewMode === 'calendar' ? "list" : "calendar"} size={20} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -517,9 +520,12 @@ export const CalendarScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.bgPrimary,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -527,18 +533,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: isDark ? 0.2 : 0.03,
     shadowRadius: 8,
     elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     zIndex: 10,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 60 },
 
@@ -555,14 +563,16 @@ const styles = StyleSheet.create({
   },
   kpiBox: {
     width: (width - 40) / 2,
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     padding: 11,
     borderRadius: 14,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   kpiHeaderRow: {
     flexDirection: 'row',
@@ -573,7 +583,7 @@ const styles = StyleSheet.create({
   kpiLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textSecondary,
     letterSpacing: 0.5,
   },
   kpiValue: {
@@ -583,25 +593,25 @@ const styles = StyleSheet.create({
   },
   kpiSubText: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
 
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   navBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.bgSecondary,
   },
   monthTitleWrapper: {
     flexDirection: 'row',
@@ -611,10 +621,10 @@ const styles = StyleSheet.create({
   monthTitleText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   todayBadge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -639,9 +649,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 7,
     borderRadius: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgCard,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     gap: 5,
   },
   chipBadge: {
@@ -664,29 +674,29 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   headerViewToggleBtn: {
     padding: 6,
     borderRadius: 10,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
 
   calendarCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 12,
     marginBottom: 16,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   weekdaysRow: {
     flexDirection: 'row',
@@ -694,7 +704,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   weekdayCell: {
     width: CELL_SIZE,
@@ -703,7 +713,7 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   weekendText: {
     color: '#f43f5e',
@@ -722,27 +732,27 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   dayCellSelected: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#3b82f6',
   },
   dayCellToday: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.25)' : '#eff6ff',
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: '#3b82f6',
   },
   dayNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e293b',
+    color: colors.textPrimary,
   },
   dayNumberDimmed: {
-    color: '#cbd5e1',
+    color: colors.textMuted,
   },
   dayNumberSelected: {
     color: '#ffffff',
     fontWeight: '800',
   },
   dayNumberToday: {
-    color: '#2563eb',
+    color: '#3b82f6',
     fontWeight: '800',
   },
   dotsContainer: {
@@ -768,12 +778,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   sectionBadge: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   dailySummaryRow: {
     flexDirection: 'row',
@@ -793,22 +803,24 @@ const styles = StyleSheet.create({
   },
   dailySummaryText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textSecondary,
   },
 
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     marginHorizontal: 16,
     marginBottom: 10,
     padding: 14,
     borderRadius: 14,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: isDark ? 0.2 : 0.04,
     shadowRadius: 6,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   eventIcon: {
     width: 40,
@@ -824,7 +836,7 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e293b',
+    color: colors.textPrimary,
     flex: 1,
   },
   eventMetaRow: {
@@ -835,7 +847,7 @@ const styles = StyleSheet.create({
   },
   eventSubtitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -861,7 +873,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    color: '#94a3b8',
+    color: colors.textMuted,
     fontSize: 13,
   },
 });

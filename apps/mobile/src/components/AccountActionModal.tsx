@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Modal, View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 interface AccountActionModalProps {
@@ -14,6 +15,9 @@ interface AccountActionModalProps {
 }
 
 export const AccountActionModal = ({ visible, onClose, onSuccess, account }: AccountActionModalProps) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState('');
@@ -113,7 +117,7 @@ export const AccountActionModal = ({ visible, onClose, onSuccess, account }: Acc
           <View style={styles.header}>
             <Text style={styles.title}>{account ? 'Hesabı Düzenle' : 'Yeni Hesap Ekle'}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#64748b" />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -130,6 +134,7 @@ export const AccountActionModal = ({ visible, onClose, onSuccess, account }: Acc
                 <TextInput
                   style={styles.input}
                   placeholder="örn: Garanti Maaş, Nakit Cüzdan"
+                  placeholderTextColor={colors.textMuted}
                   value={name}
                   onChangeText={setName}
                 />
@@ -140,6 +145,7 @@ export const AccountActionModal = ({ visible, onClose, onSuccess, account }: Acc
                 <TextInput
                   style={styles.input}
                   placeholder="örn: Ahmet, Ortak"
+                  placeholderTextColor={colors.textMuted}
                   value={ownerName}
                   onChangeText={setOwnerName}
                 />
@@ -157,7 +163,7 @@ export const AccountActionModal = ({ visible, onClose, onSuccess, account }: Acc
                   <Text style={styles.dropdownSelectorText}>
                     {types.find(t => t.value === type)?.label || 'Seçiniz'}
                   </Text>
-                  <Ionicons name="chevron-down" size={20} color="#64748b" />
+                  <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
                 </TouchableOpacity>
                 {showTypeDropdown && (
                   <View style={styles.dropdownList}>
@@ -182,6 +188,7 @@ export const AccountActionModal = ({ visible, onClose, onSuccess, account }: Acc
                 <TextInput
                   style={styles.input}
                   placeholder="örn: Garanti BBVA"
+                  placeholderTextColor={colors.textMuted}
                   value={bankName}
                   onChangeText={setBankName}
                 />
@@ -193,6 +200,7 @@ export const AccountActionModal = ({ visible, onClose, onSuccess, account }: Acc
                   <TextInput
                     style={styles.input}
                     placeholder="0.00"
+                    placeholderTextColor={colors.textMuted}
                     value={balance}
                     onChangeText={setBalance}
                     keyboardType="decimal-pad"
@@ -210,7 +218,7 @@ export const AccountActionModal = ({ visible, onClose, onSuccess, account }: Acc
                     <Text style={styles.dropdownSelectorText}>
                       {currencies.find(c => c.value === currency)?.label || 'Seçiniz'}
                     </Text>
-                    <Ionicons name="chevron-down" size={20} color="#64748b" />
+                    <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                   {showCurrencyDropdown && (
                     <View style={[styles.dropdownList, { top: 76 }]}>
@@ -251,18 +259,22 @@ export const AccountActionModal = ({ visible, onClose, onSuccess, account }: Acc
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     maxHeight: '90%',
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -273,7 +285,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   closeBtn: {
     padding: 4,
@@ -292,43 +304,43 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
-    color: '#0f172a',
-    backgroundColor: '#f8fafc',
+    color: colors.textPrimary,
+    backgroundColor: colors.bgSecondary,
   },
   dropdownSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
   },
   dropdownSelectorText: {
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   dropdownList: {
     position: 'absolute',
     top: 76,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: isDark ? 0.3 : 0.1,
     shadowRadius: 12,
     elevation: 5,
     maxHeight: 200,
@@ -337,11 +349,11 @@ const styles = StyleSheet.create({
   dropdownItem: {
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   dropdownItemText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.textPrimary,
     fontWeight: '500',
   },
   submitBtn: {

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotifications, NotificationItem } from '../context/NotificationContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface InAppNotificationBannerProps {
   onPressNotification?: (item: NotificationItem) => void;
@@ -10,6 +11,7 @@ interface InAppNotificationBannerProps {
 
 export const InAppNotificationBanner = ({ onPressNotification }: InAppNotificationBannerProps) => {
   const { bannerNotification, dismissBanner, markAsRead } = useNotifications();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(-150)).current;
 
@@ -36,16 +38,16 @@ export const InAppNotificationBanner = ({ onPressNotification }: InAppNotificati
     switch (type) {
       case 'INSTALLMENT_DUE':
       case 'INSTALLMENT_OVERDUE':
-        return { name: 'card', color: '#f59e0b', bg: '#fef3c7' };
+        return { name: 'card', color: '#f59e0b', bg: isDark ? 'rgba(245,158,11,0.2)' : '#fef3c7' };
       case 'SUBSCRIPTION_RENEWAL':
-        return { name: 'sync', color: '#3b82f6', bg: '#dbeafe' };
+        return { name: 'sync', color: '#3b82f6', bg: isDark ? 'rgba(59,130,246,0.2)' : '#dbeafe' };
       case 'PAYMENT_REMINDER':
       case 'REMINDER':
-        return { name: 'time', color: '#8b5cf6', bg: '#ede9fe' };
+        return { name: 'time', color: '#8b5cf6', bg: isDark ? 'rgba(139,92,246,0.2)' : '#ede9fe' };
       case 'WARRANTY_EXPIRING':
-        return { name: 'shield-checkmark', color: '#10b981', bg: '#d1fae5' };
+        return { name: 'shield-checkmark', color: '#10b981', bg: isDark ? 'rgba(16,185,129,0.2)' : '#d1fae5' };
       default:
-        return { name: 'notifications', color: '#6366f1', bg: '#e0e7ff' };
+        return { name: 'notifications', color: '#6366f1', bg: isDark ? 'rgba(99,102,241,0.2)' : '#e0e7ff' };
     }
   };
 
@@ -71,7 +73,7 @@ export const InAppNotificationBanner = ({ onPressNotification }: InAppNotificati
       ]}
     >
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
         activeOpacity={0.9}
         onPress={handlePress}
       >
@@ -81,18 +83,22 @@ export const InAppNotificationBanner = ({ onPressNotification }: InAppNotificati
 
         <View style={styles.textContainer}>
           <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
               {bannerNotification.title}
             </Text>
             <Text style={styles.timeText}>Şimdi</Text>
           </View>
-          <Text style={styles.message} numberOfLines={2}>
+          <Text style={[styles.message, { color: colors.textSecondary }]} numberOfLines={2}>
             {bannerNotification.message}
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.closeBtn} onPress={dismissBanner} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="close" size={18} color="#94a3b8" />
+        <TouchableOpacity 
+          style={[styles.closeBtn, { backgroundColor: isDark ? colors.bgPrimary : '#f8fafc' }]} 
+          onPress={dismissBanner} 
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="close" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
@@ -111,16 +117,14 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
     borderRadius: 18,
     padding: 14,
-    shadowColor: '#0f172a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 8,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
   },
   iconContainer: {
     width: 42,
@@ -143,7 +147,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
     flex: 1,
     paddingRight: 6,
   },
@@ -154,12 +157,11 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: 12,
-    color: '#475569',
     lineHeight: 16,
   },
   closeBtn: {
     padding: 4,
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
   },
 });
+

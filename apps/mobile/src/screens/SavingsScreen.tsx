@@ -4,8 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { SavingsActionModal } from '../components/SavingsActionModal';
+import { useTheme } from '../context/ThemeContext';
 
 export const SavingsScreen = ({ navigation }: any) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const [data, setData] = useState<any[]>([]);
   const [marketRates, setMarketRates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,13 +146,13 @@ export const SavingsScreen = ({ navigation }: any) => {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Varlık veya banka ara..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
       </View>
@@ -174,7 +177,7 @@ export const SavingsScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Altın & Döviz</Text>
         <View style={{ width: 24 }} />
@@ -207,7 +210,7 @@ export const SavingsScreen = ({ navigation }: any) => {
                   <View style={styles.cardHeaderTop}>
                     <View style={styles.cardHeaderLeft}>
                       <View style={[styles.cardIcon, { 
-                        backgroundColor: item.type === 'GOLD' ? '#fef3c7' : item.type === 'SILVER' ? '#f1f5f9' : '#e0e7ff' 
+                        backgroundColor: item.type === 'GOLD' ? (isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7') : item.type === 'SILVER' ? (isDark ? 'rgba(148, 163, 184, 0.2)' : '#f1f5f9') : (isDark ? 'rgba(99, 102, 241, 0.2)' : '#e0e7ff') 
                       }]}>
                         <Ionicons name="cash-outline" size={24} color={item.type === 'GOLD' ? '#f59e0b' : item.type === 'SILVER' ? '#94a3b8' : '#6366f1'} />
                       </View>
@@ -240,16 +243,16 @@ export const SavingsScreen = ({ navigation }: any) => {
                       <Text style={styles.detailValue}>{formatCurrency(currentRate)}</Text>
                     </View>
                     <View style={styles.actionRow}>
-                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#ecfdf5' }]} onPress={() => handleAction('buy', item)}>
+                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5' }]} onPress={() => handleAction('buy', item)}>
                         <Text style={[styles.actionBtnText, { color: '#10b981' }]}>Al</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#fff1f2' }]} onPress={() => handleAction('sell', item)}>
+                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244, 63, 94, 0.2)' : '#fff1f2' }]} onPress={() => handleAction('sell', item)}>
                         <Text style={[styles.actionBtnText, { color: '#f43f5e' }]}>Sat</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#f1f5f9' }]} onPress={() => handleAction('edit', item)}>
-                        <Text style={[styles.actionBtnText, { color: '#64748b' }]}>Düzenle</Text>
+                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]} onPress={() => handleAction('edit', item)}>
+                        <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>Düzenle</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#f1f5f9' }]} onPress={() => handleDelete(item)}>
+                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]} onPress={() => handleDelete(item)}>
                         <Ionicons name="trash" size={16} color="#ef4444" />
                       </TouchableOpacity>
                     </View>
@@ -282,9 +285,12 @@ export const SavingsScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.bgPrimary,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,18 +298,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: isDark ? 0.3 : 0.03,
     shadowRadius: 8,
     elevation: 2,
     zIndex: 10,
+    borderBottomWidth: isDark ? 1 : 0,
+    borderBottomColor: colors.border,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 100 },
   
@@ -315,20 +323,22 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.3 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   kpiLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textMuted,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
@@ -336,34 +346,57 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
     marginBottom: 2,
+    color: colors.textPrimary,
   },
   kpiSubText: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textSecondary,
   },
 
   searchContainer: { flexDirection: 'row', marginBottom: 16 },
-  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, height: 48, borderWidth: 1, borderColor: '#e2e8f0' },
+  searchBox: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: colors.bgCard, 
+    borderRadius: 12, 
+    paddingHorizontal: 12, 
+    height: 48, 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, height: '100%', fontSize: 15, color: '#0f172a' },
+  searchInput: { flex: 1, height: '100%', fontSize: 15, color: colors.textPrimary },
 
   filterTabs: { flexDirection: 'row', marginBottom: 16, gap: 8 },
-  filterTab: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
-  filterTabActive: { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' },
-  filterTabText: { fontSize: 13, color: '#64748b', fontWeight: '600' },
+  filterTab: { 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 12, 
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
+  filterTabActive: { 
+    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5', 
+    borderColor: '#10b981' 
+  },
+  filterTabText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
   filterTabTextActive: { color: '#10b981' },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 16,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.3 : 0.05,
     shadowRadius: 8,
     elevation: 2,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cardHeader: {
     padding: 16,
@@ -386,27 +419,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: '#1e293b', marginBottom: 2 },
-  cardSubtitle: { fontSize: 13, color: '#64748b' },
+  cardTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary, marginBottom: 2 },
+  cardSubtitle: { fontSize: 13, color: colors.textSecondary },
   cardHeaderRight: {
     alignItems: 'flex-end',
   },
-  cardAmount: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginBottom: 2 },
+  cardAmount: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginBottom: 2 },
   pnlText: { fontSize: 13, fontWeight: '600' },
   
   expandedContent: {
     padding: 16,
     paddingTop: 0,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 6,
   },
-  detailLabel: { fontSize: 13, color: '#64748b' },
-  detailValue: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
+  detailLabel: { fontSize: 13, color: colors.textSecondary },
+  detailValue: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
   
   actionRow: {
     flexDirection: 'row',
@@ -425,7 +458,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  emptyText: { textAlign: 'center', color: '#94a3b8', marginTop: 32, paddingHorizontal: 20 },
+  emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: 32, paddingHorizontal: 20 },
   fab: {
     position: 'absolute',
     bottom: 24,

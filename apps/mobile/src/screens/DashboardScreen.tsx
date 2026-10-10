@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { fetchApi, getAvatarUrl } from '../lib/api';
@@ -72,6 +73,7 @@ export const DashboardScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
   const { user, setUser } = useContext(AuthContext);
   const { unreadCount } = useNotifications();
+  const { isDark, colors, toggleTheme } = useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
@@ -310,18 +312,18 @@ export const DashboardScreen = ({ navigation }: any) => {
   }, [user?.disabledMenus, menuSearchQuery]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bgPrimary }]} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.bgPrimary} />
 
       {/* TOP HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bgPrimary }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={styles.avatarWrapper}
             onPress={() => navigation.navigate('Profile')}
             activeOpacity={0.8}
           >
-            <View style={styles.avatarContainer}>
+            <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
               {user?.avatarUrl && getAvatarUrl(user.avatarUrl) ? (
                 <Image source={{ uri: getAvatarUrl(user.avatarUrl)! }} style={styles.avatarImage} />
               ) : (
@@ -333,16 +335,24 @@ export const DashboardScreen = ({ navigation }: any) => {
             </View>
           </TouchableOpacity>
 
-          <Text style={styles.userName}>{displayName}</Text>
+          <Text style={[styles.userName, { color: colors.textPrimary }]}>{displayName}</Text>
         </View>
 
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={styles.iconCircleButton}
+            style={[styles.iconCircleButton, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+          >
+            <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={20} color={isDark ? "#f59e0b" : colors.textPrimary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.iconCircleButton, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
             onPress={() => navigation.navigate('Notifications')}
             activeOpacity={0.7}
           >
-            <Ionicons name="notifications-outline" size={22} color="#1e293b" />
+            <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             {unreadCount > 0 && (
               <View style={styles.notifBadge}>
                 <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -351,18 +361,18 @@ export const DashboardScreen = ({ navigation }: any) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.iconCircleButton}
+            style={[styles.iconCircleButton, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
             onPress={() => navigation.navigate('Settings')}
             activeOpacity={0.7}
           >
-            <Ionicons name="settings-outline" size={22} color="#1e293b" />
+            <Ionicons name="settings-outline" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* MAIN SCROLLABLE CONTENT */}
       <ScrollView
-        style={styles.scroll}
+        style={[styles.scroll, { backgroundColor: colors.bgPrimary }]}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#6366f1']} />}
@@ -464,32 +474,32 @@ export const DashboardScreen = ({ navigation }: any) => {
         <View style={styles.actionsRow}>
           {/* Gelir Ekle */}
           <TouchableOpacity
-            style={styles.actionCard}
+            style={[styles.actionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
             onPress={() => navigation.navigate('Transactions', { initialType: 'INCOME', openModal: true })}
             activeOpacity={0.8}
           >
-            <View style={[styles.actionIconCircle, { backgroundColor: '#dcfce7' }]}>
+            <View style={[styles.actionIconCircle, { backgroundColor: isDark ? '#064e3b' : '#dcfce7' }]}>
               <Ionicons name="add" size={22} color="#16a34a" />
             </View>
             <View style={styles.actionTextCol}>
-              <Text style={styles.actionTitle}>Gelir Ekle</Text>
-              <Text style={styles.actionSubtitle}>Yeni gelir kaydı oluştur</Text>
+              <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>Gelir Ekle</Text>
+              <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>Yeni gelir kaydı oluştur</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#16a34a" />
           </TouchableOpacity>
 
           {/* Gider Ekle */}
           <TouchableOpacity
-            style={styles.actionCard}
+            style={[styles.actionCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
             onPress={() => navigation.navigate('Transactions', { initialType: 'EXPENSE', openModal: true })}
             activeOpacity={0.8}
           >
-            <View style={[styles.actionIconCircle, { backgroundColor: '#fee2e2' }]}>
+            <View style={[styles.actionIconCircle, { backgroundColor: isDark ? '#7f1d1d' : '#fee2e2' }]}>
               <Ionicons name="remove" size={22} color="#dc2626" />
             </View>
             <View style={styles.actionTextCol}>
-              <Text style={styles.actionTitle}>Gider Ekle</Text>
-              <Text style={styles.actionSubtitle}>Harcama kaydı oluştur</Text>
+              <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>Gider Ekle</Text>
+              <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>Harcama kaydı oluştur</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="#dc2626" />
           </TouchableOpacity>
@@ -497,7 +507,7 @@ export const DashboardScreen = ({ navigation }: any) => {
 
         {/* QUICK ACCESS (HIZLI ERİŞİM) */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Hızlı Erişim</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Hızlı Erişim</Text>
           <TouchableOpacity onPress={() => setIsMoreModalVisible(true)} activeOpacity={0.7}>
             <View style={styles.seeAllRow}>
               <Text style={styles.seeAllText}>Tümünü Gör</Text>
@@ -510,14 +520,14 @@ export const DashboardScreen = ({ navigation }: any) => {
           {QUICK_SERVICES.map((item) => (
             <TouchableOpacity
               key={item.id}
-              style={styles.quickCard}
+              style={[styles.quickCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
               onPress={() => navigation.navigate(item.route)}
               activeOpacity={0.75}
             >
-              <View style={styles.quickIconBox}>
-                <Ionicons name={item.icon as any} size={22} color="#7c3aed" />
+              <View style={[styles.quickIconBox, { backgroundColor: isDark ? colors.bgSecondary : '#f5f3ff' }]}>
+                <Ionicons name={item.icon as any} size={22} color={isDark ? '#a78bfa' : '#7c3aed'} />
               </View>
-              <Text style={styles.quickLabel} numberOfLines={2}>
+              <Text style={[styles.quickLabel, { color: colors.textPrimary }]} numberOfLines={2}>
                 {item.title}
               </Text>
             </TouchableOpacity>
@@ -527,10 +537,10 @@ export const DashboardScreen = ({ navigation }: any) => {
         {/* UPCOMING PAYMENTS (YAKLAŞAN ÖDEMELER) */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
-            <View style={styles.calendarIconSquare}>
-              <Ionicons name="calendar-outline" size={16} color="#7c3aed" />
+            <View style={[styles.calendarIconSquare, { backgroundColor: isDark ? colors.bgSecondary : '#f5f3ff' }]}>
+              <Ionicons name="calendar-outline" size={16} color={isDark ? '#a78bfa' : '#7c3aed'} />
             </View>
-            <Text style={styles.sectionTitle}>Yaklaşan Ödemeler</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Yaklaşan Ödemeler</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Calendar')} activeOpacity={0.7}>
             <View style={styles.seeAllRow}>
@@ -540,28 +550,28 @@ export const DashboardScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.upcomingContainer}>
+        <View style={[styles.upcomingContainer, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           {upcomingPayments.map((item, index) => {
             const isUrgent = item.daysLeft <= 3;
             return (
               <React.Fragment key={item.id}>
-                {index > 0 && <View style={styles.upcomingDivider} />}
+                {index > 0 && <View style={[styles.upcomingDivider, { backgroundColor: colors.divider }]} />}
                 <TouchableOpacity
                   style={styles.upcomingItemRow}
                   onPress={() => navigation.navigate(item.route || 'Calendar')}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.upcomingIconBox, { backgroundColor: item.bg }]}>
+                  <View style={[styles.upcomingIconBox, { backgroundColor: isDark ? `${item.color}25` : item.bg }]}>
                     <Ionicons name={item.icon as any} size={20} color={item.color} />
                   </View>
 
                   <View style={styles.upcomingInfoCol}>
-                    <Text style={styles.upcomingItemTitle}>{item.title}</Text>
-                    <Text style={styles.upcomingItemDate}>{item.date}</Text>
+                    <Text style={[styles.upcomingItemTitle, { color: colors.textPrimary }]}>{item.title}</Text>
+                    <Text style={[styles.upcomingItemDate, { color: colors.textSecondary }]}>{item.date}</Text>
                   </View>
 
                   <View style={styles.upcomingRightCol}>
-                    <Text style={styles.upcomingItemAmount}>
+                    <Text style={[styles.upcomingItemAmount, { color: colors.textPrimary }]}>
                       {isBalanceHidden ? '••••••' : formatMoney(item.amount)}
                     </Text>
                     <View style={[styles.daysBadge, isUrgent ? styles.daysBadgeUrgent : styles.daysBadgeNormal]}>
@@ -571,7 +581,7 @@ export const DashboardScreen = ({ navigation }: any) => {
                     </View>
                   </View>
 
-                  <Ionicons name="chevron-forward" size={16} color="#cbd5e1" style={{ marginLeft: 6 }} />
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} style={{ marginLeft: 6 }} />
                 </TouchableOpacity>
               </React.Fragment>
             );
@@ -580,26 +590,26 @@ export const DashboardScreen = ({ navigation }: any) => {
 
         {/* MONTHLY SPENDING / TARGET CARD */}
         <TouchableOpacity
-          style={styles.spendingCard}
+          style={[styles.spendingCard, { backgroundColor: isDark ? colors.bgCard : '#f5f3ff', borderColor: isDark ? colors.border : '#ede9fe' }]}
           onPress={() => navigation.navigate('Reports')}
           activeOpacity={0.85}
         >
           <View style={styles.spendingLeftCol}>
             <View style={styles.spendingHeaderRow}>
-              <View style={styles.targetIconCircle}>
-                <Ionicons name="disc-outline" size={18} color="#7c3aed" />
+              <View style={[styles.targetIconCircle, { backgroundColor: isDark ? colors.bgSecondary : '#ede9fe' }]}>
+                <Ionicons name="disc-outline" size={18} color={isDark ? '#a78bfa' : '#7c3aed'} />
               </View>
-              <Text style={styles.spendingCardTitle}>Bu ay toplam harcamanız</Text>
+              <Text style={[styles.spendingCardTitle, { color: colors.textSecondary }]}>Bu ay toplam harcamanız</Text>
             </View>
 
-            <Text style={styles.spendingCardAmount}>
+            <Text style={[styles.spendingCardAmount, { color: colors.textPrimary }]}>
               {isBalanceHidden ? '••••••' : formatMoney(monthlyExpense)}
             </Text>
 
             <View style={styles.spendingTrendRow}>
               <Ionicons name="arrow-down" size={12} color="#10b981" />
               <Text style={styles.spendingTrendText}>%8</Text>
-              <Text style={styles.spendingTrendDesc}>Geçen aya göre daha az</Text>
+              <Text style={[styles.spendingTrendDesc, { color: colors.textSecondary }]}>Geçen aya göre daha az</Text>
             </View>
           </View>
 
@@ -625,7 +635,7 @@ export const DashboardScreen = ({ navigation }: any) => {
             </Svg>
           </View>
 
-          <Ionicons name="chevron-forward" size={18} color="#94a3b8" style={{ marginLeft: 6 }} />
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ marginLeft: 6 }} />
         </TouchableOpacity>
       </ScrollView>
 
@@ -634,6 +644,8 @@ export const DashboardScreen = ({ navigation }: any) => {
         style={[
           styles.bottomNavContainer,
           {
+            backgroundColor: colors.bottomNavBg,
+            borderTopColor: colors.bottomNavBorder,
             paddingBottom: insets.bottom > 0 ? insets.bottom + 6 : (Platform.OS === 'android' ? 16 : 8),
           },
         ]}
@@ -648,8 +660,8 @@ export const DashboardScreen = ({ navigation }: any) => {
           onPress={() => navigation.navigate('Overview')}
           activeOpacity={0.7}
         >
-          <Ionicons name="grid-outline" size={22} color="#94a3b8" />
-          <Text style={styles.navText}>Kontrol Paneli</Text>
+          <Ionicons name="grid-outline" size={22} color={colors.textMuted} />
+          <Text style={[styles.navText, { color: colors.textMuted }]}>Kontrol Paneli</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -657,8 +669,8 @@ export const DashboardScreen = ({ navigation }: any) => {
           onPress={() => navigation.navigate('Transactions')}
           activeOpacity={0.7}
         >
-          <Ionicons name="swap-horizontal-outline" size={24} color="#94a3b8" />
-          <Text style={styles.navText}>İşlemler</Text>
+          <Ionicons name="swap-horizontal-outline" size={24} color={colors.textMuted} />
+          <Text style={[styles.navText, { color: colors.textMuted }]}>İşlemler</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -666,8 +678,8 @@ export const DashboardScreen = ({ navigation }: any) => {
           onPress={() => navigation.navigate('Reports')}
           activeOpacity={0.7}
         >
-          <Ionicons name="bar-chart-outline" size={22} color="#94a3b8" />
-          <Text style={styles.navText}>Raporlar</Text>
+          <Ionicons name="bar-chart-outline" size={22} color={colors.textMuted} />
+          <Text style={[styles.navText, { color: colors.textMuted }]}>Raporlar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -675,8 +687,8 @@ export const DashboardScreen = ({ navigation }: any) => {
           onPress={() => setIsMoreModalVisible(true)}
           activeOpacity={0.7}
         >
-          <Ionicons name="ellipsis-horizontal" size={24} color="#94a3b8" />
-          <Text style={styles.navText}>Daha Fazla</Text>
+          <Ionicons name="ellipsis-horizontal" size={24} color={colors.textMuted} />
+          <Text style={[styles.navText, { color: colors.textMuted }]}>Daha Fazla</Text>
         </TouchableOpacity>
       </View>
 
@@ -691,7 +703,7 @@ export const DashboardScreen = ({ navigation }: any) => {
         }}
       >
         <Pressable
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}
           onPress={() => {
             setIsMoreModalVisible(false);
             setMenuSearchQuery('');
@@ -701,17 +713,18 @@ export const DashboardScreen = ({ navigation }: any) => {
             style={[
               styles.modalSheet,
               {
+                backgroundColor: colors.bgCard,
                 paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : (Platform.OS === 'ios' ? 36 : 24),
               },
             ]}
             onPress={(e) => e.stopPropagation()}
           >
-            <View style={styles.modalHandle} />
+            <View style={[styles.modalHandle, { backgroundColor: isDark ? '#475569' : '#cbd5e1' }]} />
 
             <View style={styles.modalHeaderRow}>
               <View>
-                <Text style={styles.modalTitle}>Tüm Menüler</Text>
-                <Text style={styles.modalSubtitle}>Tüm finansal araçlarınız ve hizmetler</Text>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Tüm Menüler</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>Tüm finansal araçlarınız ve hizmetler</Text>
               </View>
               <TouchableOpacity
                 onPress={() => {
@@ -720,24 +733,24 @@ export const DashboardScreen = ({ navigation }: any) => {
                 }}
                 style={styles.modalCloseBtn}
               >
-                <Ionicons name="close" size={20} color="#64748b" />
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             {/* Arama Çubuğu */}
-            <View style={styles.modalSearchContainer}>
-              <Ionicons name="search-outline" size={18} color="#94a3b8" style={{ marginRight: 8 }} />
+            <View style={[styles.modalSearchContainer, { backgroundColor: colors.bgInput, borderColor: colors.border }]}>
+              <Ionicons name="search-outline" size={18} color={colors.textMuted} style={{ marginRight: 8 }} />
               <TextInput
                 placeholder="Menü veya hizmet ara..."
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.textMuted}
                 value={menuSearchQuery}
                 onChangeText={setMenuSearchQuery}
-                style={styles.modalSearchInput}
+                style={[styles.modalSearchInput, { color: colors.textPrimary }]}
                 autoCorrect={false}
               />
               {menuSearchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setMenuSearchQuery('')}>
-                  <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                  <Ionicons name="close-circle" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -752,7 +765,7 @@ export const DashboardScreen = ({ navigation }: any) => {
                 {visibleAllServices.map((s) => (
                   <TouchableOpacity
                     key={s.id}
-                    style={styles.moreCard}
+                    style={[styles.moreCard, { backgroundColor: isDark ? colors.bgSecondary : '#ffffff', borderColor: colors.border }]}
                     onPress={() => {
                       setIsMoreModalVisible(false);
                       setMenuSearchQuery('');
@@ -768,7 +781,7 @@ export const DashboardScreen = ({ navigation }: any) => {
                     <View style={[styles.moreIconCircle, { backgroundColor: `${s.color}15` }]}>
                       <Ionicons name={s.icon as any} size={22} color={s.color} />
                     </View>
-                    <Text style={styles.moreCardLabel} numberOfLines={2}>
+                    <Text style={[styles.moreCardLabel, { color: colors.textPrimary }]} numberOfLines={2}>
                       {s.title}
                     </Text>
                   </TouchableOpacity>

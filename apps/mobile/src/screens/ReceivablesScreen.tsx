@@ -3,8 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 export const ReceivablesScreen = ({ navigation }: any) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const [receivables, setReceivables] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedPlans, setExpandedPlans] = useState<Record<string, boolean>>({});
@@ -367,14 +370,14 @@ export const ReceivablesScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Taksitli Alacaklar</Text>
         <TouchableOpacity 
           style={styles.toggleBtn}
           onPress={() => setViewMode(prev => prev === 'plan' ? 'list' : 'plan')}
         >
-          <Ionicons name={viewMode === 'plan' ? "list" : "albums"} size={22} color="#1e293b" />
+          <Ionicons name={viewMode === 'plan' ? "list" : "albums"} size={22} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -457,16 +460,17 @@ export const ReceivablesScreen = ({ navigation }: any) => {
 
               <View style={styles.searchContainer}>
                 <View style={styles.searchBox}>
-                  <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+                  <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
                   <TextInput 
                     style={styles.searchInput}
                     placeholder="Alacak adı veya kişi ara..."
+                    placeholderTextColor={colors.textMuted}
                     value={filters.search}
                     onChangeText={(t) => setFilters(prev => ({ ...prev, search: t }))}
                   />
                 </View>
                 <TouchableOpacity style={styles.filterBtn} onPress={() => setIsFiltersOpen(true)}>
-                  <Ionicons name="filter" size={20} color={activeFiltersCount > 0 ? '#4f46e5' : '#64748b'} />
+                  <Ionicons name="filter" size={20} color={activeFiltersCount > 0 ? '#4f46e5' : colors.textSecondary} />
                   {activeFiltersCount > 0 && (
                     <View style={styles.filterBadge}>
                       <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
@@ -491,7 +495,7 @@ export const ReceivablesScreen = ({ navigation }: any) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filtrele</Text>
               <TouchableOpacity onPress={() => setIsFiltersOpen(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -535,9 +539,12 @@ export const ReceivablesScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.bgPrimary,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -545,19 +552,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: isDark ? 0.3 : 0.03,
     shadowRadius: 8,
     elevation: 2,
     zIndex: 10,
+    borderBottomWidth: isDark ? 1 : 0,
+    borderBottomColor: colors.border,
   },
   backButton: { padding: 4 },
-  toggleBtn: { padding: 4, backgroundColor: '#f1f5f9', borderRadius: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  toggleBtn: { 
+    padding: 6, 
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', 
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   
   kpiGrid: {
@@ -568,20 +583,22 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.3 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   kpiLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textMuted,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
@@ -592,7 +609,7 @@ const styles = StyleSheet.create({
   },
   kpiSubText: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textSecondary,
   },
   infoBox: {
     flexDirection: 'row',
@@ -603,12 +620,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   infoBoxSuccess: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#a7f3d0',
+    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ecfdf5',
+    borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#a7f3d0',
   },
   infoBoxDanger: {
-    backgroundColor: '#fff1f2',
-    borderColor: '#fecdd3',
+    backgroundColor: isDark ? 'rgba(244, 63, 94, 0.1)' : '#fff1f2',
+    borderColor: isDark ? 'rgba(244, 63, 94, 0.3)' : '#fecdd3',
   },
   infoBoxIcon: {
     padding: 8,
@@ -625,30 +642,51 @@ const styles = StyleSheet.create({
   },
   infoBoxText: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   
   searchContainer: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 16, marginBottom: 16, gap: 12 },
-  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, height: 48, borderWidth: 1, borderColor: '#e2e8f0' },
+  searchBox: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: colors.bgCard, 
+    borderRadius: 12, 
+    paddingHorizontal: 12, 
+    height: 48, 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, height: '100%', fontSize: 15, color: '#0f172a' },
-  filterBtn: { width: 48, height: 48, backgroundColor: '#fff', borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
-  filterBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#10b981', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
+  searchInput: { flex: 1, height: '100%', fontSize: 15, color: colors.textPrimary },
+  filterBtn: { 
+    width: 48, 
+    height: 48, 
+    backgroundColor: colors.bgCard, 
+    borderRadius: 12, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
+  filterBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#10b981', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.bgCard },
   filterBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
 
   listContent: { padding: 16, paddingBottom: 100 },
   
   planCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.3 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   planHeader: { padding: 0 },
   planHeaderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
@@ -658,24 +696,24 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  planTitle: { fontSize: 16, fontWeight: '700', color: '#1e293b', marginBottom: 2 },
-  planSubtitle: { fontSize: 13, color: '#64748b' },
+  planTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  planSubtitle: { fontSize: 13, color: colors.textSecondary },
   
   progressContainer: { marginBottom: 16 },
-  progressBarBg: { height: 8, backgroundColor: '#f1f5f9', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
+  progressBarBg: { height: 8, backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
   progressBarFill: { height: '100%', backgroundColor: '#10b981', borderRadius: 4 },
   progressTextRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  progressText: { fontSize: 12, color: '#64748b', fontWeight: '600' },
+  progressText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
 
   planActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
     paddingTop: 12,
     marginTop: 12,
   },
@@ -690,40 +728,73 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  installmentsList: { backgroundColor: '#f8fafc', padding: 16, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
-  instRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 12, marginBottom: 8 },
+  installmentsList: { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc', padding: 16, borderTopWidth: 1, borderTopColor: colors.border },
+  instRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    backgroundColor: colors.bgCard, 
+    padding: 12, 
+    borderRadius: 12, 
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   instInfo: { flex: 1 },
-  instNum: { fontSize: 14, fontWeight: '700', color: '#1e293b', marginBottom: 4 },
-  instDate: { fontSize: 12, color: '#94a3b8' },
+  instNum: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 },
+  instDate: { fontSize: 12, color: colors.textMuted },
   instRight: { alignItems: 'flex-end', gap: 8 },
   instAmountWrapper: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  instAmount: { fontSize: 14, fontWeight: '700', color: '#0f172a' },
+  instAmount: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   badgeText: { fontSize: 10, fontWeight: '700' },
   
   instActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   instActionBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   instActionBtnPrimary: { backgroundColor: '#10b981' },
-  instActionBtnPaid: { backgroundColor: '#f1f5f9' },
+  instActionBtnPaid: { backgroundColor: isDark ? colors.bgPrimary : '#f1f5f9' },
   instActionBtnText: { fontSize: 12, fontWeight: '700' },
   instDeleteBtn: { padding: 4 },
 
   listRowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  emptyText: { textAlign: 'center', color: '#94a3b8', marginTop: 32 },
+  emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: 32 },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { 
+    backgroundColor: colors.bgCard, 
+    borderTopLeftRadius: 24, 
+    borderTopRightRadius: 24, 
+    padding: 24, 
+    paddingBottom: 40,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
-  filterSectionTitle: { fontSize: 14, fontWeight: '600', color: '#64748b', marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  filterSectionTitle: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 12 },
   filterOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
-  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: 'transparent' },
-  filterChipActiveRec: { backgroundColor: '#ecfdf5', borderColor: '#10b981' },
-  filterChipText: { fontSize: 14, color: '#64748b', fontWeight: '500' },
+  filterChip: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 8, 
+    borderRadius: 20, 
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
+  filterChipActiveRec: { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5', borderColor: '#10b981' },
+  filterChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
   filterChipTextActiveRec: { color: '#10b981', fontWeight: '600' },
   modalFooter: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  modalBtnClear: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center' },
-  modalBtnClearText: { color: '#64748b', fontSize: 16, fontWeight: '600' },
+  modalBtnClear: { 
+    flex: 1, 
+    paddingVertical: 14, 
+    borderRadius: 12, 
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', 
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalBtnClearText: { color: colors.textSecondary, fontSize: 16, fontWeight: '600' },
   modalBtnApplyRec: { flex: 2, paddingVertical: 14, borderRadius: 12, backgroundColor: '#10b981', alignItems: 'center' },
   modalBtnApplyText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +17,8 @@ const CATEGORY_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', 
 type ReportTab = 'SUMMARY' | 'MONTHLY' | 'YEARLY' | 'COMPARISON';
 
 export const ReportsScreen = ({ navigation }: any) => {
+  const { isDark, colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const [activeTab, setActiveTab] = useState<ReportTab>('SUMMARY');
   const [loading, setLoading] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
@@ -300,10 +303,11 @@ export const ReportsScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Finansal Raporlar</Text>
         <TouchableOpacity onPress={() => setShowGuide(!showGuide)} style={styles.guideToggleBtn}>
@@ -1100,9 +1104,12 @@ export const ReportsScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.bgPrimary,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1110,9 +1117,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+    borderBottomWidth: isDark ? 1 : 0,
+    borderBottomColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
@@ -1121,42 +1130,42 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   guideToggleBtn: { padding: 4 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { padding: 16, paddingBottom: 60 },
 
   // Guide
   guideCard: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#f0fdf4',
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#bbf7d0',
+    borderColor: isDark ? '#059669' : '#bbf7d0',
   },
   guideTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#166534',
+    color: isDark ? '#34d399' : '#166534',
   },
   guideText: {
     fontSize: 11,
-    color: '#334155',
+    color: isDark ? colors.textSecondary : '#334155',
     lineHeight: 16,
   },
 
   // Tabs
   tabsContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     marginHorizontal: 16,
     marginTop: 10,
     marginBottom: 6,
     borderRadius: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   tabBtn: {
     flexDirection: 'row',
@@ -1164,16 +1173,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: isDark ? colors.bgSecondary : '#f8fafc',
     gap: 6,
   },
   tabBtnActive: {
-    backgroundColor: '#f3e8ff',
+    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.25)' : '#f3e8ff',
   },
   tabText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textMuted,
   },
   tabTextActive: {
     color: '#8b5cf6',
@@ -1189,20 +1198,22 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     padding: 12,
     borderRadius: 14,
     marginBottom: 10,
-    shadowColor: '#64748b',
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
   kpiLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textSecondary,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
@@ -1210,26 +1221,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     marginBottom: 2,
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   kpiSubText: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
 
   // Sections
   sectionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
+    shadowOpacity: isDark ? 0.2 : 0.04,
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: colors.border,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1240,11 +1251,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   emptyCardText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.textMuted,
     textAlign: 'center',
     paddingVertical: 14,
   },
@@ -1254,23 +1265,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   navBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9',
   },
   monthTitleText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
 
   // Monthly Trend Bar
@@ -1283,11 +1294,11 @@ const styles = StyleSheet.create({
     width: 36,
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   barTrack: {
     height: 16,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9',
     borderRadius: 4,
     overflow: 'hidden',
     justifyContent: 'center',
@@ -1302,7 +1313,7 @@ const styles = StyleSheet.create({
   barText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#1e293b',
+    color: colors.textPrimary,
     paddingLeft: 6,
   },
   legendRow: {
@@ -1312,7 +1323,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
   },
   legendDot: {
     width: 8,
@@ -1321,7 +1332,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
 
@@ -1340,16 +1351,16 @@ const styles = StyleSheet.create({
   catName: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1e293b',
+    color: colors.textPrimary,
   },
   catAmount: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   catProgressTrack: {
     height: 6,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9',
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -1364,13 +1375,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f8fafc',
+    borderBottomColor: colors.border,
   },
   merchantRank: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#fef3c7',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -1378,22 +1389,22 @@ const styles = StyleSheet.create({
   merchantRankText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#d97706',
+    color: '#f59e0b',
   },
   merchantName: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1e293b',
+    color: colors.textPrimary,
   },
   merchantCount: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textMuted,
     marginTop: 1,
   },
   merchantAmount: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
 
   // Trend Chips
@@ -1401,17 +1412,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   trendCatChipActive: {
-    backgroundColor: '#f3e8ff',
+    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#f3e8ff',
     borderColor: '#8b5cf6',
   },
   trendCatText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textMuted,
     fontWeight: '600',
   },
   trendCatTextActive: {
@@ -1423,36 +1434,37 @@ const styles = StyleSheet.create({
   compNavBtn: {
     padding: 4,
     borderRadius: 6,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   compKpiCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     padding: 12,
     borderRadius: 14,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: isDark ? 0.2 : 0.04,
     shadowRadius: 6,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: colors.border,
   },
   compKpiTitle: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textSecondary,
     letterSpacing: 0.5,
   },
   compLabel: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: colors.textMuted,
     marginBottom: 2,
   },
   compAmount: {
     fontSize: 14,
     fontWeight: '800',
+    color: colors.textPrimary,
   },
   pctBadge: {
     flexDirection: 'row',
@@ -1472,7 +1484,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
 
   // Yearly Matrix Table Styles
@@ -1480,21 +1492,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#f5f3ff',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#f5f3ff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd6fe',
+    borderColor: isDark ? 'rgba(99, 102, 241, 0.4)' : '#ddd6fe',
   },
   expandToggleText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#6366f1',
+    color: colors.accent,
   },
   matrixHintText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textMuted,
     marginBottom: 8,
     fontStyle: 'italic',
   },
@@ -1503,17 +1515,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   matrixTable: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   matrixHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: isDark ? colors.bgSecondary : '#f8fafc',
     borderBottomWidth: 1.5,
-    borderBottomColor: '#cbd5e1',
+    borderBottomColor: colors.border,
   },
   matrixCell: {
     paddingVertical: 9,
@@ -1526,13 +1538,13 @@ const styles = StyleSheet.create({
   matrixNameCol: {
     width: 165,
     borderRightWidth: 1,
-    borderRightColor: '#e2e8f0',
+    borderRightColor: colors.border,
   },
   matrixMonthCol: {
     width: 76,
     alignItems: 'center',
     borderRightWidth: 1,
-    borderRightColor: '#f1f5f9',
+    borderRightColor: colors.border,
   },
   matrixTotalCol: {
     width: 95,
@@ -1541,25 +1553,25 @@ const styles = StyleSheet.create({
   matrixHeaderText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   matrixParentGroup: {
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.border,
   },
   matrixParentRow: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: isDark ? colors.bgSecondary : '#f8fafc',
   },
   matrixParentName: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
     flex: 1,
   },
   matrixValueText: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   matrixParentValText: {
@@ -1574,18 +1586,18 @@ const styles = StyleSheet.create({
   },
   matrixChildRow: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
   },
   matrixChildName: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   matrixChildValText: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textMuted,
     fontWeight: '500',
   },
   matrixChildTotalText: {
@@ -1596,14 +1608,14 @@ const styles = StyleSheet.create({
   },
   matrixGrandTotalRow: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9',
     borderTopWidth: 2,
-    borderTopColor: '#94a3b8',
+    borderTopColor: colors.border,
   },
   matrixGrandTotalLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.textPrimary,
     letterSpacing: 0.3,
   },
   matrixGrandTotalMonthVal: {

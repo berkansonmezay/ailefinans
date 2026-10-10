@@ -2,22 +2,26 @@ import { Vibration, Platform } from 'react-native';
 
 // Audio and Notifications modules initialized safely with try/catch to prevent native runtime crashes
 let audioModule: any = null;
+let audioModuleChecked = false;
 let audioPlayerInstance: any = null;
 let notificationsModule: any = null;
 
-try {
-  // Expo SDK 57 official audio module (present in Expo Go 57)
-  const expoAudio = require('expo-audio');
-  audioModule = expoAudio.AudioModule;
-  if (audioModule?.setAudioModeAsync) {
-    audioModule.setAudioModeAsync({
-      playsInSilentMode: true,
-      shouldPlayInBackground: false,
-    }).catch(() => {});
+function getAudioModule() {
+  if (audioModuleChecked) return audioModule;
+  audioModuleChecked = true;
+  try {
+    const expoAudio = require('expo-audio');
+    audioModule = expoAudio.AudioModule;
+    if (audioModule?.setAudioModeAsync) {
+      audioModule.setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: false,
+      }).catch(() => {});
+    }
+  } catch (err) {
+    audioModule = null;
   }
-} catch (err) {
-  // Graceful fallback if native audio module is unavailable
-  console.log('ExpoAudio native modülü yüklenmedi:', err);
+  return audioModule;
 }
 
 try {
@@ -43,9 +47,10 @@ try {
  */
 export const playNotificationSound = async () => {
   try {
-    if (audioModule?.AudioPlayer) {
+    const mod = getAudioModule();
+    if (mod?.AudioPlayer) {
       if (!audioPlayerInstance) {
-        audioPlayerInstance = new audioModule.AudioPlayer(
+        audioPlayerInstance = new mod.AudioPlayer(
           require('../../assets/notification.wav'),
           500,
           false,

@@ -5,6 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { useTheme } from '../context/ThemeContext';
 
 interface InvoiceActionModalProps {
   visible: boolean;
@@ -14,6 +15,9 @@ interface InvoiceActionModalProps {
 }
 
 export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: InvoiceActionModalProps) => {
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [loading, setLoading] = useState(false);
 
   const [provider, setProvider] = useState('');
@@ -114,7 +118,7 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={22} color="#64748b" />
+              <Ionicons name="close" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -132,7 +136,7 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
                 placeholder="Örn: Türk Telekom, İGDAŞ, Amazon..."
                 value={provider}
                 onChangeText={setProvider}
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.textMuted}
               />
             </View>
 
@@ -144,7 +148,7 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
                 placeholder="Örn: GIB202609180124"
                 value={invoiceNumber}
                 onChangeText={setInvoiceNumber}
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={colors.textMuted}
               />
             </View>
 
@@ -158,7 +162,7 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="decimal-pad"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
 
@@ -189,7 +193,7 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
                   placeholder="YYYY-AA-GG"
                   value={invoiceDate}
                   onChangeText={setInvoiceDate}
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
 
@@ -200,7 +204,7 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
                   placeholder="YYYY-AA-GG"
                   value={dueDate}
                   onChangeText={setDueDate}
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.textMuted}
                 />
               </View>
             </View>
@@ -210,31 +214,31 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
               <Text style={styles.label}>Ödeme Durumu</Text>
               <View style={styles.statusRow}>
                 <TouchableOpacity
-                  style={[styles.statusBtn, status === 'PENDING' && { backgroundColor: '#fffbeb', borderColor: '#f59e0b' }]}
+                  style={[styles.statusBtn, status === 'PENDING' && { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fffbeb', borderColor: '#f59e0b' }]}
                   onPress={() => setStatus('PENDING')}
                 >
-                  <Ionicons name="time-outline" size={16} color={status === 'PENDING' ? '#d97706' : '#64748b'} />
-                  <Text style={[styles.statusText, status === 'PENDING' && { color: '#d97706', fontWeight: '700' }]}>
+                  <Ionicons name="time-outline" size={16} color={status === 'PENDING' ? '#f59e0b' : colors.textMuted} />
+                  <Text style={[styles.statusText, status === 'PENDING' && { color: '#f59e0b', fontWeight: '700' }]}>
                     Bekliyor
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.statusBtn, status === 'PAID' && { backgroundColor: '#ecfdf5', borderColor: '#10b981' }]}
+                  style={[styles.statusBtn, status === 'PAID' && { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5', borderColor: '#10b981' }]}
                   onPress={() => setStatus('PAID')}
                 >
-                  <Ionicons name="checkmark-circle-outline" size={16} color={status === 'PAID' ? '#059669' : '#64748b'} />
-                  <Text style={[styles.statusText, status === 'PAID' && { color: '#059669', fontWeight: '700' }]}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color={status === 'PAID' ? '#10b981' : colors.textMuted} />
+                  <Text style={[styles.statusText, status === 'PAID' && { color: '#10b981', fontWeight: '700' }]}>
                     Ödendi
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.statusBtn, status === 'CANCELLED' && { backgroundColor: '#fef2f2', borderColor: '#ef4444' }]}
+                  style={[styles.statusBtn, status === 'CANCELLED' && { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fef2f2', borderColor: '#ef4444' }]}
                   onPress={() => setStatus('CANCELLED')}
                 >
-                  <Ionicons name="close-circle-outline" size={16} color={status === 'CANCELLED' ? '#dc2626' : '#64748b'} />
-                  <Text style={[styles.statusText, status === 'CANCELLED' && { color: '#dc2626', fontWeight: '700' }]}>
+                  <Ionicons name="close-circle-outline" size={16} color={status === 'CANCELLED' ? '#ef4444' : colors.textMuted} />
+                  <Text style={[styles.statusText, status === 'CANCELLED' && { color: '#ef4444', fontWeight: '700' }]}>
                     İptal
                   </Text>
                 </TouchableOpacity>
@@ -272,16 +276,20 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
     maxHeight: '90%',
     paddingBottom: Platform.OS === 'ios' ? 30 : 20,
   },
@@ -291,25 +299,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   iconCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#ecfdf5',
+    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   closeButton: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: isDark ? colors.bgSecondary : '#f8fafc',
   },
   formScroll: {
     paddingHorizontal: 20,
@@ -325,18 +333,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   currencyRow: {
     flexDirection: 'row',
@@ -345,24 +353,24 @@ const styles = StyleSheet.create({
   },
   currencyBtn: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   currencyBtnActive: {
-    backgroundColor: '#ecfdf5',
+    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5',
     borderColor: '#10b981',
   },
   currencyText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   currencyTextActive: {
-    color: '#059669',
+    color: '#10b981',
     fontWeight: '800',
   },
   statusRow: {
@@ -377,14 +385,14 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   footer: {
     flexDirection: 'row',
@@ -392,19 +400,19 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9',
     alignItems: 'center',
   },
   cancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   submitButton: {
     flex: 2,

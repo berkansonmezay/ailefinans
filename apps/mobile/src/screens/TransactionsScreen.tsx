@@ -8,10 +8,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 export const TransactionsScreen = ({ navigation, route }: any) => {
+  const { isDark, colors } = useTheme();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [merchants, setMerchants] = useState<any[]>([]);
@@ -436,38 +438,38 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
+      <View style={[styles.header, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>İşlemler</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>İşlemler</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
         <View style={styles.kpiGrid}>
           {/* TOPLAM GELİR */}
-          <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>TOPLAM GELİR</Text>
+          <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
+            <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>TOPLAM GELİR</Text>
             <Text style={[styles.kpiValue, { color: '#10b981' }]}>{formatCurrency(totals.income)}</Text>
           </View>
           
           {/* TOPLAM GİDER */}
-          <View style={[styles.kpiCard, { borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>TOPLAM GİDER</Text>
+          <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#f43f5e', borderLeftWidth: 4 }]}>
+            <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>TOPLAM GİDER</Text>
             <Text style={[styles.kpiValue, { color: '#f43f5e' }]}>{formatCurrency(totals.expense)}</Text>
           </View>
           
           {/* NET BAKİYE */}
-          <View style={[styles.kpiCard, { borderLeftColor: totals.balance >= 0 ? '#3b82f6' : '#64748b', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>NET BAKİYE</Text>
-            <Text style={[styles.kpiValue, { color: totals.balance >= 0 ? '#3b82f6' : '#64748b' }]}>{formatCurrency(totals.balance)}</Text>
+          <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: totals.balance >= 0 ? '#3b82f6' : '#64748b', borderLeftWidth: 4 }]}>
+            <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>NET BAKİYE</Text>
+            <Text style={[styles.kpiValue, { color: totals.balance >= 0 ? '#3b82f6' : colors.textMuted }]}>{formatCurrency(totals.balance)}</Text>
           </View>
           
           {/* İŞLEM SAYISI */}
-          <View style={[styles.kpiCard, { borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>İŞLEM SAYISI</Text>
+          <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#8b5cf6', borderLeftWidth: 4 }]}>
+            <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>İŞLEM SAYISI</Text>
             <Text style={[styles.kpiValue, { color: '#8b5cf6' }]}>{filteredTransactions.length} Adet</Text>
           </View>
         </View>
@@ -475,20 +477,21 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
 
       {/* Search & Filter Bar */}
       <View style={styles.searchBarContainer}>
-        <View style={styles.searchInputWrapper}>
-          <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+        <View style={[styles.searchInputWrapper, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
+          <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.textPrimary }]}
             placeholder="İşlem ara..."
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
         <TouchableOpacity 
-          style={[styles.filterButton, (filterVade || filterCategoryId !== 'Tümü' || filterMerchantId !== 'Tümü') && styles.filterButtonActive]} 
+          style={[styles.filterButton, { backgroundColor: colors.bgCard, borderColor: colors.border }, (filterVade || filterCategoryId !== 'Tümü' || filterMerchantId !== 'Tümü') && styles.filterButtonActive]} 
           onPress={() => setIsFilterModalVisible(true)}
         >
-          <Ionicons name="filter" size={20} color={(filterVade || filterCategoryId !== 'Tümü' || filterMerchantId !== 'Tümü') ? '#fff' : '#64748b'} />
+          <Ionicons name="filter" size={20} color={(filterVade || filterCategoryId !== 'Tümü' || filterMerchantId !== 'Tümü') ? '#fff' : colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -503,7 +506,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <TouchableOpacity 
-              style={styles.card}
+              style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}
               onPress={() => handleTransactionPress(item)}
               activeOpacity={0.7}
             >
@@ -515,8 +518,8 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                 />
               </View>
               <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>{item.description || 'İsimsiz İşlem'}</Text>
-                <Text style={styles.cardSubtitle}>
+                <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{item.description || 'İsimsiz İşlem'}</Text>
+                <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
                   {item.category?.name || 'Kategorisiz'} • {item.merchant?.name ? `${item.merchant.name} • ` : ''}{formatDate(item.transactionDate || item.date)}
                 </Text>
               </View>
@@ -524,12 +527,12 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                 <Text style={[styles.cardAmount, { color: item.type === 'INCOME' ? '#10b981' : '#f43f5e' }]}>
                   {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
                 </Text>
-                <Ionicons name="chevron-forward" size={14} color="#cbd5e1" style={{ marginTop: 2 }} />
+                <Ionicons name="chevron-forward" size={14} color={isDark ? '#475569' : '#cbd5e1'} style={{ marginTop: 2 }} />
               </View>
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>Henüz bir işlem bulunmuyor.</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>Henüz bir işlem bulunmuyor.</Text>
           }
         />
       )}
@@ -559,7 +562,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
         <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
           <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={[styles.modalContent, { maxHeight: maxContentHeight }]}
+            style={[styles.modalContent, { maxHeight: maxContentHeight, backgroundColor: colors.bgCard }]}
           >
             {/* Dynamic Colored Header */}
             <View style={[styles.modalHeaderThemed, { backgroundColor: themeColor }]}>
@@ -598,22 +601,22 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
               {/* Row: Amount + Payment Option (Tek Çekim / Taksitli) */}
               <View style={{ marginBottom: 16 }}>
                 <View style={styles.amountHeaderRow}>
-                  <Text style={styles.fieldLabel}>Tutar (₺)</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tutar (₺)</Text>
                   {!editingTx && (
-                    <View style={styles.paymentTypeToggle}>
+                    <View style={[styles.paymentTypeToggle, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', borderColor: colors.border }]}>
                       <TouchableOpacity 
-                        style={[styles.paymentTypeBtn, !isInstallment && styles.paymentTypeBtnActive]}
+                        style={[styles.paymentTypeBtn, !isInstallment && [styles.paymentTypeBtnActive, { backgroundColor: isDark ? colors.bgCard : '#ffffff' }]]}
                         onPress={() => setIsInstallment(false)}
                       >
-                        <Text style={[styles.paymentTypeBtnText, !isInstallment && styles.paymentTypeBtnTextActive]}>
+                        <Text style={[styles.paymentTypeBtnText, !isInstallment && [styles.paymentTypeBtnTextActive, { color: colors.textPrimary }]]}>
                           Tek Çekim
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity 
-                        style={[styles.paymentTypeBtn, isInstallment && styles.paymentTypeBtnActive]}
+                        style={[styles.paymentTypeBtn, isInstallment && [styles.paymentTypeBtnActive, { backgroundColor: isDark ? colors.bgCard : '#ffffff' }]]}
                         onPress={() => setIsInstallment(true)}
                       >
-                        <Text style={[styles.paymentTypeBtnText, isInstallment && styles.paymentTypeBtnTextActive]}>
+                        <Text style={[styles.paymentTypeBtnText, isInstallment && [styles.paymentTypeBtnTextActive, { color: colors.textPrimary }]]}>
                           # Taksitli
                         </Text>
                       </TouchableOpacity>
@@ -623,10 +626,10 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
 
                 {/* Big Centered Amount Input */}
                 <TextInput 
-                  style={styles.amountInput} 
+                  style={[styles.amountInput, { backgroundColor: isDark ? colors.bgSecondary : '#ffffff', borderColor: colors.border, color: colors.textPrimary }]} 
                   keyboardType="numeric" 
                   placeholder="0.00" 
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.textMuted}
                   value={amount}
                   onChangeText={setAmount}
                   autoFocus={!editingTx}
@@ -636,7 +639,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
               {/* Harcama Yeri (Gider) / Gelir Kaynağı (Gelir) (* Zorunlu) - Sağa Sola Kaydırma */}
               <View style={{ marginBottom: 16 }}>
                 <View style={styles.labelRow}>
-                  <Text style={styles.fieldLabel}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
                     {isExpense ? 'Harcama Yeri' : 'Gelir Kaynağı'}
                   </Text>
                   <Text style={styles.requiredBadge}>* Zorunlu</Text>
@@ -666,6 +669,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                         key={m.id} 
                         style={[
                           styles.chipItem, 
+                          { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc', borderColor: colors.border },
                           isSelected && (isExpense ? styles.chipItemActiveExp : styles.chipItemActiveInc)
                         ]}
                         onPress={() => setMerchantId(isSelected ? '' : m.id)}
@@ -679,14 +683,14 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                             style={{ marginRight: 4 }} 
                           />
                         )}
-                        <Text style={[styles.chipItemText, isSelected && styles.chipItemTextActive]}>
+                        <Text style={[styles.chipItemText, { color: isSelected ? (isExpense ? '#ef4444' : '#10b981') : colors.textSecondary }, isSelected && styles.chipItemTextActive]}>
                           {m.name}
                         </Text>
                       </TouchableOpacity>
                     );
                   })}
                   {merchants.length === 0 && (
-                    <Text style={{ fontSize: 12, color: '#94a3b8', paddingVertical: 6 }}>
+                    <Text style={{ fontSize: 12, color: colors.textMuted, paddingVertical: 6 }}>
                       {isExpense ? 'Kayıtlı harcama yeri bulunmuyor.' : 'Kayıtlı gelir kaynağı bulunmuyor.'}
                     </Text>
                   )}
@@ -701,7 +705,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
               {/* Kategori (* Zorunlu) - Sağa Sola Kaydırma */}
               <View style={{ marginBottom: 16 }}>
                 <View style={styles.labelRow}>
-                  <Text style={styles.fieldLabel}>Kategori</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Kategori</Text>
                   <Text style={styles.requiredBadge}>* Zorunlu</Text>
                   {selectedCategory && (
                     <View style={[styles.activeSelectionBadge, { backgroundColor: isExpense ? '#fef2f2' : '#ecfdf5', borderColor: isExpense ? '#fca5a5' : '#6ee7b7' }]}>
@@ -729,6 +733,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                         key={c.id} 
                         style={[
                           styles.chipItem, 
+                          { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc', borderColor: colors.border },
                           isSelected && (isExpense ? styles.chipItemActiveExp : styles.chipItemActiveInc)
                         ]}
                         onPress={() => setCategoryId(isSelected ? '' : c.id)}
@@ -742,14 +747,14 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                             style={{ marginRight: 4 }} 
                           />
                         )}
-                        <Text style={[styles.chipItemText, isSelected && styles.chipItemTextActive]}>
+                        <Text style={[styles.chipItemText, { color: isSelected ? (isExpense ? '#ef4444' : '#10b981') : colors.textSecondary }, isSelected && styles.chipItemTextActive]}>
                           {c.name}
                         </Text>
                       </TouchableOpacity>
                     );
                   })}
                   {filteredCategories.length === 0 && (
-                    <Text style={{ fontSize: 12, color: '#94a3b8', paddingVertical: 6 }}>Kategori bulunmuyor.</Text>
+                    <Text style={{ fontSize: 12, color: colors.textMuted, paddingVertical: 6 }}>Kategori bulunmuyor.</Text>
                   )}
                 </ScrollView>
                 {hasSubmitted && !categoryId && (
@@ -762,25 +767,25 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
               {/* Row: Date & Description */}
               <View style={styles.rowTwoCols}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Tarih</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Tarih</Text>
                   <View style={styles.inputWithIcon}>
                     <TextInput 
-                      style={styles.textInputCompact} 
+                      style={[styles.textInputCompact, { backgroundColor: isDark ? colors.bgSecondary : '#ffffff', borderColor: colors.border, color: colors.textPrimary }]} 
                       placeholder="YYYY-AA-GG" 
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={colors.textMuted}
                       value={date}
                       onChangeText={setDate}
                     />
-                    <Ionicons name="calendar-outline" size={18} color="#64748b" style={styles.inputIconRight} />
+                    <Ionicons name="calendar-outline" size={18} color={colors.textMuted} style={styles.inputIconRight} />
                   </View>
                 </View>
 
                 <View style={{ flex: 1.4 }}>
-                  <Text style={styles.fieldLabel}>Açıklama</Text>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Açıklama</Text>
                   <TextInput 
-                    style={styles.textInputCompact} 
+                    style={[styles.textInputCompact, { backgroundColor: isDark ? colors.bgSecondary : '#ffffff', borderColor: colors.border, color: colors.textPrimary }]} 
                     placeholder="İşlem açıklaması..." 
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={colors.textMuted}
                     value={description}
                     onChangeText={setDescription}
                   />
@@ -789,28 +794,28 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
 
               {/* Installments Section (Shown when Taksitli is active, for both Gider and Gelir) */}
               {isInstallment && (
-                <View style={styles.installmentBox}>
-                  <Text style={styles.installmentBoxTitle}>
+                <View style={[styles.installmentBox, { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc', borderColor: colors.border }]}>
+                  <Text style={[styles.installmentBoxTitle, { color: colors.textMuted }]}>
                     {isExpense ? 'Taksitli Gider Bilgileri' : 'Taksitli Gelir Bilgileri'}
                   </Text>
                   <View style={styles.rowTwoCols}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.installmentSubLabel}>Taksit Sayısı</Text>
+                      <Text style={[styles.installmentSubLabel, { color: colors.textMuted }]}>Taksit Sayısı</Text>
                       <TextInput 
-                        style={styles.installmentInput} 
+                        style={[styles.installmentInput, { backgroundColor: isDark ? colors.bgCard : '#ffffff', borderColor: colors.border, color: colors.textPrimary }]} 
                         keyboardType="numeric" 
                         placeholder="Örn: 3" 
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.textMuted}
                         value={installmentCount}
                         onChangeText={setInstallmentCount}
                       />
                     </View>
                     <View style={{ flex: 1.2 }}>
-                      <Text style={styles.installmentSubLabel}>İlk Taksit Tarihi</Text>
+                      <Text style={[styles.installmentSubLabel, { color: colors.textMuted }]}>İlk Taksit Tarihi</Text>
                       <TextInput 
-                        style={styles.installmentInput} 
+                        style={[styles.installmentInput, { backgroundColor: isDark ? colors.bgCard : '#ffffff', borderColor: colors.border, color: colors.textPrimary }]} 
                         placeholder="YYYY-AA-GG" 
-                        placeholderTextColor="#94a3b8"
+                        placeholderTextColor={colors.textMuted}
                         value={firstInstallmentDate}
                         onChangeText={setFirstInstallmentDate}
                       />
@@ -875,19 +880,19 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
           activeOpacity={1} 
           onPress={() => setActionModalVisible(false)}
         >
-          <View style={styles.actionSheetContainer} onStartShouldSetResponder={() => true}>
+          <View style={[styles.actionSheetContainer, { backgroundColor: colors.bgCard }]} onStartShouldSetResponder={() => true}>
             {/* Drag Handle */}
-            <View style={styles.sheetHandle} />
+            <View style={[styles.sheetHandle, { backgroundColor: isDark ? '#475569' : '#cbd5e1' }]} />
 
             {/* Header */}
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetHeaderTitle}>İşlem Detayı</Text>
+              <Text style={[styles.sheetHeaderTitle, { color: colors.textPrimary }]}>İşlem Detayı</Text>
               <TouchableOpacity 
                 onPress={() => setActionModalVisible(false)}
                 style={styles.sheetCloseBtn}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={20} color="#64748b" />
+                <Ionicons name="close" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -897,7 +902,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                 <View style={styles.sheetHero}>
                   <View style={[
                     styles.sheetIconCircle, 
-                    { backgroundColor: selectedTx.type === 'INCOME' ? '#dcfce7' : '#ffe4e6' }
+                    { backgroundColor: selectedTx.type === 'INCOME' ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#dcfce7') : (isDark ? 'rgba(244, 63, 94, 0.2)' : '#ffe4e6') }
                   ]}>
                     <Ionicons 
                       name={selectedTx.type === 'INCOME' ? "arrow-down" : "arrow-up"} 
@@ -913,20 +918,20 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                     {selectedTx.type === 'INCOME' ? '+' : '-'}{formatCurrency(selectedTx.amount)}
                   </Text>
 
-                  <Text style={styles.sheetTitle}>
+                  <Text style={[styles.sheetTitle, { color: colors.textSecondary }]}>
                     {selectedTx.description || (selectedTx.type === 'INCOME' ? 'Gelir İşlemi' : 'Gider İşlemi')}
                   </Text>
 
                   <View style={[
                     styles.sheetTypeBadge,
                     { 
-                      backgroundColor: selectedTx.type === 'INCOME' ? '#ecfdf5' : '#fff1f2',
-                      borderColor: selectedTx.type === 'INCOME' ? '#a7f3d0' : '#fecdd3' 
+                      backgroundColor: selectedTx.type === 'INCOME' ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5') : (isDark ? 'rgba(244, 63, 94, 0.15)' : '#fff1f2'),
+                      borderColor: selectedTx.type === 'INCOME' ? '#10b981' : '#f43f5e' 
                     }
                   ]}>
                     <Text style={[
                       styles.sheetTypeBadgeText,
-                      { color: selectedTx.type === 'INCOME' ? '#059669' : '#e11d48' }
+                      { color: selectedTx.type === 'INCOME' ? '#10b981' : '#f43f5e' }
                     ]}>
                       {selectedTx.type === 'INCOME' ? 'Gelir Kaydı' : 'Gider Kaydı'}
                     </Text>
@@ -934,28 +939,28 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                 </View>
 
                 {/* Details List */}
-                <View style={styles.sheetDetailsCard}>
+                <View style={[styles.sheetDetailsCard, { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc', borderColor: colors.border }]}>
                   <View style={styles.sheetDetailRow}>
-                    <Text style={styles.sheetDetailLabel}>
+                    <Text style={[styles.sheetDetailLabel, { color: colors.textMuted }]}>
                       {selectedTx.type === 'EXPENSE' ? 'Harcama Yeri' : 'Gelir Kaynağı'}
                     </Text>
-                    <Text style={styles.sheetDetailValue}>
+                    <Text style={[styles.sheetDetailValue, { color: colors.textPrimary }]}>
                       {selectedTx.merchant?.name || selectedTx.source || '-'}
                     </Text>
                   </View>
-                  <View style={styles.sheetDivider} />
+                  <View style={[styles.sheetDivider, { backgroundColor: colors.divider }]} />
 
                   <View style={styles.sheetDetailRow}>
-                    <Text style={styles.sheetDetailLabel}>Kategori</Text>
-                    <Text style={styles.sheetDetailValue}>
+                    <Text style={[styles.sheetDetailLabel, { color: colors.textMuted }]}>Kategori</Text>
+                    <Text style={[styles.sheetDetailValue, { color: colors.textPrimary }]}>
                       {selectedTx.category?.name || 'Kategorisiz'}
                     </Text>
                   </View>
-                  <View style={styles.sheetDivider} />
+                  <View style={[styles.sheetDivider, { backgroundColor: colors.divider }]} />
 
                   <View style={styles.sheetDetailRow}>
-                    <Text style={styles.sheetDetailLabel}>Tarih</Text>
-                    <Text style={styles.sheetDetailValue}>
+                    <Text style={[styles.sheetDetailLabel, { color: colors.textMuted }]}>Tarih</Text>
+                    <Text style={[styles.sheetDetailValue, { color: colors.textPrimary }]}>
                       {new Date(selectedTx.transactionDate || selectedTx.date).toLocaleDateString('tr-TR', {
                         day: 'numeric',
                         month: 'long',
@@ -977,7 +982,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                   </TouchableOpacity>
 
                   <TouchableOpacity 
-                    style={styles.sheetDeleteBtn}
+                    style={[styles.sheetDeleteBtn, { backgroundColor: isDark ? 'rgba(244, 63, 94, 0.15)' : '#fff1f2', borderColor: isDark ? 'rgba(244, 63, 94, 0.3)' : '#fecdd3' }]}
                     onPress={() => handleDeleteTransaction(selectedTx)}
                     activeOpacity={0.8}
                   >
@@ -994,77 +999,117 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
       {/* Filter Modal */}
       <Modal visible={isFilterModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={styles.filterModalContent}>
+          <View style={[styles.filterModalContent, { backgroundColor: colors.bgCard }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filtreler</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Filtreler</Text>
               <TouchableOpacity onPress={() => setIsFilterModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.filterSectionLabel}>VADE</Text>
+              <Text style={[styles.filterSectionLabel, { color: colors.textMuted }]}>VADE</Text>
               <View style={styles.catGrid}>
                 {['Bugün', 'Bu Hafta', '15 Gün', 'Bu Ay', 'Geçen Ay', 'Geçmiş'].map(vade => (
                   <TouchableOpacity 
                     key={vade} 
-                    style={[styles.filterChip, filterVade === vade && styles.filterChipActive]}
+                    style={[
+                      styles.filterChip, 
+                      { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', borderColor: isDark ? colors.border : 'transparent' },
+                      filterVade === vade && styles.filterChipActive
+                    ]}
                     onPress={() => setFilterVade(vade === filterVade ? '' : vade)}
                   >
-                    <Text style={[styles.filterChipText, filterVade === vade && styles.filterChipTextActive]}>{vade}</Text>
+                    <Text style={[
+                      styles.filterChipText, 
+                      { color: filterVade === vade ? '#4f46e5' : colors.textSecondary },
+                      filterVade === vade && styles.filterChipTextActive
+                    ]}>{vade}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.filterSectionLabel}>KATEGORİ</Text>
+              <Text style={[styles.filterSectionLabel, { color: colors.textMuted }]}>KATEGORİ</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20, flexGrow: 0 }}>
                 <TouchableOpacity 
-                  style={[styles.filterChip, filterCategoryId === 'Tümü' && styles.filterChipActive, { marginRight: 8 }]}
+                  style={[
+                    styles.filterChip, 
+                    { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', borderColor: isDark ? colors.border : 'transparent', marginRight: 8 },
+                    filterCategoryId === 'Tümü' && styles.filterChipActive
+                  ]}
                   onPress={() => setFilterCategoryId('Tümü')}
                 >
-                  <Text style={[styles.filterChipText, filterCategoryId === 'Tümü' && styles.filterChipTextActive]}>Tümü</Text>
+                  <Text style={[
+                    styles.filterChipText, 
+                    { color: filterCategoryId === 'Tümü' ? '#4f46e5' : colors.textSecondary },
+                    filterCategoryId === 'Tümü' && styles.filterChipTextActive
+                  ]}>Tümü</Text>
                 </TouchableOpacity>
                 {categories.map(c => (
                   <TouchableOpacity 
                     key={c.id} 
-                    style={[styles.filterChip, filterCategoryId === c.id && styles.filterChipActive, { marginRight: 8 }]}
+                    style={[
+                      styles.filterChip, 
+                      { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', borderColor: isDark ? colors.border : 'transparent', marginRight: 8 },
+                      filterCategoryId === c.id && styles.filterChipActive
+                    ]}
                     onPress={() => setFilterCategoryId(c.id)}
                   >
-                    <Text style={[styles.filterChipText, filterCategoryId === c.id && styles.filterChipTextActive]}>{c.name}</Text>
+                    <Text style={[
+                      styles.filterChipText, 
+                      { color: filterCategoryId === c.id ? '#4f46e5' : colors.textSecondary },
+                      filterCategoryId === c.id && styles.filterChipTextActive
+                    ]}>{c.name}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
 
               {/* Harcama Yeri (Only Merchants, No Accounts!) */}
-              <Text style={styles.filterSectionLabel}>HARCAMA YERİ</Text>
+              <Text style={[styles.filterSectionLabel, { color: colors.textMuted }]}>HARCAMA YERİ</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 28, flexGrow: 0 }}>
                 <TouchableOpacity 
-                  style={[styles.filterChip, filterMerchantId === 'Tümü' && styles.filterChipActive, { marginRight: 8 }]}
+                  style={[
+                    styles.filterChip, 
+                    { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', borderColor: isDark ? colors.border : 'transparent', marginRight: 8 },
+                    filterMerchantId === 'Tümü' && styles.filterChipActive
+                  ]}
                   onPress={() => setFilterMerchantId('Tümü')}
                 >
-                  <Text style={[styles.filterChipText, filterMerchantId === 'Tümü' && styles.filterChipTextActive]}>Tümü</Text>
+                  <Text style={[
+                    styles.filterChipText, 
+                    { color: filterMerchantId === 'Tümü' ? '#4f46e5' : colors.textSecondary },
+                    filterMerchantId === 'Tümü' && styles.filterChipTextActive
+                  ]}>Tümü</Text>
                 </TouchableOpacity>
                 {merchants.map(m => (
                   <TouchableOpacity 
                     key={m.id} 
-                    style={[styles.filterChip, filterMerchantId === m.id && styles.filterChipActive, { marginRight: 8 }]}
+                    style={[
+                      styles.filterChip, 
+                      { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', borderColor: isDark ? colors.border : 'transparent', marginRight: 8 },
+                      filterMerchantId === m.id && styles.filterChipActive
+                    ]}
                     onPress={() => setFilterMerchantId(m.id)}
                   >
-                    <Text style={[styles.filterChipText, filterMerchantId === m.id && styles.filterChipTextActive]}>🏪 {m.name}</Text>
+                    <Text style={[
+                      styles.filterChipText, 
+                      { color: filterMerchantId === m.id ? '#4f46e5' : colors.textSecondary },
+                      filterMerchantId === m.id && styles.filterChipTextActive
+                    ]}>🏪 {m.name}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
 
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <TouchableOpacity 
-                  style={[styles.submitBtn, { flex: 1, backgroundColor: '#f1f5f9' }]} 
+                  style={[styles.submitBtn, { flex: 1, backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]} 
                   onPress={() => {
                     setFilterVade('');
                     setFilterCategoryId('Tümü');
                     setFilterMerchantId('Tümü');
                   }}
                 >
-                  <Text style={[styles.submitBtnText, { color: '#64748b' }]}>Temizle</Text>
+                  <Text style={[styles.submitBtnText, { color: colors.textMuted }]}>Temizle</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 

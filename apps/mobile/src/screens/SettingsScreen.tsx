@@ -5,11 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchApi, getAvatarUrl } from '../lib/api';
 import { AuthContext } from '../context/AuthContext';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { useTheme } from '../context/ThemeContext';
 
-type Tab = 'TENANT' | 'CATEGORIES' | 'MERCHANTS';
+type Tab = 'TENANT' | 'CATEGORIES' | 'MERCHANTS' | 'THEME';
 
 export const SettingsScreen = ({ navigation }: any) => {
   const { user, setUser } = useContext(AuthContext);
+  const { isDark, colors, themeMode, setThemeMode } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>('TENANT');
   const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
   
@@ -200,27 +202,50 @@ export const SettingsScreen = ({ navigation }: any) => {
   };
 
   const renderTabs = () => (
-    <View style={styles.tabsContainer}>
+    <View style={[styles.tabsContainer, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
       <TouchableOpacity 
-        style={[styles.tab, activeTab === 'TENANT' && styles.activeTab]} 
+        style={[
+          styles.tab, 
+          { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc' },
+          activeTab === 'TENANT' && [styles.activeTab, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff' }]
+        ]} 
         onPress={() => setActiveTab('TENANT')}
       >
-        <Ionicons name="business-outline" size={16} color={activeTab === 'TENANT' ? '#4f46e5' : '#64748b'} />
-        <Text style={[styles.tabText, activeTab === 'TENANT' && styles.activeTabText]}>Kurum</Text>
+        <Ionicons name="business-outline" size={15} color={activeTab === 'TENANT' ? colors.accent : colors.textMuted} />
+        <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'TENANT' && [styles.activeTabText, { color: colors.accent }]]}>Kurum</Text>
       </TouchableOpacity>
       <TouchableOpacity 
-        style={[styles.tab, activeTab === 'CATEGORIES' && styles.activeTab]} 
+        style={[
+          styles.tab, 
+          { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc' },
+          activeTab === 'CATEGORIES' && [styles.activeTab, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff' }]
+        ]} 
         onPress={() => setActiveTab('CATEGORIES')}
       >
-        <Ionicons name="pricetags-outline" size={16} color={activeTab === 'CATEGORIES' ? '#4f46e5' : '#64748b'} />
-        <Text style={[styles.tabText, activeTab === 'CATEGORIES' && styles.activeTabText]}>Kategoriler</Text>
+        <Ionicons name="pricetags-outline" size={15} color={activeTab === 'CATEGORIES' ? colors.accent : colors.textMuted} />
+        <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'CATEGORIES' && [styles.activeTabText, { color: colors.accent }]]}>Kategori</Text>
       </TouchableOpacity>
       <TouchableOpacity 
-        style={[styles.tab, activeTab === 'MERCHANTS' && styles.activeTab]} 
+        style={[
+          styles.tab, 
+          { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc' },
+          activeTab === 'MERCHANTS' && [styles.activeTab, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff' }]
+        ]} 
         onPress={() => setActiveTab('MERCHANTS')}
       >
-        <Ionicons name="storefront-outline" size={16} color={activeTab === 'MERCHANTS' ? '#4f46e5' : '#64748b'} />
-        <Text style={[styles.tabText, activeTab === 'MERCHANTS' && styles.activeTabText]}>Harcama Yeri</Text>
+        <Ionicons name="storefront-outline" size={15} color={activeTab === 'MERCHANTS' ? colors.accent : colors.textMuted} />
+        <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'MERCHANTS' && [styles.activeTabText, { color: colors.accent }]]}>Harcama</Text>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={[
+          styles.tab, 
+          { backgroundColor: isDark ? colors.bgSecondary : '#f8fafc' },
+          activeTab === 'THEME' && [styles.activeTab, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff' }]
+        ]} 
+        onPress={() => setActiveTab('THEME')}
+      >
+        <Ionicons name="color-palette-outline" size={15} color={activeTab === 'THEME' ? colors.accent : colors.textMuted} />
+        <Text style={[styles.tabText, { color: colors.textMuted }, activeTab === 'THEME' && [styles.activeTabText, { color: colors.accent }]]}>Görünüm</Text>
       </TouchableOpacity>
     </View>
   );
@@ -229,34 +254,35 @@ export const SettingsScreen = ({ navigation }: any) => {
     if (tenantLoading) return <ActivityIndicator size="large" color="#4f46e5" style={{ marginTop: 40 }} />;
     return (
       <View style={styles.tabContent}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Aktif Kurum Ayarları</Text>
-          <Text style={styles.label}>Kurum / Aile Adı</Text>
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Aktif Kurum Ayarları</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Kurum / Aile Adı</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: isDark ? colors.bgSecondary : '#ffffff', borderColor: colors.border, color: colors.textPrimary }]}
             value={tenantName}
             onChangeText={setTenantName}
             placeholder="Örn: Yılmaz Ailesi"
+            placeholderTextColor={colors.textMuted}
           />
           <TouchableOpacity style={styles.btnPrimary} onPress={handleUpdateTenant} disabled={isTenantSaving}>
             {isTenantSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnPrimaryText}>Kaydet</Text>}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Kurum Üyeleri</Text>
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Kurum Üyeleri</Text>
           {members.map((m, idx) => (
-            <View key={idx} style={styles.memberRow}>
-              <View style={[styles.avatarMini, { overflow: 'hidden' }]}>
+            <View key={idx} style={[styles.memberRow, { borderBottomColor: colors.border }]}>
+              <View style={[styles.avatarMini, { overflow: 'hidden', backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
                 {m.user?.avatarUrl && getAvatarUrl(m.user.avatarUrl) ? (
                   <Image source={{ uri: getAvatarUrl(m.user.avatarUrl)! }} style={{ width: '100%', height: '100%' }} />
                 ) : (
-                  <Text style={styles.avatarMiniText}>{(m.user?.firstName?.[0] || 'U').toUpperCase()}</Text>
+                  <Text style={[styles.avatarMiniText, { color: colors.textMuted }]}>{(m.user?.firstName?.[0] || 'U').toUpperCase()}</Text>
                 )}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.memberName}>{m.user?.firstName} {m.user?.lastName}</Text>
-                <Text style={styles.memberRole}>{m.role === 'OWNER' ? 'Yönetici' : 'Üye'}</Text>
+                <Text style={[styles.memberName, { color: colors.textPrimary }]}>{m.user?.firstName} {m.user?.lastName}</Text>
+                <Text style={[styles.memberRole, { color: colors.textMuted }]}>{m.role === 'OWNER' ? 'Yönetici' : 'Üye'}</Text>
               </View>
             </View>
           ))}
@@ -270,7 +296,7 @@ export const SettingsScreen = ({ navigation }: any) => {
     return (
       <View style={styles.tabContent}>
         <View style={styles.flexRowBetween}>
-          <Text style={styles.sectionTitle}>Tüm Kategoriler</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Tüm Kategoriler</Text>
           <TouchableOpacity style={styles.addBtn} onPress={() => handleOpenCatModal()}>
             <Ionicons name="add" size={16} color="#fff" />
             <Text style={styles.addBtnText}>Yeni</Text>
@@ -281,16 +307,16 @@ export const SettingsScreen = ({ navigation }: any) => {
           keyExtractor={(item) => item.id}
           scrollEnabled={false}
           renderItem={({ item }) => (
-            <View style={styles.listItem}>
+            <View style={[styles.listItem, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
               <View style={styles.listLeft}>
-                <View style={[styles.typeIcon, { backgroundColor: item.type === 'INCOME' ? '#ecfdf5' : '#fef2f2' }]}>
+                <View style={[styles.typeIcon, { backgroundColor: item.type === 'INCOME' ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5') : (isDark ? 'rgba(244, 63, 94, 0.2)' : '#fef2f2') }]}>
                   <Ionicons name={item.type === 'INCOME' ? 'arrow-up' : 'arrow-down'} size={16} color={item.type === 'INCOME' ? '#10b981' : '#f43f5e'} />
                 </View>
-                <Text style={styles.listName}>{item.name}</Text>
+                <Text style={[styles.listName, { color: colors.textPrimary }]}>{item.name}</Text>
               </View>
               <View style={styles.listRight}>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => handleOpenCatModal(item)}>
-                  <Ionicons name="pencil" size={18} color="#64748b" />
+                  <Ionicons name="pencil" size={18} color={colors.textMuted} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => handleDeleteCategory(item.id)}>
                   <Ionicons name="trash" size={18} color="#f43f5e" />
@@ -298,7 +324,7 @@ export const SettingsScreen = ({ navigation }: any) => {
               </View>
             </View>
           )}
-          ListEmptyComponent={<Text style={styles.emptyText}>Henüz kategori yok.</Text>}
+          ListEmptyComponent={<Text style={[styles.emptyText, { color: colors.textMuted }]}>Henüz kategori yok.</Text>}
         />
       </View>
     );
@@ -309,7 +335,7 @@ export const SettingsScreen = ({ navigation }: any) => {
     return (
       <View style={styles.tabContent}>
         <View style={styles.flexRowBetween}>
-          <Text style={styles.sectionTitle}>Harcama Yerleri</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Harcama Yerleri</Text>
           <TouchableOpacity style={styles.addBtn} onPress={() => handleOpenMerchModal()}>
             <Ionicons name="add" size={16} color="#fff" />
             <Text style={styles.addBtnText}>Yeni</Text>
@@ -320,16 +346,16 @@ export const SettingsScreen = ({ navigation }: any) => {
           keyExtractor={(item) => item.id}
           scrollEnabled={false}
           renderItem={({ item }) => (
-            <View style={styles.listItem}>
+            <View style={[styles.listItem, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
               <View style={styles.listLeft}>
-                <View style={[styles.typeIcon, { backgroundColor: '#eff6ff' }]}>
+                <View style={[styles.typeIcon, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff' }]}>
                   <Ionicons name="storefront" size={16} color="#3b82f6" />
                 </View>
-                <Text style={styles.listName}>{item.name}</Text>
+                <Text style={[styles.listName, { color: colors.textPrimary }]}>{item.name}</Text>
               </View>
               <View style={styles.listRight}>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => handleOpenMerchModal(item)}>
-                  <Ionicons name="pencil" size={18} color="#64748b" />
+                  <Ionicons name="pencil" size={18} color={colors.textMuted} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => handleDeleteMerchant(item.id)}>
                   <Ionicons name="trash" size={18} color="#f43f5e" />
@@ -337,28 +363,118 @@ export const SettingsScreen = ({ navigation }: any) => {
               </View>
             </View>
           )}
-          ListEmptyComponent={<Text style={styles.emptyText}>Henüz kayıtlı harcama yeri yok.</Text>}
+          ListEmptyComponent={<Text style={[styles.emptyText, { color: colors.textMuted }]}>Henüz kayıtlı harcama yeri yok.</Text>}
         />
       </View>
     );
   };
 
+  const renderThemeTab = () => {
+    const options: Array<{ mode: 'light' | 'dark' | 'system'; title: string; desc: string; icon: any }> = [
+      { mode: 'light', title: 'Açık Tema', desc: 'Aydınlık ve ferah klasik görünüm', icon: 'sunny-outline' },
+      { mode: 'dark', title: 'Koyu Tema', desc: 'Göz yormayan modern karanlık renk paleti', icon: 'moon-outline' },
+      { mode: 'system', title: 'Sistem Teması', desc: 'Cihazınızın sistem ayarlarıyla otomatik eşleşir', icon: 'phone-portrait-outline' },
+    ];
+
+    return (
+      <View style={styles.tabContent}>
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Görünüm ve Tema</Text>
+          <Text style={[styles.label, { color: colors.textMuted, marginBottom: 16 }]}>
+            Uygulamanın renk temasını belirleyin. Seçiminiz anında uygulanır ve cihazınıza kaydedilir.
+          </Text>
+
+          <View style={{ gap: 12 }}>
+            {options.map((opt) => {
+              const isSelected = themeMode === opt.mode;
+              return (
+                <TouchableOpacity
+                  key={opt.mode}
+                  style={[
+                    styles.themeOptionCard,
+                    {
+                      backgroundColor: isSelected 
+                        ? (isDark ? 'rgba(99, 102, 241, 0.15)' : '#eef2ff') 
+                        : (isDark ? colors.bgSecondary : '#f8fafc'),
+                      borderColor: isSelected ? colors.accent : (isDark ? colors.border : '#e2e8f0'),
+                    }
+                  ]}
+                  onPress={() => setThemeMode(opt.mode)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.themeOptionIconCircle,
+                    { 
+                      backgroundColor: isSelected ? colors.accent : (isDark ? '#334155' : '#e2e8f0'),
+                    }
+                  ]}>
+                    <Ionicons 
+                      name={opt.icon} 
+                      size={20} 
+                      color={isSelected ? '#ffffff' : (isDark ? '#cbd5e1' : '#64748b')} 
+                    />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={[
+                      styles.themeOptionTitle,
+                      { color: isSelected ? colors.accent : colors.textPrimary }
+                    ]}>
+                      {opt.title}
+                    </Text>
+                    <Text style={[styles.themeOptionDesc, { color: colors.textMuted }]}>
+                      {opt.desc}
+                    </Text>
+                  </View>
+
+                  <View style={[
+                    styles.radioCircle,
+                    { borderColor: isSelected ? colors.accent : (isDark ? '#475569' : '#cbd5e1') },
+                    isSelected && { backgroundColor: colors.accent }
+                  ]}>
+                    {isSelected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Current Active Indicator Card */}
+        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#e0e7ff', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={isDark ? "moon" : "sunny"} size={22} color={colors.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary }}>
+              Aktif Durum: {isDark ? '🌙 Koyu Mod' : '☀️ Açık Mod'}
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+              {themeMode === 'system' ? 'Cihaz sistem teması devrede' : 'Kişisel tercih aktif'}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bgPrimary }]}>
+      <View style={[styles.header, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ayarlar</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Ayarlar</Text>
         <View style={styles.backButton} />
       </View>
 
       {renderTabs()}
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={[styles.scrollView, { backgroundColor: colors.bgPrimary }]} contentContainerStyle={styles.scrollContent}>
         {activeTab === 'TENANT' && renderTenantTab()}
         {activeTab === 'CATEGORIES' && renderCategoriesTab()}
         {activeTab === 'MERCHANTS' && renderMerchantsTab()}
+        {activeTab === 'THEME' && renderThemeTab()}
       </ScrollView>
 
       {/* Category Modal */}
@@ -366,12 +482,12 @@ export const SettingsScreen = ({ navigation }: any) => {
         <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
           <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-            style={[styles.modalContent, { maxHeight: maxContentHeight }]}
+            style={[styles.modalContent, { maxHeight: maxContentHeight, backgroundColor: colors.bgCard }]}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingCatId ? 'Kategori Düzenle' : 'Yeni Kategori'}</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{editingCatId ? 'Kategori Düzenle' : 'Yeni Kategori'}</Text>
               <TouchableOpacity onPress={() => setIsCatModalOpen(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             <ScrollView 
@@ -381,20 +497,25 @@ export const SettingsScreen = ({ navigation }: any) => {
               contentContainerStyle={{ paddingBottom: 20 }}
             >
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Kategori Adı</Text>
-                <TextInput style={styles.input} value={catFormData.name} onChangeText={t => setCatFormData({...catFormData, name: t})} />
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Kategori Adı</Text>
+                <TextInput 
+                  style={[styles.input, { backgroundColor: isDark ? colors.bgSecondary : '#ffffff', borderColor: colors.border, color: colors.textPrimary }]} 
+                  value={catFormData.name} 
+                  onChangeText={t => setCatFormData({...catFormData, name: t})} 
+                  placeholderTextColor={colors.textMuted}
+                />
               </View>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Türü</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Türü</Text>
                 <View style={styles.rowInputs}>
                   <TouchableOpacity 
-                    style={[styles.typeBtn, catFormData.type === 'EXPENSE' && styles.typeBtnActiveExp]}
+                    style={[styles.typeBtn, { borderColor: colors.border, backgroundColor: isDark ? colors.bgSecondary : '#fff' }, catFormData.type === 'EXPENSE' && styles.typeBtnActiveExp]}
                     onPress={() => setCatFormData({...catFormData, type: 'EXPENSE'})}
                   >
                     <Text style={[styles.typeBtnText, catFormData.type === 'EXPENSE' && { color: '#f43f5e' }]}>Gider</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
-                    style={[styles.typeBtn, catFormData.type === 'INCOME' && styles.typeBtnActiveInc]}
+                    style={[styles.typeBtn, { borderColor: colors.border, backgroundColor: isDark ? colors.bgSecondary : '#fff' }, catFormData.type === 'INCOME' && styles.typeBtnActiveInc]}
                     onPress={() => setCatFormData({...catFormData, type: 'INCOME'})}
                   >
                     <Text style={[styles.typeBtnText, catFormData.type === 'INCOME' && { color: '#10b981' }]}>Gelir</Text>
@@ -414,12 +535,12 @@ export const SettingsScreen = ({ navigation }: any) => {
         <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
           <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-            style={[styles.modalContent, { maxHeight: maxContentHeight }]}
+            style={[styles.modalContent, { maxHeight: maxContentHeight, backgroundColor: colors.bgCard }]}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingMerchId ? 'Kurum Düzenle' : 'Yeni Harcama Yeri'}</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{editingMerchId ? 'Kurum Düzenle' : 'Yeni Harcama Yeri'}</Text>
               <TouchableOpacity onPress={() => setIsMerchModalOpen(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             <ScrollView 
@@ -429,8 +550,14 @@ export const SettingsScreen = ({ navigation }: any) => {
               contentContainerStyle={{ paddingBottom: 20 }}
             >
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Harcama Yeri Adı</Text>
-                <TextInput style={styles.input} value={merchFormData.name} onChangeText={t => setMerchFormData({ name: t })} placeholder="Örn: Migros" />
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Harcama Yeri Adı</Text>
+                <TextInput 
+                  style={[styles.input, { backgroundColor: isDark ? colors.bgSecondary : '#ffffff', borderColor: colors.border, color: colors.textPrimary }]} 
+                  value={merchFormData.name} 
+                  onChangeText={t => setMerchFormData({ name: t })} 
+                  placeholder="Örn: Migros" 
+                  placeholderTextColor={colors.textMuted}
+                />
               </View>
               <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: '#3b82f6' }]} onPress={handleSaveMerchant}>
                 <Text style={styles.btnPrimaryText}>Kaydet</Text>
@@ -500,4 +627,36 @@ const styles = StyleSheet.create({
   typeBtnActiveExp: { borderColor: '#f43f5e', backgroundColor: '#fff1f2' },
   typeBtnActiveInc: { borderColor: '#10b981', backgroundColor: '#ecfdf5' },
   typeBtnText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
+  themeOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    gap: 14,
+  },
+  themeOptionIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeOptionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  themeOptionDesc: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  radioCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

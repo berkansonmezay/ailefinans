@@ -5,6 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { useTheme } from '../context/ThemeContext';
 
 interface StockActionModalProps {
   visible: boolean;
@@ -15,6 +16,9 @@ interface StockActionModalProps {
 }
 
 export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }: StockActionModalProps) => {
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [symbol, setSymbol] = useState('');
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
@@ -163,7 +167,7 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
           <View style={styles.header}>
             <Text style={styles.title}>{getTitle()}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#64748b" />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -185,6 +189,7 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
                   setShowDropdown(true);
                 }}
                 placeholder="Hisse Ara... (örn: THYAO)"
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="characters"
                 editable={action === 'buy' && !stock} // Only editable for new buys without selected stock
               />
@@ -219,6 +224,7 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
                   value={quantity}
                   onChangeText={setQuantity}
                   placeholder="100"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="numeric"
                 />
               </View>
@@ -229,6 +235,7 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
                   value={price}
                   onChangeText={setPrice}
                   placeholder="150.50"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="numeric"
                 />
               </View>
@@ -253,18 +260,23 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
     padding: 24,
     paddingBottom: 40,
+    maxHeight: '90%',
   },
   header: {
     flexDirection: 'row',
@@ -275,7 +287,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   closeBtn: {
     padding: 4,
@@ -289,17 +301,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     fontSize: 15,
-    color: '#1e293b',
+    color: colors.textPrimary,
   },
   row: {
     flexDirection: 'row',
@@ -324,13 +336,13 @@ const styles = StyleSheet.create({
     top: 76,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: isDark ? 0.4 : 0.1,
     shadowRadius: 12,
     elevation: 5,
     maxHeight: 200,
@@ -342,16 +354,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   dropdownSymbol: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   dropdownName: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textSecondary,
     flex: 1,
     textAlign: 'right',
     marginLeft: 8,
@@ -359,7 +371,7 @@ const styles = StyleSheet.create({
   dropdownEmptyText: {
     padding: 16,
     textAlign: 'center',
-    color: '#94a3b8',
+    color: colors.textMuted,
     fontSize: 13,
   },
 });

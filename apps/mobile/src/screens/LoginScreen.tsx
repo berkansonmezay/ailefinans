@@ -1,11 +1,15 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image, ScrollView, Keyboard, TouchableWithoutFeedback, StatusBar, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 
 export const LoginScreen = () => {
   const { login } = useContext(AuthContext);
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -97,7 +101,7 @@ export const LoginScreen = () => {
                   <TextInput
                     style={styles.input}
                     placeholder="Kullanıcı adı veya e-posta"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={colors.textMuted}
                     value={identifier}
                     onChangeText={setIdentifier}
                     keyboardType="email-address"
@@ -111,7 +115,7 @@ export const LoginScreen = () => {
                   <TextInput
                     style={styles.input}
                     placeholder="••••••••"
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={colors.textMuted}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={true}
@@ -174,7 +178,7 @@ export const LoginScreen = () => {
               <TextInput
                 style={styles.modalInput}
                 placeholder="ornek@email.com"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.textMuted}
                 value={forgotEmail}
                 onChangeText={setForgotEmail}
                 autoCapitalize="none"
@@ -211,10 +215,10 @@ export const LoginScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.bgPrimary,
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
   },
   keyboardView: { 
@@ -226,14 +230,16 @@ const styles = StyleSheet.create({
     padding: 16
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 32,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
+    shadowOpacity: isDark ? 0.3 : 0.1,
     shadowRadius: 15,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   logoContainer: { 
     alignItems: 'center', 
@@ -243,7 +249,7 @@ const styles = StyleSheet.create({
     width: 64, 
     height: 64, 
     borderRadius: 16, 
-    backgroundColor: '#ffffff',
+    backgroundColor: isDark ? colors.bgSecondary : '#ffffff',
     overflow: 'hidden',
     justifyContent: 'center', 
     alignItems: 'center',
@@ -252,6 +258,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 5,
     elevation: 2,
+    borderWidth: isDark ? 1 : 0,
+    borderColor: colors.border,
   },
   logoImage: {
     width: 52,
@@ -260,13 +268,13 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 24, 
     fontWeight: '700', 
-    color: '#111827', 
+    color: colors.textPrimary, 
     textAlign: 'center',
     marginBottom: 8 
   },
   subtitle: { 
     fontSize: 15, 
-    color: '#6b7280', 
+    color: colors.textSecondary, 
     textAlign: 'center',
     marginBottom: 32 
   },
@@ -279,19 +287,19 @@ const styles = StyleSheet.create({
   label: { 
     fontSize: 14, 
     fontWeight: '500', 
-    color: '#374151', 
+    color: colors.textSecondary, 
     marginBottom: 6 
   },
   input: { 
     width: '100%',
     borderWidth: 1, 
-    borderColor: '#e5e7eb', 
+    borderColor: colors.border, 
     borderRadius: 8, 
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgSecondary,
     paddingVertical: 12, 
     paddingHorizontal: 14, 
     fontSize: 15, 
-    color: '#111827' 
+    color: colors.textPrimary 
   },
   forgotPasswordContainer: {
     alignItems: 'flex-end',
@@ -300,11 +308,11 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: '#6366f1', // Indigo color for links
-    fontWeight: '400',
+    color: '#6366f1',
+    fontWeight: '500',
   },
   loginButton: { 
-    backgroundColor: '#6366f1', // Indigo button color
+    backgroundColor: '#6366f1',
     paddingVertical: 12, 
     borderRadius: 8, 
     alignItems: 'center', 
@@ -313,7 +321,7 @@ const styles = StyleSheet.create({
   loginButtonText: { 
     color: '#ffffff', 
     fontSize: 15, 
-    fontWeight: '500' 
+    fontWeight: '600' 
   },
   registerContainer: {
     flexDirection: 'row',
@@ -322,11 +330,11 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 14,
-    color: '#6b7280'
+    color: colors.textSecondary
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20
@@ -334,25 +342,27 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 380,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
     padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: isDark ? 0.3 : 0.15,
     shadowRadius: 12,
-    elevation: 8
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center'
   },
   modalSubtitle: {
     fontSize: 13,
-    color: '#6b7280',
+    color: colors.textSecondary,
     lineHeight: 18,
     textAlign: 'center',
     marginBottom: 20
@@ -360,13 +370,13 @@ const styles = StyleSheet.create({
   modalInput: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     borderRadius: 10,
-    backgroundColor: '#f9fafb',
+    backgroundColor: colors.bgSecondary,
     paddingVertical: 12,
     paddingHorizontal: 14,
     fontSize: 14,
-    color: '#111827',
+    color: colors.textPrimary,
     marginBottom: 20
   },
   modalActions: {
@@ -378,13 +388,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff'
+    backgroundColor: colors.bgSecondary
   },
   modalCancelText: {
-    color: '#4b5563',
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '500'
   },
@@ -394,7 +404,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#059669' // Emerald
+    backgroundColor: '#059669'
   },
   modalSubmitText: {
     color: '#ffffff',

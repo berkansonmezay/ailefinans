@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { StockActionModal } from '../components/StockActionModal';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 export const StocksScreen = ({ navigation }: any) => {
+  const { isDark, colors } = useTheme();
   const [data, setData] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -99,22 +101,22 @@ export const StocksScreen = ({ navigation }: any) => {
       <View style={styles.headerContainer}>
         {/* KPI Cards */}
         <View style={styles.kpiGrid}>
-          <View style={[styles.kpiCard, { borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>PORTFÖY DEĞERİ</Text>
-            <Text style={styles.kpiValue}>{formatCurrency(summary?.totalValue || 0)}</Text>
+          <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#10b981', borderLeftWidth: 4 }]}>
+            <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>PORTFÖY DEĞERİ</Text>
+            <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{formatCurrency(summary?.totalValue || 0)}</Text>
           </View>
-          <View style={[styles.kpiCard, { borderLeftColor: '#6366f1', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>TOPLAM MALİYET</Text>
-            <Text style={styles.kpiValue}>{formatCurrency(summary?.totalCost || 0)}</Text>
+          <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: '#6366f1', borderLeftWidth: 4 }]}>
+            <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>TOPLAM MALİYET</Text>
+            <Text style={[styles.kpiValue, { color: colors.textPrimary }]}>{formatCurrency(summary?.totalCost || 0)}</Text>
           </View>
-          <View style={[styles.kpiCard, { borderLeftColor: isOverallPositive ? '#10b981' : '#f43f5e', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>KÂR / ZARAR</Text>
+          <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: isOverallPositive ? '#10b981' : '#f43f5e', borderLeftWidth: 4 }]}>
+            <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>KÂR / ZARAR</Text>
             <Text style={[styles.kpiValue, { color: isOverallPositive ? '#10b981' : '#f43f5e' }]}>
               {formatCurrency(summary?.totalPnL || 0)}
             </Text>
           </View>
-          <View style={[styles.kpiCard, { borderLeftColor: isOverallPositive ? '#10b981' : '#f43f5e', borderLeftWidth: 4 }]}>
-            <Text style={styles.kpiLabel}>GETİRİ ORANI</Text>
+          <View style={[styles.kpiCard, { backgroundColor: colors.bgCard, borderLeftColor: isOverallPositive ? '#10b981' : '#f43f5e', borderLeftWidth: 4 }]}>
+            <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>GETİRİ ORANI</Text>
             <Text style={[styles.kpiValue, { color: isOverallPositive ? '#10b981' : '#f43f5e' }]}>
               %{summary?.totalPnLPercentage?.toFixed(2) || '0.00'}
             </Text>
@@ -130,7 +132,7 @@ export const StocksScreen = ({ navigation }: any) => {
             <Text style={[styles.bannerTitle, { color: isOverallPositive ? '#10b981' : '#f43f5e' }]}>
               {isOverallPositive ? 'Hisse Portföyü Kârda' : 'Hisse Portföyü Zararda'}
             </Text>
-            <Text style={styles.bannerText}>
+            <Text style={[styles.bannerText, { color: colors.textSecondary }]}>
               {isOverallPositive 
                 ? `Portföyünüz toplamda %${summary?.totalPnLPercentage?.toFixed(2) || '0'} kâr durumundadır.`
                 : `Portföyünüz maliyetinin altında (%${Math.abs(summary?.totalPnLPercentage || 0).toFixed(2)} zarar).`}
@@ -139,35 +141,35 @@ export const StocksScreen = ({ navigation }: any) => {
         </View>
 
         {/* Search & Filters */}
-        <View style={styles.filterSection}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={20} color="#9ca3af" />
+        <View style={[styles.filterSection, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
+          <View style={[styles.searchBox, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
+            <Ionicons name="search" size={20} color={colors.textMuted} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.textPrimary }]}
               placeholder="Hisse ara (örn. THYAO)"
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
           <View style={styles.filterButtons}>
             <TouchableOpacity 
-              style={[styles.filterBtn, statusFilter === 'ALL' && styles.filterBtnActive]}
+              style={[styles.filterBtn, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }, statusFilter === 'ALL' && styles.filterBtnActive]}
               onPress={() => setStatusFilter('ALL')}
             >
-              <Text style={[styles.filterBtnText, statusFilter === 'ALL' && styles.filterBtnTextActive]}>Tümü</Text>
+              <Text style={[styles.filterBtnText, { color: colors.textMuted }, statusFilter === 'ALL' && styles.filterBtnTextActive]}>Tümü</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.filterBtn, statusFilter === 'PROFIT' && styles.filterBtnActive]}
+              style={[styles.filterBtn, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }, statusFilter === 'PROFIT' && styles.filterBtnActive]}
               onPress={() => setStatusFilter('PROFIT')}
             >
-              <Text style={[styles.filterBtnText, statusFilter === 'PROFIT' && styles.filterBtnTextActive]}>Kârda</Text>
+              <Text style={[styles.filterBtnText, { color: colors.textMuted }, statusFilter === 'PROFIT' && styles.filterBtnTextActive]}>Kârda</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.filterBtn, statusFilter === 'LOSS' && styles.filterBtnActive]}
+              style={[styles.filterBtn, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }, statusFilter === 'LOSS' && styles.filterBtnActive]}
               onPress={() => setStatusFilter('LOSS')}
             >
-              <Text style={[styles.filterBtnText, statusFilter === 'LOSS' && styles.filterBtnTextActive]}>Zararda</Text>
+              <Text style={[styles.filterBtnText, { color: colors.textMuted }, statusFilter === 'LOSS' && styles.filterBtnTextActive]}>Zararda</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -181,12 +183,12 @@ export const StocksScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
+      <View style={[styles.header, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Hisse Senetleri</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Hisse Senetleri</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -210,21 +212,21 @@ export const StocksScreen = ({ navigation }: any) => {
             const profitColor = isProfit ? '#10b981' : '#f43f5e';
             
             return (
-              <View style={styles.card}>
+              <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 }]}>
                 <View style={styles.cardHeaderRow}>
                   <View style={styles.cardTitleSection}>
-                    <View style={styles.cardIcon}>
+                    <View style={[styles.cardIcon, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
                       <Ionicons name="trending-up" size={24} color="#f59e0b" />
                     </View>
                     <View>
-                      <Text style={styles.cardTitle}>{itemTitle}</Text>
-                      <Text style={styles.cardSubtitle}>
+                      <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{itemTitle}</Text>
+                      <Text style={[styles.cardSubtitle, { color: colors.textMuted }]}>
                         {itemQuantity} Adet{item.currentPrice ? ` • ₺${Number(item.currentPrice).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
                       </Text>
                     </View>
                   </View>
                   <View style={styles.cardValueSection}>
-                    <Text style={styles.cardAmount}>{formatCurrency(itemAmount)}</Text>
+                    <Text style={[styles.cardAmount, { color: colors.textPrimary }]}>{formatCurrency(itemAmount)}</Text>
                     <View style={styles.pnlRow}>
                       <Ionicons name={isProfit ? "caret-up" : "caret-down"} size={12} color={profitColor} />
                       <Text style={[styles.pnlText, { color: profitColor }]}>
@@ -235,7 +237,7 @@ export const StocksScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* Actions Row */}
-                <View style={styles.cardActionsRow}>
+                <View style={[styles.cardActionsRow, { borderTopColor: colors.border }]}>
                   <TouchableOpacity style={styles.actionBtn} onPress={() => openModal('buy', item)}>
                     <Ionicons name="add-circle-outline" size={18} color="#3b82f6" />
                     <Text style={[styles.actionBtnText, { color: '#3b82f6' }]}>Al</Text>
@@ -257,7 +259,7 @@ export const StocksScreen = ({ navigation }: any) => {
             );
           }}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>Henüz hisse senedi bulunmuyor.</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>Henüz hisse senedi bulunmuyor.</Text>
           }
         />
       )}

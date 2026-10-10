@@ -5,6 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { useTheme } from '../context/ThemeContext';
 
 interface SavingsActionModalProps {
   visible: boolean;
@@ -16,6 +17,9 @@ interface SavingsActionModalProps {
 }
 
 export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset, currentRate }: SavingsActionModalProps) => {
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [loading, setLoading] = useState(false);
   const [marketRates, setMarketRates] = useState<any[]>([]);
 
@@ -181,7 +185,7 @@ export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset,
           <View style={styles.header}>
             <Text style={styles.title}>{getTitle()}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#64748b" />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -204,7 +208,7 @@ export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset,
                     <Text style={styles.dropdownSelectorText}>
                       {types.find(t => t.value === type)?.label || 'Seçiniz'}
                     </Text>
-                    <Ionicons name="chevron-down" size={20} color="#64748b" />
+                    <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                   {showTypeDropdown && (
                     <View style={styles.dropdownList}>
@@ -238,7 +242,7 @@ export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset,
                     onPress={() => setShowCodeDropdown(!showCodeDropdown)}
                   >
                     <Text style={styles.dropdownSelectorText}>{code || 'Seçiniz'}</Text>
-                    <Ionicons name="chevron-down" size={20} color="#64748b" />
+                    <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                   {showCodeDropdown && (
                     <ScrollView style={styles.dropdownList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -266,6 +270,7 @@ export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset,
                   <TextInput
                     style={styles.input}
                     placeholder="Fon Kodu"
+                    placeholderTextColor={colors.textMuted}
                     value={code}
                     onChangeText={setCode}
                     autoCapitalize="characters"
@@ -282,7 +287,7 @@ export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset,
                     onPress={() => setShowBankDropdown(!showBankDropdown)}
                   >
                     <Text style={styles.dropdownSelectorText}>{bank || 'Serbest Piyasa'}</Text>
-                    <Ionicons name="chevron-down" size={20} color="#64748b" />
+                    <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                   {showBankDropdown && (
                     <ScrollView style={styles.dropdownList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -309,6 +314,7 @@ export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset,
                   <TextInput
                     style={styles.input}
                     placeholder="0.00"
+                    placeholderTextColor={colors.textMuted}
                     value={quantity}
                     onChangeText={setQuantity}
                     keyboardType="decimal-pad"
@@ -319,6 +325,7 @@ export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset,
                   <TextInput
                     style={styles.input}
                     placeholder="0.00"
+                    placeholderTextColor={colors.textMuted}
                     value={price}
                     onChangeText={setPrice}
                     keyboardType="decimal-pad"
@@ -346,16 +353,20 @@ export const SavingsActionModal = ({ visible, onClose, onSuccess, action, asset,
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
     padding: 24,
     maxHeight: '90%',
   },
@@ -368,7 +379,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   closeBtn: {
     padding: 4,
@@ -387,43 +398,43 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
-    color: '#0f172a',
-    backgroundColor: '#f8fafc',
+    color: colors.textPrimary,
+    backgroundColor: colors.bgSecondary,
   },
   dropdownSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
   },
   dropdownSelectorText: {
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   dropdownList: {
     position: 'absolute',
     top: 76,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: isDark ? 0.4 : 0.1,
     shadowRadius: 12,
     elevation: 5,
     maxHeight: 200,
@@ -431,11 +442,11 @@ const styles = StyleSheet.create({
   dropdownItem: {
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   dropdownItemText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.textPrimary,
     fontWeight: '500',
   },
   submitBtn: {

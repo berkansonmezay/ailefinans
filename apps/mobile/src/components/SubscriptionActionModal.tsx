@@ -5,6 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
+import { useTheme } from '../context/ThemeContext';
 
 interface SubscriptionActionModalProps {
   visible: boolean;
@@ -14,6 +15,9 @@ interface SubscriptionActionModalProps {
 }
 
 export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscription }: SubscriptionActionModalProps) => {
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState('');
@@ -124,7 +128,7 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
           <View style={styles.header}>
             <Text style={styles.title}>{subscription ? 'Aboneliği Düzenle' : 'Yeni Abonelik'}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#64748b" />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -137,10 +141,11 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
             <View style={styles.form}>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Abonelik Adı <Text style={{color: 'red'}}>*</Text></Text>
+                <Text style={styles.label}>Abonelik Adı <Text style={{color: '#f43f5e'}}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   placeholder="örn: Netflix, Spor Salonu"
+                  placeholderTextColor={colors.textMuted}
                   value={name}
                   onChangeText={setName}
                 />
@@ -148,7 +153,7 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
 
               <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1, zIndex: 200 }]}>
-                  <Text style={styles.label}>Sıklık <Text style={{color: 'red'}}>*</Text></Text>
+                  <Text style={styles.label}>Sıklık <Text style={{color: '#f43f5e'}}>*</Text></Text>
                   <TouchableOpacity 
                     style={styles.dropdownSelector}
                     onPress={() => setShowFrequencyDropdown(!showFrequencyDropdown)}
@@ -156,7 +161,7 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
                     <Text style={styles.dropdownSelectorText}>
                       {frequencies.find(f => f.value === frequency)?.label || 'Seçiniz'}
                     </Text>
-                    <Ionicons name="chevron-down" size={20} color="#64748b" />
+                    <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                   {showFrequencyDropdown && (
                     <View style={styles.dropdownList}>
@@ -177,10 +182,11 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
                 </View>
 
                 <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>Tutar (₺) <Text style={{color: 'red'}}>*</Text></Text>
+                  <Text style={styles.label}>Tutar (₺) <Text style={{color: '#f43f5e'}}>*</Text></Text>
                   <TextInput
                     style={styles.input}
                     placeholder="0.00"
+                    placeholderTextColor={colors.textMuted}
                     value={amount}
                     onChangeText={setAmount}
                     keyboardType="decimal-pad"
@@ -189,10 +195,11 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>İlk / Sonraki Ödeme Tarihi <Text style={{color: 'red'}}>*</Text></Text>
+                <Text style={styles.label}>İlk / Sonraki Ödeme Tarihi <Text style={{color: '#f43f5e'}}>*</Text></Text>
                 <TextInput
                   style={styles.input}
                   placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textMuted}
                   value={nextPaymentDate}
                   onChangeText={setNextPaymentDate}
                 />
@@ -208,7 +215,7 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
                     <Text style={styles.dropdownSelectorText}>
                       {statuses.find(s => s.value === status)?.label || 'Seçiniz'}
                     </Text>
-                    <Ionicons name="chevron-down" size={20} color="#64748b" />
+                    <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                   {showStatusDropdown && (
                     <View style={styles.dropdownList}>
@@ -237,7 +244,7 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
                 <Switch 
                   value={reminderEnabled} 
                   onValueChange={setReminderEnabled}
-                  trackColor={{ false: "#e2e8f0", true: "#10b981" }}
+                  trackColor={{ false: isDark ? colors.border : '#e2e8f0', true: '#10b981' }}
                   thumbColor="#fff"
                 />
               </View>
@@ -248,6 +255,7 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
                   <TextInput
                     style={styles.input}
                     placeholder="3"
+                    placeholderTextColor={colors.textMuted}
                     value={remindBeforeDays}
                     onChangeText={setRemindBeforeDays}
                     keyboardType="number-pad"
@@ -275,16 +283,20 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
     padding: 24,
     maxHeight: '90%',
   },
@@ -297,7 +309,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   closeBtn: {
     padding: 4,
@@ -322,48 +334,48 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   subLabel: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.textMuted,
     marginTop: 2,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
-    color: '#0f172a',
-    backgroundColor: '#f8fafc',
+    color: colors.textPrimary,
+    backgroundColor: colors.bgSecondary,
   },
   dropdownSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
   },
   dropdownSelectorText: {
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   dropdownList: {
     position: 'absolute',
     top: 76,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: isDark ? 0.4 : 0.1,
     shadowRadius: 12,
     elevation: 5,
     maxHeight: 200,
@@ -372,11 +384,11 @@ const styles = StyleSheet.create({
   dropdownItem: {
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.border,
   },
   dropdownItemText: {
     fontSize: 14,
-    color: '#0f172a',
+    color: colors.textPrimary,
     fontWeight: '500',
   },
   submitBtn: {

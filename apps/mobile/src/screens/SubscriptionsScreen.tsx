@@ -4,8 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
 import { SubscriptionActionModal } from '../components/SubscriptionActionModal';
+import { useTheme } from '../context/ThemeContext';
 
 export const SubscriptionsScreen = ({ navigation }: any) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -109,15 +112,15 @@ export const SubscriptionsScreen = ({ navigation }: any) => {
   }, [data, searchQuery, statusFilter]);
 
   const getDaysLeft = (dateString: string) => {
-    if (!dateString) return { text: 'Belirsiz', color: '#94a3b8', bg: '#f1f5f9' };
+    if (!dateString) return { text: 'Belirsiz', color: '#94a3b8', bg: isDark ? colors.bgSecondary : '#f1f5f9' };
     const paymentDate = new Date(dateString).getTime();
     const now = new Date().getTime();
     const diffDays = Math.ceil((paymentDate - now) / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return { text: 'Gecikti', color: '#f43f5e', bg: '#fff1f2' };
-    if (diffDays === 0) return { text: 'Bugün', color: '#f59e0b', bg: '#fffbeb' };
-    if (diffDays <= 7) return { text: `${diffDays} gün kaldı`, color: '#f59e0b', bg: '#fffbeb' };
-    return { text: `${diffDays} gün kaldı`, color: '#10b981', bg: '#ecfdf5' };
+    if (diffDays < 0) return { text: 'Gecikti', color: '#f43f5e', bg: isDark ? 'rgba(244, 63, 94, 0.2)' : '#fff1f2' };
+    if (diffDays === 0) return { text: 'Bugün', color: '#f59e0b', bg: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fffbeb' };
+    if (diffDays <= 7) return { text: `${diffDays} gün kaldı`, color: '#f59e0b', bg: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fffbeb' };
+    return { text: `${diffDays} gün kaldı`, color: '#10b981', bg: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5' };
   };
 
   const renderHeader = () => (
@@ -138,12 +141,15 @@ export const SubscriptionsScreen = ({ navigation }: any) => {
       </View>
 
       {/* Banner */}
-      <View style={[styles.banner, { backgroundColor: upcomingThisWeek.length > 0 ? '#fffbeb' : '#ecfdf5', borderColor: upcomingThisWeek.length > 0 ? '#fde68a' : '#a7f3d0' }]}>
+      <View style={[styles.banner, { 
+        backgroundColor: upcomingThisWeek.length > 0 ? (isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb') : (isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5'), 
+        borderColor: upcomingThisWeek.length > 0 ? (isDark ? 'rgba(245, 158, 11, 0.3)' : '#fde68a') : (isDark ? 'rgba(16, 185, 129, 0.3)' : '#a7f3d0') 
+      }]}>
         <View style={styles.bannerIcon}>
           <Ionicons name={upcomingThisWeek.length > 0 ? "time" : "checkmark-circle"} size={24} color={upcomingThisWeek.length > 0 ? "#f59e0b" : "#10b981"} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.bannerTitle, { color: upcomingThisWeek.length > 0 ? "#d97706" : "#059669" }]}>
+          <Text style={[styles.bannerTitle, { color: upcomingThisWeek.length > 0 ? "#f59e0b" : "#10b981" }]}>
             {upcomingThisWeek.length > 0 ? 'Yaklaşan Ödemeler Var' : 'Abonelik Durumu Düzenli'}
           </Text>
           <Text style={styles.bannerText}>
@@ -156,13 +162,13 @@ export const SubscriptionsScreen = ({ navigation }: any) => {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Abonelik adı ara..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
       </View>
@@ -193,7 +199,7 @@ export const SubscriptionsScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Abonelikler</Text>
         <View style={{ width: 24 }} />
@@ -260,10 +266,10 @@ export const SubscriptionsScreen = ({ navigation }: any) => {
                       </Text>
                     </View>
                     <View style={styles.actionRow}>
-                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#eff6ff' }]} onPress={() => handleEdit(item)}>
+                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff' }]} onPress={() => handleEdit(item)}>
                         <Text style={[styles.actionBtnText, { color: '#3b82f6' }]}>Düzenle</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#fff1f2' }]} onPress={() => handleDelete(item)}>
+                      <TouchableOpacity style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(244, 63, 94, 0.2)' : '#fff1f2' }]} onPress={() => handleDelete(item)}>
                         <Ionicons name="trash" size={16} color="#f43f5e" />
                       </TouchableOpacity>
                     </View>
@@ -300,9 +306,12 @@ export const SubscriptionsScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.bgPrimary,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,18 +319,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: isDark ? 0.3 : 0.03,
     shadowRadius: 8,
     elevation: 2,
     zIndex: 10,
+    borderBottomWidth: isDark ? 1 : 0,
+    borderBottomColor: colors.border,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 100 },
   
@@ -333,27 +344,29 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.3 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   kpiLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textMuted,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   kpiValue: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#0f172a'
+    color: colors.textPrimary,
   },
 
   banner: {
@@ -374,31 +387,53 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.textSecondary,
   },
 
   searchContainer: { flexDirection: 'row', marginBottom: 12 },
-  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, height: 48, borderWidth: 1, borderColor: '#e2e8f0' },
+  searchBox: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: colors.bgCard, 
+    borderRadius: 12, 
+    paddingHorizontal: 12, 
+    height: 48, 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, height: '100%', fontSize: 15, color: '#0f172a' },
+  searchInput: { flex: 1, height: '100%', fontSize: 15, color: colors.textPrimary },
 
   filterTabs: { flexDirection: 'row', marginBottom: 16 },
-  filterTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
-  filterTabActive: { backgroundColor: '#f3e8ff', borderColor: '#d8b4fe' },
-  filterTabText: { fontSize: 13, color: '#64748b', fontWeight: '600' },
+  filterTab: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 8, 
+    borderRadius: 20, 
+    backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9', 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
+  filterTabActive: { 
+    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3e8ff', 
+    borderColor: '#d8b4fe' 
+  },
+  filterTabText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
   filterTabTextActive: { color: '#8b5cf6' },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 16,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.3 : 0.05,
     shadowRadius: 8,
     elevation: 2,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cardHeader: {
     padding: 16,
@@ -418,23 +453,23 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#f3e8ff',
+    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#f3e8ff',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e9d5ff'
+    borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#e9d5ff',
   },
   cardIconText: {
     fontSize: 14,
     fontWeight: '800',
     color: '#8b5cf6',
   },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: '#1e293b', marginBottom: 2 },
-  cardSubtitle: { fontSize: 13, color: '#64748b' },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  cardSubtitle: { fontSize: 13, color: colors.textSecondary },
   cardHeaderRight: {
     alignItems: 'flex-end',
   },
-  cardAmount: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginBottom: 4 },
+  cardAmount: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -449,15 +484,15 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 0,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 6,
   },
-  detailLabel: { fontSize: 13, color: '#64748b' },
-  detailValue: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
+  detailLabel: { fontSize: 13, color: colors.textSecondary },
+  detailValue: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
   
   actionRow: {
     flexDirection: 'row',
@@ -478,7 +513,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  emptyText: { textAlign: 'center', color: '#94a3b8', marginTop: 32, paddingHorizontal: 20 },
+  emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: 32, paddingHorizontal: 20 },
   fab: {
     position: 'absolute',
     bottom: 24,

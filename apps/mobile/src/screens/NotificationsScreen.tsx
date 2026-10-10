@@ -14,8 +14,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotifications, NotificationItem } from '../context/NotificationContext';
+import { useTheme } from '../context/ThemeContext';
 
 export const NotificationsScreen = ({ navigation }: any) => {
+  const { isDark, colors } = useTheme();
   const {
     notifications,
     unreadCount,
@@ -132,21 +134,19 @@ export const NotificationsScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
-      
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bgPrimary }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bgCard, borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={24} color="#0f172a" />
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Bildirimler</Text>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Bildirimler</Text>
           {unreadCount > 0 && (
             <View style={styles.unreadPill}>
               <Text style={styles.unreadPillText}>{unreadCount} Yeni</Text>
@@ -156,15 +156,15 @@ export const NotificationsScreen = ({ navigation }: any) => {
 
         <View style={styles.headerRightActions}>
           <TouchableOpacity
-            style={styles.soundTestBtn}
+            style={[styles.soundTestBtn, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}
             onPress={playTestAlert}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="volume-medium-outline" size={20} color="#6366f1" />
+            <Ionicons name="volume-medium-outline" size={20} color={colors.accent} />
           </TouchableOpacity>
           {unreadCount > 0 && (
             <TouchableOpacity
-              style={styles.markAllBtn}
+              style={[styles.markAllBtn, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5' }]}
               onPress={handleMarkAllRead}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
@@ -176,36 +176,36 @@ export const NotificationsScreen = ({ navigation }: any) => {
 
       {/* Filter Tabs & Test Sound Bar */}
       <View style={styles.filterSection}>
-        <View style={styles.tabContainer}>
+        <View style={[styles.tabContainer, { backgroundColor: isDark ? colors.bgSecondary : '#e2e8f0' }]}>
           <TouchableOpacity
-            style={[styles.tabBtn, filter === 'ALL' && styles.tabBtnActive]}
+            style={[styles.tabBtn, filter === 'ALL' && [styles.tabBtnActive, { backgroundColor: colors.bgCard }]]}
             onPress={() => setFilter('ALL')}
           >
-            <Text style={[styles.tabText, filter === 'ALL' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, { color: colors.textMuted }, filter === 'ALL' && [styles.tabTextActive, { color: colors.textPrimary }]]}>
               Tümü ({notifications.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tabBtn, filter === 'UNREAD' && styles.tabBtnActive]}
+            style={[styles.tabBtn, filter === 'UNREAD' && [styles.tabBtnActive, { backgroundColor: colors.bgCard }]]}
             onPress={() => setFilter('UNREAD')}
           >
-            <Text style={[styles.tabText, filter === 'UNREAD' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, { color: colors.textMuted }, filter === 'UNREAD' && [styles.tabTextActive, { color: colors.textPrimary }]]}>
               Okunmamış ({unreadCount})
             </Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.testAlertBadge} onPress={playTestAlert}>
-          <Ionicons name="play" size={12} color="#6366f1" />
-          <Text style={styles.testAlertText}>Ses Deneme</Text>
+        <TouchableOpacity style={[styles.testAlertBadge, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#ede9fe' }]} onPress={playTestAlert}>
+          <Ionicons name="play" size={12} color={colors.accent} />
+          <Text style={[styles.testAlertText, { color: colors.accent }]}>Ses Deneme</Text>
         </TouchableOpacity>
       </View>
 
       {/* Notification List */}
       {loading && notifications.length === 0 ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#6366f1" />
-          <Text style={styles.loadingText}>Bildirimler yükleniyor...</Text>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={[styles.loadingText, { color: colors.textMuted }]}>Bildirimler yükleniyor...</Text>
         </View>
       ) : (
         <FlatList
@@ -214,7 +214,7 @@ export const NotificationsScreen = ({ navigation }: any) => {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#6366f1']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.accent]} />
           }
           renderItem={({ item }) => {
             const config = getNotificationConfig(item.type);
@@ -222,7 +222,8 @@ export const NotificationsScreen = ({ navigation }: any) => {
               <TouchableOpacity
                 style={[
                   styles.card,
-                  !item.isRead && styles.cardUnread,
+                  { backgroundColor: colors.bgCard, borderColor: colors.border, borderWidth: isDark ? 1 : 0 },
+                  !item.isRead && [styles.cardUnread, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.12)' : '#faf5ff' }],
                 ]}
                 activeOpacity={0.7}
                 onPress={() => handlePressItem(item)}
@@ -240,21 +241,21 @@ export const NotificationsScreen = ({ navigation }: any) => {
                         {config.badgeText}
                       </Text>
                     </View>
-                    <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
+                    <Text style={[styles.timeText, { color: colors.textMuted }]}>{formatRelativeTime(item.createdAt)}</Text>
                   </View>
 
-                  <Text style={[styles.cardTitle, !item.isRead && styles.cardTitleUnread]}>
+                  <Text style={[styles.cardTitle, { color: colors.textPrimary }, !item.isRead && styles.cardTitleUnread]}>
                     {item.title}
                   </Text>
                   
-                  <Text style={styles.cardMessage} numberOfLines={3}>
+                  <Text style={[styles.cardMessage, { color: colors.textSecondary }]} numberOfLines={3}>
                     {item.message}
                   </Text>
 
                   {config.targetScreen && (
                     <View style={styles.actionRow}>
-                      <Text style={styles.actionText}>Detayı Görüntüle</Text>
-                      <Ionicons name="chevron-forward" size={14} color="#6366f1" />
+                      <Text style={[styles.actionText, { color: colors.accent }]}>Detayı Görüntüle</Text>
+                      <Ionicons name="chevron-forward" size={14} color={colors.accent} />
                     </View>
                   )}
                 </View>
@@ -263,13 +264,13 @@ export const NotificationsScreen = ({ navigation }: any) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconCircle}>
-                <Ionicons name="notifications-off-outline" size={48} color="#94a3b8" />
+              <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}>
+                <Ionicons name="notifications-off-outline" size={48} color={colors.textMuted} />
               </View>
-              <Text style={styles.emptyTitle}>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
                 {filter === 'UNREAD' ? 'Okunmamış bildiriminiz yok' : 'Henüz bildiriminiz bulunmuyor'}
               </Text>
-              <Text style={styles.emptySub}>
+              <Text style={[styles.emptySub, { color: colors.textMuted }]}>
                 Taksit, abonelik, garanti veya ödeme hatırlatıcılarınız geldiğinde burada sesli uyarı ile birlikte listelenecektir.
               </Text>
               <TouchableOpacity style={styles.emptyTestBtn} onPress={playTestAlert}>

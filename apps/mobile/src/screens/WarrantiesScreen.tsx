@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 import { WarrantyActionModal } from '../components/WarrantyActionModal';
 import { InvoiceActionModal } from '../components/InvoiceActionModal';
 import { WarrantySubActionModal, WarrantySubActionType } from '../components/WarrantySubActionModal';
@@ -10,6 +11,9 @@ import { WarrantySubActionModal, WarrantySubActionType } from '../components/War
 type WarrantyTab = 'WARRANTIES' | 'INVOICES' | 'SERVICES' | 'CLAIMS';
 
 export const WarrantiesScreen = ({ navigation }: any) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [activeTab, setActiveTab] = useState<WarrantyTab>('WARRANTIES');
   const [warranties, setWarranties] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -151,55 +155,55 @@ export const WarrantiesScreen = ({ navigation }: any) => {
   };
 
   const getWarrantyStatus = (endDateStr: string) => {
-    if (!endDateStr) return { text: 'Belirsiz', color: '#64748b', bg: '#f1f5f9' };
+    if (!endDateStr) return { text: 'Belirsiz', color: '#64748b', bg: isDark ? 'rgba(100, 116, 139, 0.2)' : '#f1f5f9' };
     const end = new Date(endDateStr).getTime();
     const now = new Date().getTime();
     const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return { text: 'Süresi Doldu', color: '#ef4444', bg: '#fef2f2' };
+      return { text: 'Süresi Doldu', color: '#ef4444', bg: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fef2f2' };
     }
     if (diffDays <= 30) {
-      return { text: `${diffDays} Gün Kaldı`, color: '#f59e0b', bg: '#fffbeb' };
+      return { text: `${diffDays} Gün Kaldı`, color: '#f59e0b', bg: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fffbeb' };
     }
     const months = Math.floor(diffDays / 30);
-    return { text: `${months} Ay Kaldı`, color: '#10b981', bg: '#ecfdf5' };
+    return { text: `${months} Ay Kaldı`, color: '#10b981', bg: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5' };
   };
 
   const getInvoiceStatus = (inv: any) => {
     if (inv.status === 'PAID') {
-      return { text: 'Ödendi', color: '#059669', bg: '#ecfdf5', icon: 'checkmark-circle' };
+      return { text: 'Ödendi', color: '#059669', bg: isDark ? 'rgba(5, 150, 105, 0.2)' : '#ecfdf5', icon: 'checkmark-circle' };
     }
     if (inv.status === 'CANCELLED') {
-      return { text: 'İptal', color: '#64748b', bg: '#f1f5f9', icon: 'close-circle' };
+      return { text: 'İptal', color: '#64748b', bg: isDark ? 'rgba(100, 116, 139, 0.2)' : '#f1f5f9', icon: 'close-circle' };
     }
 
     if (inv.dueDate) {
       const due = new Date(inv.dueDate).getTime();
       const now = new Date().getTime();
       if (due < now) {
-        return { text: 'Gecikmiş', color: '#dc2626', bg: '#fef2f2', icon: 'alert-circle' };
+        return { text: 'Gecikmiş', color: '#dc2626', bg: isDark ? 'rgba(220, 38, 38, 0.2)' : '#fef2f2', icon: 'alert-circle' };
       }
     }
-    return { text: 'Bekliyor', color: '#d97706', bg: '#fffbeb', icon: 'time' };
+    return { text: 'Bekliyor', color: '#d97706', bg: isDark ? 'rgba(217, 119, 6, 0.2)' : '#fffbeb', icon: 'time' };
   };
 
   const getClaimStatus = (status: string) => {
     switch (status) {
       case 'SUBMITTED':
-        return { text: 'Gönderildi', color: '#0284c7', bg: '#f0f9ff' };
+        return { text: 'Gönderildi', color: '#0284c7', bg: isDark ? 'rgba(2, 132, 199, 0.2)' : '#f0f9ff' };
       case 'IN_REVIEW':
-        return { text: 'İnceleniyor', color: '#d97706', bg: '#fffbeb' };
+        return { text: 'İnceleniyor', color: '#d97706', bg: isDark ? 'rgba(217, 119, 6, 0.2)' : '#fffbeb' };
       case 'APPROVED':
-        return { text: 'Onaylandı', color: '#059669', bg: '#ecfdf5' };
+        return { text: 'Onaylandı', color: '#059669', bg: isDark ? 'rgba(5, 150, 105, 0.2)' : '#ecfdf5' };
       case 'IN_REPAIR':
-        return { text: 'Onarımda', color: '#7c3aed', bg: '#f5f3ff' };
+        return { text: 'Onarımda', color: '#7c3aed', bg: isDark ? 'rgba(124, 58, 237, 0.2)' : '#f5f3ff' };
       case 'RESOLVED':
-        return { text: 'Çözüldü', color: '#059669', bg: '#ecfdf5' };
+        return { text: 'Çözüldü', color: '#059669', bg: isDark ? 'rgba(5, 150, 105, 0.2)' : '#ecfdf5' };
       case 'REJECTED':
-        return { text: 'Reddedildi', color: '#dc2626', bg: '#fef2f2' };
+        return { text: 'Reddedildi', color: '#dc2626', bg: isDark ? 'rgba(220, 38, 38, 0.2)' : '#fef2f2' };
       default:
-        return { text: status || 'Açık', color: '#64748b', bg: '#f1f5f9' };
+        return { text: status || 'Açık', color: '#64748b', bg: isDark ? 'rgba(100, 116, 139, 0.2)' : '#f1f5f9' };
     }
   };
 
@@ -360,7 +364,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#94a3b8" style={styles.searchIcon} />
+          <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder={
@@ -370,11 +374,11 @@ export const WarrantiesScreen = ({ navigation }: any) => {
             }
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.textMuted}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4 }}>
-              <Ionicons name="close-circle" size={16} color="#94a3b8" />
+              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -415,7 +419,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
       {/* Screen Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Garantiler & Faturalar</Text>
@@ -449,7 +453,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
               return (
                 <View style={styles.card}>
                   <View style={styles.cardHeaderTop}>
-                    <View style={[styles.iconBox, { backgroundColor: isPaid ? '#ecfdf5' : '#fffbeb' }]}>
+                    <View style={[styles.iconBox, { backgroundColor: isPaid ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5') : (isDark ? 'rgba(245, 158, 11, 0.2)' : '#fffbeb') }]}>
                       <Ionicons name="receipt-outline" size={22} color={isPaid ? '#10b981' : '#f59e0b'} />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -484,7 +488,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
                     )}
 
                     <TouchableOpacity 
-                      style={[styles.actionBtn, { backgroundColor: '#eff6ff' }]} 
+                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff' }]} 
                       onPress={() => handleEditInvoice(item)}
                     >
                       <Ionicons name="pencil" size={13} color="#3b82f6" />
@@ -492,7 +496,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity 
-                      style={[styles.actionBtn, { backgroundColor: '#fff1f2' }]} 
+                      style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fff1f2' }]} 
                       onPress={() => handleDeleteInvoice(item)}
                     >
                       <Ionicons name="trash" size={13} color="#ef4444" />
@@ -507,7 +511,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
               return (
                 <View style={styles.card}>
                   <View style={styles.cardHeaderTop}>
-                    <View style={[styles.iconBox, { backgroundColor: '#fffbeb' }]}>
+                    <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(217, 119, 6, 0.2)' : '#fffbeb' }]}>
                       <Ionicons name="build-outline" size={20} color="#d97706" />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -517,15 +521,15 @@ export const WarrantiesScreen = ({ navigation }: any) => {
                       </Text>
                     </View>
                     {item.cost != null && item.cost > 0 && (
-                      <Text style={[styles.cardAmount, { color: '#0f172a' }]}>{formatCurrency(item.cost)}</Text>
+                      <Text style={[styles.cardAmount, { color: colors.textPrimary }]}>{formatCurrency(item.cost)}</Text>
                     )}
                   </View>
                   <View style={{ paddingHorizontal: 14, paddingBottom: 12 }}>
                     <Text style={styles.serviceDesc}>{item.description}</Text>
                     {item.partsReplaced ? (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                        <Ionicons name="hardware-chip-outline" size={13} color="#64748b" />
-                        <Text style={{ fontSize: 11, color: '#64748b' }}>Değişen: {item.partsReplaced}</Text>
+                        <Ionicons name="hardware-chip-outline" size={13} color={colors.textSecondary} />
+                        <Text style={{ fontSize: 11, color: colors.textSecondary }}>Değişen: {item.partsReplaced}</Text>
                       </View>
                     ) : null}
                   </View>
@@ -540,7 +544,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
               return (
                 <View style={styles.card}>
                   <View style={styles.cardHeaderTop}>
-                    <View style={[styles.iconBox, { backgroundColor: '#fdf2f8' }]}>
+                    <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(236, 72, 153, 0.2)' : '#fdf2f8' }]}>
                       <Ionicons name="clipboard-outline" size={20} color="#ec4899" />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -559,7 +563,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
                   <View style={{ paddingHorizontal: 14, paddingBottom: 12 }}>
                     <Text style={styles.serviceDesc}>{item.issueDescription}</Text>
                     {item.notes ? (
-                      <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, fontStyle: 'italic' }}>
+                      <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4, fontStyle: 'italic' }}>
                         Not: {item.notes}
                       </Text>
                     ) : null}
@@ -576,7 +580,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
               <View style={styles.card}>
                 <TouchableOpacity style={styles.cardHeader} onPress={() => toggleExpand(item.id)}>
                   <View style={styles.cardHeaderTop}>
-                    <View style={[styles.iconBox, { backgroundColor: '#ecfeff' }]}>
+                    <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(6, 182, 212, 0.2)' : '#ecfeff' }]}>
                       <Ionicons name="shield-checkmark" size={22} color="#06b6d4" />
                     </View>
 
@@ -631,7 +635,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
                     {/* Quick Warranty Sub-Actions (Extend, Service, Claim, Edit, Delete) */}
                     <View style={styles.warrantyQuickActions}>
                       <TouchableOpacity 
-                        style={[styles.subActionBtn, { backgroundColor: '#eff6ff' }]}
+                        style={[styles.subActionBtn, { backgroundColor: isDark ? 'rgba(37, 99, 235, 0.2)' : '#eff6ff' }]}
                         onPress={() => openSubAction('EXTEND', item)}
                       >
                         <Ionicons name="shield-outline" size={13} color="#2563eb" />
@@ -639,7 +643,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
                       </TouchableOpacity>
 
                       <TouchableOpacity 
-                        style={[styles.subActionBtn, { backgroundColor: '#fffbeb' }]}
+                        style={[styles.subActionBtn, { backgroundColor: isDark ? 'rgba(217, 119, 6, 0.2)' : '#fffbeb' }]}
                         onPress={() => openSubAction('SERVICE', item)}
                       >
                         <Ionicons name="build-outline" size={13} color="#d97706" />
@@ -647,7 +651,7 @@ export const WarrantiesScreen = ({ navigation }: any) => {
                       </TouchableOpacity>
 
                       <TouchableOpacity 
-                        style={[styles.subActionBtn, { backgroundColor: '#fdf2f8' }]}
+                        style={[styles.subActionBtn, { backgroundColor: isDark ? 'rgba(219, 39, 119, 0.2)' : '#fdf2f8' }]}
                         onPress={() => openSubAction('CLAIM', item)}
                       >
                         <Ionicons name="clipboard-outline" size={13} color="#db2777" />
@@ -655,15 +659,15 @@ export const WarrantiesScreen = ({ navigation }: any) => {
                       </TouchableOpacity>
 
                       <TouchableOpacity 
-                        style={[styles.subActionBtn, { backgroundColor: '#f1f5f9' }]}
+                        style={[styles.subActionBtn, { backgroundColor: isDark ? colors.bgSecondary : '#f1f5f9' }]}
                         onPress={() => handleEditWarranty(item)}
                       >
-                        <Ionicons name="pencil" size={13} color="#475569" />
-                        <Text style={[styles.subActionText, { color: '#475569' }]}>Düzenle</Text>
+                        <Ionicons name="pencil" size={13} color={colors.textSecondary} />
+                        <Text style={[styles.subActionText, { color: colors.textSecondary }]}>Düzenle</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity 
-                        style={[styles.subActionBtn, { backgroundColor: '#fff1f2' }]}
+                        style={[styles.subActionBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fff1f2' }]}
                         onPress={() => handleDeleteWarranty(item)}
                       >
                         <Ionicons name="trash" size={13} color="#ef4444" />
@@ -737,9 +741,12 @@ export const WarrantiesScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.bgPrimary,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -747,28 +754,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: isDark ? 0.2 : 0.03,
     shadowRadius: 8,
     elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     zIndex: 10,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary },
   scannerHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#eef2ff',
+    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e0e7ff',
+    borderColor: isDark ? '#6366f1' : '#e0e7ff',
   },
   scannerHeaderBtnText: {
     fontSize: 11,
@@ -786,20 +795,22 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     padding: 12,
     borderRadius: 14,
     marginBottom: 10,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   kpiLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textSecondary,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
@@ -810,16 +821,16 @@ const styles = StyleSheet.create({
   },
   kpiSubText: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
 
   tabsWrapper: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderRadius: 14,
     padding: 4,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   tabItem: {
     flexDirection: 'row',
@@ -831,12 +842,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabItemActive: {
-    backgroundColor: '#ecfeff',
+    backgroundColor: isDark ? 'rgba(6, 182, 212, 0.2)' : '#ecfeff',
   },
   tabItemText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   tabItemTextActive: {
     color: '#06b6d4',
@@ -848,32 +859,44 @@ const styles = StyleSheet.create({
     flex: 1, 
     flexDirection: 'row', 
     alignItems: 'center', 
-    backgroundColor: '#fff', 
+    backgroundColor: colors.bgCard, 
     borderRadius: 12, 
     paddingHorizontal: 12, 
     height: 42, 
     borderWidth: 1, 
-    borderColor: '#e2e8f0' 
+    borderColor: colors.border 
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, height: '100%', fontSize: 13, color: '#0f172a' },
+  searchInput: { flex: 1, height: '100%', fontSize: 13, color: colors.textPrimary },
 
   categoryPills: { marginBottom: 16 },
-  pill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
-  pillActive: { backgroundColor: '#cffafe', borderColor: '#a5f3fc' },
-  pillText: { fontSize: 11, color: '#64748b', fontWeight: '600' },
+  pill: { 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 16, 
+    backgroundColor: colors.bgCard, 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
+  pillActive: { 
+    backgroundColor: isDark ? 'rgba(6, 182, 212, 0.25)' : '#cffafe', 
+    borderColor: '#06b6d4' 
+  },
+  pillText: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
   pillTextActive: { color: '#0891b2', fontWeight: '700' },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: 16,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   cardHeader: {
@@ -895,27 +918,27 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e293b',
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   cardSubtitle: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   cardDueDate: {
     fontSize: 11,
-    color: '#64748b',
+    color: colors.textMuted,
     marginTop: 2,
   },
   cardPrice: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   cardAmount: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   badge: {
     paddingHorizontal: 7,
@@ -931,15 +954,15 @@ const styles = StyleSheet.create({
     padding: 14,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 3,
   },
-  detailLabel: { fontSize: 12, color: '#64748b' },
-  detailValue: { fontSize: 12, fontWeight: '600', color: '#1e293b' },
+  detailLabel: { fontSize: 12, color: colors.textMuted },
+  detailValue: { fontSize: 12, fontWeight: '600', color: colors.textPrimary },
 
   warrantyQuickActions: {
     flexDirection: 'row',
@@ -948,7 +971,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     gap: 6,
     borderTopWidth: 1,
-    borderTopColor: '#f8fafc',
+    borderTopColor: colors.border,
     paddingTop: 8,
   },
   subActionBtn: {
@@ -972,19 +995,19 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f8fafc',
+    borderTopColor: colors.border,
     paddingTop: 8,
   },
   payBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#ecfdf5',
+    backgroundColor: isDark ? 'rgba(5, 150, 105, 0.2)' : '#ecfdf5',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#a7f3d0',
+    borderColor: '#059669',
   },
   payBtnText: {
     fontSize: 11,
@@ -1006,11 +1029,11 @@ const styles = StyleSheet.create({
 
   serviceDesc: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.textSecondary,
     lineHeight: 16,
   },
 
-  emptyText: { textAlign: 'center', color: '#94a3b8', marginTop: 32, paddingHorizontal: 20 },
+  emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: 32, paddingHorizontal: 20 },
   fab: {
     position: 'absolute',
     bottom: 24,

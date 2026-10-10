@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 interface Transaction {
@@ -49,6 +50,9 @@ export const AccountTransactionModal = ({
   accountType,
   initialTab = 'history',
 }: AccountTransactionModalProps) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [activeTab, setActiveTab] = useState<'history' | 'add'>(initialTab);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -245,7 +249,7 @@ export const AccountTransactionModal = ({
     return (
       <View style={styles.txCard}>
         <View style={styles.txLeft}>
-          <View style={[styles.txIconContainer, { backgroundColor: isIncome ? '#dcfce7' : '#fee2e2' }]}>
+          <View style={[styles.txIconContainer, { backgroundColor: isIncome ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#dcfce7') : (isDark ? 'rgba(244, 63, 94, 0.2)' : '#fee2e2') }]}>
             <Ionicons
               name={isIncome ? 'arrow-down-circle' : 'arrow-up-circle'}
               size={22}
@@ -274,7 +278,7 @@ export const AccountTransactionModal = ({
             style={styles.txDeleteBtn}
             onPress={() => handleDeleteTransaction(item)}
           >
-            <Ionicons name="trash-outline" size={16} color="#94a3b8" />
+            <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
       </View>
@@ -307,12 +311,12 @@ export const AccountTransactionModal = ({
               </View>
               {accountBalance != null && (
                 <Text style={styles.subtitle}>
-                  Güncel Bakiye: <Text style={{ fontWeight: '700', color: '#0f172a' }}>{formatCurrency(accountBalance)}</Text>
+                  Güncel Bakiye: <Text style={{ fontWeight: '700', color: colors.textPrimary }}>{formatCurrency(accountBalance)}</Text>
                 </Text>
               )}
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#64748b" />
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -491,7 +495,7 @@ export const AccountTransactionModal = ({
                 <TextInput
                   style={styles.input}
                   placeholder="0.00"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.textMuted}
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="decimal-pad"
@@ -568,7 +572,7 @@ export const AccountTransactionModal = ({
                 <TextInput
                   style={styles.input}
                   placeholder="YYYY-AA-GG (Örn: 2026-09-19)"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.textMuted}
                   value={date}
                   onChangeText={setDate}
                 />
@@ -580,7 +584,7 @@ export const AccountTransactionModal = ({
                 <TextInput
                   style={styles.input}
                   placeholder="Örn: Maaş, Kira, Fatura, Market..."
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={colors.textMuted}
                   value={description}
                   onChangeText={setDescription}
                 />
@@ -618,16 +622,20 @@ export const AccountTransactionModal = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
     maxHeight: '90%',
     minHeight: '55%',
     paddingHorizontal: 20,
@@ -643,10 +651,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   typeBadge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
@@ -658,7 +666,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   closeBtn: {
@@ -668,10 +676,12 @@ const styles = StyleSheet.create({
   // Tabs
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.bgSecondary,
     borderRadius: 12,
     padding: 4,
     marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   tab: {
     flex: 1,
@@ -682,17 +692,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabActive: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: isDark ? 0.3 : 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
   tabText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: colors.textSecondary,
   },
   tabTextActive: {
     color: '#3b82f6',
@@ -703,13 +713,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   historySummaryItem: {
     flex: 1,
@@ -718,7 +728,7 @@ const styles = StyleSheet.create({
   historySummaryLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textMuted,
     textTransform: 'uppercase',
   },
   historySummaryValue: {
@@ -729,7 +739,7 @@ const styles = StyleSheet.create({
   summaryDivider: {
     width: 1,
     height: 24,
-    backgroundColor: '#cbd5e1',
+    backgroundColor: colors.border,
   },
 
   // History Filter
@@ -744,22 +754,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     gap: 5,
   },
   hFilterChipActive: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#93c5fd',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff',
+    borderColor: '#3b82f6',
   },
   hFilterText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   hFilterTextActive: {
-    color: '#2563eb',
+    color: '#3b82f6',
     fontWeight: '700',
   },
   chipDot: {
@@ -778,12 +788,12 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
   emptyText: {
     marginTop: 10,
     fontSize: 14,
-    color: '#94a3b8',
+    color: colors.textMuted,
     textAlign: 'center',
   },
   emptyAddBtn: {
@@ -792,7 +802,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#eff6ff',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff',
     borderRadius: 10,
     gap: 6,
   },
@@ -807,12 +817,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     paddingVertical: 11,
     paddingHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: colors.border,
   },
   txLeft: {
     flexDirection: 'row',
@@ -834,7 +844,7 @@ const styles = StyleSheet.create({
   txDescription: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1e293b',
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   txMetaRow: {
@@ -844,10 +854,10 @@ const styles = StyleSheet.create({
   },
   txDate: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
   categoryBadge: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: isDark ? colors.border : '#e2e8f0',
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
@@ -855,7 +865,7 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: {
     fontSize: 10,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   txRight: {
@@ -870,16 +880,18 @@ const styles = StyleSheet.create({
   txDeleteBtn: {
     padding: 6,
     borderRadius: 6,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: isDark ? colors.bgCard : '#f1f5f9',
   },
 
   // Toggle
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.bgSecondary,
     borderRadius: 12,
     padding: 4,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   toggleBtn: {
     flex: 1,
@@ -907,7 +919,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   toggleTextActive: {
@@ -923,18 +935,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   input: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 13,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   categoryScroll: {
     gap: 8,
@@ -944,35 +956,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.bgSecondary,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
   },
   categoryChipActive: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff',
     borderColor: '#3b82f6',
   },
   categoryChipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   categoryChipTextActive: {
-    color: '#2563eb',
+    color: '#3b82f6',
     fontWeight: '700',
   },
   quickDateBtn: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: '#eff6ff',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff',
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#bfdbfe',
+    borderColor: isDark ? 'rgba(59, 130, 246, 0.4)' : '#bfdbfe',
   },
   quickDateText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#2563eb',
+    color: '#3b82f6',
   },
 
   // Submit

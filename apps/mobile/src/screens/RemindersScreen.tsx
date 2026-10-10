@@ -3,9 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
 import { ReminderActionModal } from '../components/ReminderActionModal';
 
 export const RemindersScreen = ({ navigation }: any) => {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -84,10 +88,10 @@ export const RemindersScreen = ({ navigation }: any) => {
 
   const getStatusInfo = (dueDateStr: string, status: string) => {
     if (status === 'COMPLETED') {
-      return { text: 'Tamamlandı', color: '#10b981', bg: '#ecfdf5', isCompleted: true, isOverdue: false };
+      return { text: 'Tamamlandı', color: '#10b981', bg: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5', isCompleted: true, isOverdue: false };
     }
     if (status === 'CANCELLED') {
-      return { text: 'İptal Edildi', color: '#64748b', bg: '#f1f5f9', isCompleted: false, isOverdue: false };
+      return { text: 'İptal Edildi', color: '#64748b', bg: isDark ? 'rgba(100, 116, 139, 0.2)' : '#f1f5f9', isCompleted: false, isOverdue: false };
     }
 
     const dueDate = new Date(dueDateStr);
@@ -99,12 +103,12 @@ export const RemindersScreen = ({ navigation }: any) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return { text: `${Math.abs(diffDays)} Gün Gecikti`, color: '#ef4444', bg: '#fef2f2', isCompleted: false, isOverdue: true };
+      return { text: `${Math.abs(diffDays)} Gün Gecikti`, color: '#ef4444', bg: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fef2f2', isCompleted: false, isOverdue: true };
     }
     if (diffDays === 0) {
-      return { text: 'Bugün', color: '#f59e0b', bg: '#fffbeb', isCompleted: false, isOverdue: false };
+      return { text: 'Bugün', color: '#f59e0b', bg: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fffbeb', isCompleted: false, isOverdue: false };
     }
-    return { text: `${diffDays} Gün Kaldı`, color: '#3b82f6', bg: '#eff6ff', isCompleted: false, isOverdue: false };
+    return { text: `${diffDays} Gün Kaldı`, color: '#3b82f6', bg: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff', isCompleted: false, isOverdue: false };
   };
 
   // KPIs
@@ -180,13 +184,13 @@ export const RemindersScreen = ({ navigation }: any) => {
       {/* Search Input */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color={colors.textMuted} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Hatırlatıcı veya açıklama ara..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
       </View>
@@ -219,7 +223,7 @@ export const RemindersScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Hatırlatıcılar</Text>
         <View style={{ width: 24 }} />
@@ -251,7 +255,7 @@ export const RemindersScreen = ({ navigation }: any) => {
                       <Ionicons 
                         name={isCompleted ? "checkmark-circle" : "ellipse-outline"} 
                         size={26} 
-                        color={isCompleted ? "#10b981" : "#94a3b8"} 
+                        color={isCompleted ? "#10b981" : colors.textMuted} 
                       />
                     </TouchableOpacity>
 
@@ -301,21 +305,21 @@ export const RemindersScreen = ({ navigation }: any) => {
 
                     <View style={styles.actionRow}>
                       <TouchableOpacity 
-                        style={[styles.actionBtn, { backgroundColor: isCompleted ? '#f1f5f9' : '#ecfdf5' }]} 
+                        style={[styles.actionBtn, { backgroundColor: isDark ? (isCompleted ? colors.bgSecondary : 'rgba(16, 185, 129, 0.2)') : (isCompleted ? '#f1f5f9' : '#ecfdf5') }]} 
                         onPress={() => handleComplete(item)}
                       >
                         <Ionicons 
                           name={isCompleted ? "arrow-undo" : "checkmark"} 
                           size={16} 
-                          color={isCompleted ? "#64748b" : "#10b981"} 
+                          color={isCompleted ? colors.textMuted : "#10b981"} 
                         />
-                        <Text style={[styles.actionBtnText, { color: isCompleted ? "#64748b" : "#10b981" }]}>
+                        <Text style={[styles.actionBtnText, { color: isCompleted ? colors.textMuted : "#10b981" }]}>
                           {isCompleted ? 'Geri Al' : 'Tamamla'}
                         </Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity 
-                        style={[styles.actionBtn, { backgroundColor: '#eff6ff' }]} 
+                        style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff' }]} 
                         onPress={() => handleEdit(item)}
                       >
                         <Ionicons name="pencil" size={14} color="#3b82f6" />
@@ -323,7 +327,7 @@ export const RemindersScreen = ({ navigation }: any) => {
                       </TouchableOpacity>
 
                       <TouchableOpacity 
-                        style={[styles.actionBtn, { backgroundColor: '#fff1f2' }]} 
+                        style={[styles.actionBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fff1f2' }]} 
                         onPress={() => handleDelete(item)}
                       >
                         <Ionicons name="trash" size={14} color="#ef4444" />
@@ -362,9 +366,12 @@ export const RemindersScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.bgPrimary,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -372,18 +379,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: isDark ? 0.2 : 0.03,
     shadowRadius: 8,
     elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     zIndex: 10,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { paddingBottom: 100 },
 
@@ -395,19 +404,21 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.bgCard,
     padding: 12,
     borderRadius: 14,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   kpiLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748b',
+    color: colors.textSecondary,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
@@ -418,30 +429,52 @@ const styles = StyleSheet.create({
   },
   kpiSubText: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
 
   searchContainer: { flexDirection: 'row', marginBottom: 12 },
-  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, height: 46, borderWidth: 1, borderColor: '#e2e8f0' },
+  searchBox: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: colors.bgCard, 
+    borderRadius: 12, 
+    paddingHorizontal: 12, 
+    height: 46, 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, height: '100%', fontSize: 14, color: '#0f172a' },
+  searchInput: { flex: 1, height: '100%', fontSize: 14, color: colors.textPrimary },
 
   filterTabs: { flexDirection: 'row', marginBottom: 16 },
-  filterTab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
-  filterTabActive: { backgroundColor: '#fee2e2', borderColor: '#fca5a5' },
-  filterTabText: { fontSize: 12, color: '#64748b', fontWeight: '600' },
+  filterTab: { 
+    paddingHorizontal: 14, 
+    paddingVertical: 8, 
+    borderRadius: 20, 
+    backgroundColor: colors.bgCard, 
+    borderWidth: 1, 
+    borderColor: colors.border 
+  },
+  filterTabActive: { 
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2', 
+    borderColor: '#ef4444' 
+  },
+  filterTabText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
   filterTabTextActive: { color: '#ef4444' },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.bgCard,
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: 16,
-    shadowColor: '#64748b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.2 : 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   cardHeader: {
@@ -462,16 +495,16 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1e293b',
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   completedText: {
     textDecorationLine: 'line-through',
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
   cardSubtitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.textSecondary,
   },
   cardRight: {
     alignItems: 'flex-end',
@@ -480,7 +513,7 @@ const styles = StyleSheet.create({
   cardAmount: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0f172a',
+    color: colors.textPrimary,
   },
   badge: {
     paddingHorizontal: 8,
@@ -496,11 +529,11 @@ const styles = StyleSheet.create({
     padding: 14,
     paddingTop: 4,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: colors.border,
   },
   detailDesc: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   detailRow: {
@@ -508,8 +541,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 4,
   },
-  detailLabel: { fontSize: 12, color: '#64748b' },
-  detailValue: { fontSize: 12, fontWeight: '600', color: '#1e293b' },
+  detailLabel: { fontSize: 12, color: colors.textMuted },
+  detailValue: { fontSize: 12, fontWeight: '600', color: colors.textPrimary },
 
   actionRow: {
     flexDirection: 'row',
@@ -529,7 +562,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  emptyText: { textAlign: 'center', color: '#94a3b8', marginTop: 32, paddingHorizontal: 20 },
+  emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: 32, paddingHorizontal: 20 },
   fab: {
     position: 'absolute',
     bottom: 24,
