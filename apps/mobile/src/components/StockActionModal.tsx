@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { 
-  Modal, View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform
+  Modal, View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 interface StockActionModalProps {
   visible: boolean;
@@ -150,12 +151,14 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
     return '';
   };
 
+  const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
         <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalContent}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={[styles.modalContent, { maxHeight: maxContentHeight }]}
         >
           <View style={styles.header}>
             <Text style={styles.title}>{getTitle()}</Text>
@@ -164,7 +167,13 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
             </TouchableOpacity>
           </View>
 
-          <View style={styles.form}>
+          <ScrollView 
+            style={{ flexShrink: 1 }} 
+            contentContainerStyle={{ paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.form}>
             <View style={[styles.inputGroup, { zIndex: 100 }]}>
               <Text style={styles.label}>Hisse Kodu (Örn: THYAO)</Text>
               <TextInput
@@ -236,7 +245,8 @@ export const StockActionModal = ({ visible, onClose, onSuccess, action, stock }:
                 <Text style={styles.submitBtnText}>Kaydet</Text>
               )}
             </TouchableOpacity>
-          </View>
+            </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </View>
     </Modal>

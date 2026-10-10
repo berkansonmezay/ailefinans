@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { 
-  Modal, View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform
+  Modal, View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 interface CryptoActionModalProps {
   visible: boolean;
@@ -143,12 +144,14 @@ export const CryptoActionModal = ({ visible, onClose, onSuccess, action, crypto 
     return '';
   };
 
+  const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
         <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-          style={styles.modalContent}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+          style={[styles.modalContent, { maxHeight: maxContentHeight }]}
         >
           <View style={styles.header}>
             <Text style={styles.title}>{getTitle()}</Text>
@@ -157,80 +160,87 @@ export const CryptoActionModal = ({ visible, onClose, onSuccess, action, crypto 
             </TouchableOpacity>
           </View>
 
-          <View style={styles.form}>
-            {(!crypto || action === 'buy') && (
-              <View style={[styles.inputGroup, { zIndex: 100 }]}>
-                <Text style={styles.label}>Sembol (Örn: BTC)</Text>
+          <ScrollView 
+            style={{ flexShrink: 1 }} 
+            contentContainerStyle={{ paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.form}>
+              {(!crypto || action === 'buy') && (
+                <View style={[styles.inputGroup, { zIndex: 100 }]}>
+                  <Text style={styles.label}>Sembol (Örn: BTC)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Kripto Ara... (örn: BTC)"
+                    value={searchQuery}
+                    onChangeText={(text) => {
+                      setSearchQuery(text);
+                      setSymbol(text);
+                      setShowDropdown(true);
+                    }}
+                    autoCapitalize="characters"
+                    editable={action !== 'edit'}
+                  />
+                  
+                  {showDropdown && (searchQuery.length >= 2) && (
+                    <View style={styles.dropdown}>
+                      {isSearching ? (
+                        <Text style={styles.dropdownEmptyText}>Aranıyor...</Text>
+                      ) : searchResults.length > 0 ? (
+                        searchResults.map((result, idx) => (
+                          <TouchableOpacity 
+                            key={idx} 
+                            style={styles.dropdownItem}
+                            onPress={() => handleSelectCrypto(result.symbol)}
+                          >
+                            <Text style={styles.dropdownSymbol}>{result.symbol}</Text>
+                            <Text style={styles.dropdownName} numberOfLines={1}>{result.shortname || result.longname}</Text>
+                          </TouchableOpacity>
+                        ))
+                      ) : (
+                        <Text style={styles.dropdownEmptyText}>Sonuç bulunamadı</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Miktar</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Kripto Ara... (örn: BTC)"
-                  value={searchQuery}
-                  onChangeText={(text) => {
-                    setSearchQuery(text);
-                    setSymbol(text);
-                    setShowDropdown(true);
-                  }}
-                  autoCapitalize="characters"
-                  editable={action !== 'edit'}
+                  placeholder="0.00"
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  keyboardType="decimal-pad"
                 />
-                
-                {showDropdown && (searchQuery.length >= 2) && (
-                  <View style={styles.dropdown}>
-                    {isSearching ? (
-                      <Text style={styles.dropdownEmptyText}>Aranıyor...</Text>
-                    ) : searchResults.length > 0 ? (
-                      searchResults.map((result, idx) => (
-                        <TouchableOpacity 
-                          key={idx} 
-                          style={styles.dropdownItem}
-                          onPress={() => handleSelectCrypto(result.symbol)}
-                        >
-                          <Text style={styles.dropdownSymbol}>{result.symbol}</Text>
-                          <Text style={styles.dropdownName} numberOfLines={1}>{result.shortname || result.longname}</Text>
-                        </TouchableOpacity>
-                      ))
-                    ) : (
-                      <Text style={styles.dropdownEmptyText}>Sonuç bulunamadı</Text>
-                    )}
-                  </View>
-                )}
               </View>
-            )}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Miktar</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0.00"
-                value={quantity}
-                onChangeText={setQuantity}
-                keyboardType="decimal-pad"
-              />
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{action === 'edit' ? 'Ortalama Maliyet (₺)' : 'Fiyat (₺)'}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="0.00"
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.submitBtnText}>Kaydet</Text>
+                )}
+              </TouchableOpacity>
             </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>{action === 'edit' ? 'Ortalama Maliyet (₺)' : 'Fiyat (₺)'}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0.00"
-                value={price}
-                onChangeText={setPrice}
-                keyboardType="decimal-pad"
-              />
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitBtnText}>Kaydet</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </View>
     </Modal>

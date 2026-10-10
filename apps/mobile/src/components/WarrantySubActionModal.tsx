@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 export type WarrantySubActionType = 'EXTEND' | 'SERVICE' | 'CLAIM';
 
@@ -196,14 +197,15 @@ export const WarrantySubActionModal = ({
   };
 
   const meta = getMeta();
+  const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.overlay}
-      >
-        <View style={styles.container}>
+      <View style={[styles.overlay, overlayKeyboardStyle]}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={[styles.container, { maxHeight: maxContentHeight }]}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
@@ -222,7 +224,12 @@ export const WarrantySubActionModal = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={[styles.formScroll, { flexShrink: 1 }]} 
+            contentContainerStyle={{ paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+          >
             {/* ================= EXTEND FORM ================= */}
             {type === 'EXTEND' && (
               <>
@@ -428,8 +435,8 @@ export const WarrantySubActionModal = ({
               )}
             </TouchableOpacity>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };

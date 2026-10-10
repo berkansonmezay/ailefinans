@@ -4,12 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi, getAvatarUrl } from '../lib/api';
 import { AuthContext } from '../context/AuthContext';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 type Tab = 'TENANT' | 'CATEGORIES' | 'MERCHANTS';
 
 export const SettingsScreen = ({ navigation }: any) => {
   const { user, setUser } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState<Tab>('TENANT');
+  const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
   
   // States for Tenant
   const [tenant, setTenant] = useState<any>(null);
@@ -361,61 +363,81 @@ export const SettingsScreen = ({ navigation }: any) => {
 
       {/* Category Modal */}
       <Modal visible={isCatModalOpen} animationType="slide" transparent>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+            style={[styles.modalContent, { maxHeight: maxContentHeight }]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingCatId ? 'Kategori Düzenle' : 'Yeni Kategori'}</Text>
               <TouchableOpacity onPress={() => setIsCatModalOpen(false)}>
                 <Ionicons name="close" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Kategori Adı</Text>
-              <TextInput style={styles.input} value={catFormData.name} onChangeText={t => setCatFormData({...catFormData, name: t})} />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Türü</Text>
-              <View style={styles.rowInputs}>
-                <TouchableOpacity 
-                  style={[styles.typeBtn, catFormData.type === 'EXPENSE' && styles.typeBtnActiveExp]}
-                  onPress={() => setCatFormData({...catFormData, type: 'EXPENSE'})}
-                >
-                  <Text style={[styles.typeBtnText, catFormData.type === 'EXPENSE' && { color: '#f43f5e' }]}>Gider</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.typeBtn, catFormData.type === 'INCOME' && styles.typeBtnActiveInc]}
-                  onPress={() => setCatFormData({...catFormData, type: 'INCOME'})}
-                >
-                  <Text style={[styles.typeBtnText, catFormData.type === 'INCOME' && { color: '#10b981' }]}>Gelir</Text>
-                </TouchableOpacity>
+            <ScrollView 
+              showsVerticalScrollIndicator={false} 
+              keyboardShouldPersistTaps="handled" 
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Kategori Adı</Text>
+                <TextInput style={styles.input} value={catFormData.name} onChangeText={t => setCatFormData({...catFormData, name: t})} />
               </View>
-            </View>
-            <TouchableOpacity style={[styles.btnPrimary, catFormData.type === 'INCOME' ? { backgroundColor: '#10b981' } : { backgroundColor: '#f43f5e' }]} onPress={handleSaveCategory}>
-              <Text style={styles.btnPrimaryText}>Kaydet</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Türü</Text>
+                <View style={styles.rowInputs}>
+                  <TouchableOpacity 
+                    style={[styles.typeBtn, catFormData.type === 'EXPENSE' && styles.typeBtnActiveExp]}
+                    onPress={() => setCatFormData({...catFormData, type: 'EXPENSE'})}
+                  >
+                    <Text style={[styles.typeBtnText, catFormData.type === 'EXPENSE' && { color: '#f43f5e' }]}>Gider</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.typeBtn, catFormData.type === 'INCOME' && styles.typeBtnActiveInc]}
+                    onPress={() => setCatFormData({...catFormData, type: 'INCOME'})}
+                  >
+                    <Text style={[styles.typeBtnText, catFormData.type === 'INCOME' && { color: '#10b981' }]}>Gelir</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <TouchableOpacity style={[styles.btnPrimary, catFormData.type === 'INCOME' ? { backgroundColor: '#10b981' } : { backgroundColor: '#f43f5e' }]} onPress={handleSaveCategory}>
+                <Text style={styles.btnPrimaryText}>Kaydet</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       {/* Merchant Modal */}
       <Modal visible={isMerchModalOpen} animationType="slide" transparent>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+            style={[styles.modalContent, { maxHeight: maxContentHeight }]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingMerchId ? 'Kurum Düzenle' : 'Yeni Harcama Yeri'}</Text>
               <TouchableOpacity onPress={() => setIsMerchModalOpen(false)}>
                 <Ionicons name="close" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Harcama Yeri Adı</Text>
-              <TextInput style={styles.input} value={merchFormData.name} onChangeText={t => setMerchFormData({ name: t })} placeholder="Örn: Migros" />
-            </View>
-            <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: '#3b82f6' }]} onPress={handleSaveMerchant}>
-              <Text style={styles.btnPrimaryText}>Kaydet</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
+            <ScrollView 
+              showsVerticalScrollIndicator={false} 
+              keyboardShouldPersistTaps="handled" 
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Harcama Yeri Adı</Text>
+                <TextInput style={styles.input} value={merchFormData.name} onChangeText={t => setMerchFormData({ name: t })} placeholder="Örn: Migros" />
+              </View>
+              <TouchableOpacity style={[styles.btnPrimary, { backgroundColor: '#3b82f6' }]} onPress={handleSaveMerchant}>
+                <Text style={styles.btnPrimaryText}>Kaydet</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
 
     </SafeAreaView>

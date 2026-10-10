@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 interface SubscriptionActionModalProps {
   visible: boolean;
@@ -111,12 +112,14 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
     { value: 'CANCELLED', label: 'İptal Edildi' },
   ];
 
+  const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
         <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-          style={styles.modalContent}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+          style={[styles.modalContent, { maxHeight: maxContentHeight }]}
         >
           <View style={styles.header}>
             <Text style={styles.title}>{subscription ? 'Aboneliği Düzenle' : 'Yeni Abonelik'}</Text>
@@ -125,7 +128,12 @@ export const SubscriptionActionModal = ({ visible, onClose, onSuccess, subscript
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={{maxHeight: 500}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView 
+            style={{ flexShrink: 1 }} 
+            contentContainerStyle={{ paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.form}>
 
               <View style={styles.inputGroup}>

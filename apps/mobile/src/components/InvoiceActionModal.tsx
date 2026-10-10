@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 interface InvoiceActionModalProps {
   visible: boolean;
@@ -93,13 +94,15 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
     }
   };
 
+  const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.overlay}
-      >
-        <View style={styles.container}>
+      <View style={[styles.overlay, overlayKeyboardStyle]}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={[styles.container, { maxHeight: maxContentHeight }]}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -115,7 +118,12 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={[styles.formScroll, { flexShrink: 1 }]} 
+            contentContainerStyle={{ paddingBottom: 24 }}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Provider */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Kurum / Sağlayıcı Adı *</Text>
@@ -258,8 +266,8 @@ export const InvoiceActionModal = ({ visible, onClose, onSuccess, invoice }: Inv
               )}
             </TouchableOpacity>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };

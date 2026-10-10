@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 interface Transaction {
   id: string;
@@ -280,12 +281,14 @@ export const AccountTransactionModal = ({
     );
   };
 
+  const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, overlayKeyboardStyle]}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={[styles.container, { maxHeight: maxContentHeight }]}
         >
           {/* Header */}
           <View style={styles.header}>

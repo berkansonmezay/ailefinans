@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
+import { useModalKeyboard } from '../hooks/useModalKeyboard';
 
 const { width } = Dimensions.get('window');
 
@@ -15,6 +16,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -389,11 +391,11 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
 
       {/* New Transaction Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <KeyboardAvoidingView 
-          style={styles.modalOverlay} 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.modalContent}>
+        <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={[styles.modalContent, { maxHeight: maxContentHeight }]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Yeni İşlem</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -401,7 +403,12 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
               </TouchableOpacity>
             </View>
             
-                        <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ paddingBottom: 24 }}
+            >
               {/* Type Toggle */}
               <View style={styles.toggleContainer}>
                 <TouchableOpacity 
@@ -517,8 +524,8 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                 )}
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       {/* Filter Modal */}

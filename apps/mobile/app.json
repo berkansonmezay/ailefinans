@@ -25,6 +25,7 @@
     ],
     "android": {
       "package": "com.ailefinans.app",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/logo.jpg"
