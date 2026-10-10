@@ -27,11 +27,10 @@ import toast from 'react-hot-toast';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function SavingsPage() {
   const { confirm } = useConfirm();
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [assets, setAssets] = useState<any[]>([]);
   const [marketRates, setMarketRates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,7 +249,6 @@ export default function SavingsPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
-          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {[
             { id: 'ALL', label: 'Tümü' },
             { id: 'GOLD', label: 'Altın & Değerli Maden' },

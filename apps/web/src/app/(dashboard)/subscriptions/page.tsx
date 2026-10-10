@@ -23,11 +23,10 @@ import { tr } from 'date-fns/locale';
 import { SubscriptionSummaryBar } from '@/components/subscriptions/SubscriptionSummaryBar';
 import { SubscriptionModal } from '@/components/subscriptions/SubscriptionModal';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function SubscriptionsPage() {
   const { confirm } = useConfirm();
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInfoGuide, setShowInfoGuide] = useState(false);
@@ -199,7 +198,6 @@ export default function SubscriptionsPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
-          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {[
             { id: 'ALL', label: 'Tümü' },
             { id: 'ACTIVE', label: 'Aktif Olanlar' },

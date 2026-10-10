@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
 
 interface User {
   id: string;
@@ -161,26 +162,7 @@ export default function AdminUsersPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [activeTab, setActiveTab] = useState<'users' | 'tenants'>('users');
   const [isFamilyView, setIsFamilyView] = useState(false);
-  const [isFitMode, setIsFitMode] = useState(true);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('admin_fit_mode');
-      if (saved !== null) {
-        setIsFitMode(saved === 'true');
-      }
-    }
-  }, []);
-
-  const toggleFitMode = () => {
-    setIsFitMode(prev => {
-      const next = !prev;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('admin_fit_mode', String(next));
-      }
-      return next;
-    });
-  };
+  const { isFitMode } = useTableFitMode();
 
   const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -756,28 +738,8 @@ export default function AdminUsersPage() {
                 />
               </div>
 
-              {/* View Toggles (Aile Görünümü & Ekrana Sığdır) */}
+              {/* View Toggles (Aile Görünümü) */}
               <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-                <button
-                  type="button"
-                  onClick={toggleFitMode}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
-                    isFitMode
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20'
-                      : 'bg-bg-secondary text-text-secondary hover:text-text-primary border-border hover:border-text-muted/30'
-                  }`}
-                  title="Sütunları daraltarak tüm verileri ve işlem butonlarını yatay kaydırma olmadan ekrana sığdır"
-                >
-                  <Minimize2 className={`w-4 h-4 ${isFitMode ? 'text-white' : 'text-blue-500'}`} />
-                  <span>Ekrana Sığdır</span>
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                    isFitMode
-                      ? 'bg-white/20 text-white'
-                      : 'bg-bg-card text-text-muted border border-border'
-                  }`}>
-                    {isFitMode ? 'Açık' : 'Kapalı'}
-                  </span>
-                </button>
                 <button
                   type="button"
                   onClick={() => setIsFamilyView(!isFamilyView)}

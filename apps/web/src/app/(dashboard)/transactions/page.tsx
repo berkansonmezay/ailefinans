@@ -15,11 +15,10 @@ import ExcelJS from 'exceljs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function TransactionsPage() {
   const { confirm } = useConfirm();
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -764,7 +763,6 @@ export default function TransactionsPage() {
         </div>
         
         <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
-          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           <Button 
             onClick={() => {
               setEditingTx(null);

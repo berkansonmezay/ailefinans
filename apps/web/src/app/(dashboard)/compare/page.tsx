@@ -24,9 +24,20 @@ export default function ComparePage() {
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [availableYears, setAvailableYears] = useState<number[]>(
+    Array.from({ length: 5 }, (_, i) => currentYear - i)
+  );
 
-  // Available years: last 5 years
-  const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  useEffect(() => {
+    fetchApi<number[]>('/dashboard/available-years')
+      .then((res) => {
+        const years = Array.isArray(res) ? res : ((res as any)?.data || []);
+        if (Array.isArray(years) && years.length > 0) {
+          setAvailableYears(years);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function loadData() {

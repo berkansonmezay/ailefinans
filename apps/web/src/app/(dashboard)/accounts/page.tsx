@@ -24,7 +24,6 @@ import {
 import { toast } from 'react-hot-toast';
 import { AccountTransactionsModal } from '@/components/accounts/AccountTransactionsModal';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 interface Account {
   id: string;
@@ -55,7 +54,7 @@ function formatCurrency(val: number, currency: string = 'TRY') {
 
 export default function AccountsPage() {
   const { confirm } = useConfirm();
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInfoGuide, setShowInfoGuide] = useState(false);
@@ -382,7 +381,6 @@ export default function AccountsPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
-          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {[
             { id: 'ALL', label: 'Tümü' },
             { id: 'BANK_ACCOUNT', label: 'Banka' },

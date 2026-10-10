@@ -175,20 +175,29 @@ export class DashboardService {
     };
   }
 
-  async getMonthlyChart(tenantId: string, months: number = 6) {
+  async getMonthlyChart(tenantId: string, months: number = 6, year?: number) {
     const now = new Date();
     const monthConfigs: Array<{ start: Date; end: Date }> = [];
-    for (let i = months - 1; i >= 0; i--) {
-      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const end = new Date(
-        now.getFullYear(),
-        now.getMonth() - i + 1,
-        0,
-        23,
-        59,
-        59,
-      );
-      monthConfigs.push({ start, end });
+
+    if (year && year !== now.getFullYear()) {
+      for (let m = 0; m < 12; m++) {
+        const start = new Date(year, m, 1);
+        const end = new Date(year, m + 1, 0, 23, 59, 59);
+        monthConfigs.push({ start, end });
+      }
+    } else {
+      for (let i = months - 1; i >= 0; i--) {
+        const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const end = new Date(
+          now.getFullYear(),
+          now.getMonth() - i + 1,
+          0,
+          23,
+          59,
+          59,
+        );
+        monthConfigs.push({ start, end });
+      }
     }
 
     const monthPromises = monthConfigs.map(async ({ start, end }) => {
@@ -583,5 +592,31 @@ export class DashboardService {
         .map((g: any) => ({ ...g, months: g.months.map((m: number) => Number(m.toFixed(2))), total: Number(g.total.toFixed(2)) }))
         .sort((a, b) => b.total - a.total),
     };
+  }
+
+  async getAvailableYears(tenantId: string): Promise<number[]> {
+    try {
+      const raw = await this.prisma.$queryRaw<{ year: number }[]>`
+        SELECT DISTINCT EXTRACT(YEAR FROM "transactionDate")::int AS year
+        FROM (
+          SELECT "transactionDate" FROM "IncomeTransaction" WHERE "tenantId" = ${tenantId} AND "deletedAt" IS NULL
+          UNION ALL
+          SELECT "transactionDate" FROM "ExpenseTransaction" WHERE "tenantId" = ${tenantId} AND "deletedAt" IS NULL
+        ) t
+        WHERE "transactionDate" IS NOT NULL
+        ORDER BY year DESC
+      `;
+      const currentYear = new Date().getFullYear();
+      const dbYears = raw
+        .map((r) => r.year)
+        .filter((y) => typeof y === "number" && !isNaN(y) && y > 1900 && y < 2200);
+      const allYears = Array.from(new Set([currentYear, ...dbYears])).sort(
+        (a, b) => b - a,
+      );
+      return allYears;
+    } catch (error) {
+      const currentYear = new Date().getFullYear();
+      return [currentYear];
+    }
   }
 }

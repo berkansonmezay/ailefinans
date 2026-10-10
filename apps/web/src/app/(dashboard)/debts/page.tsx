@@ -43,11 +43,10 @@ import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function DebtsPage() {
   const { confirm } = useConfirm();
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [items, setItems] = useState<any[]>([]);
   const [debts, setDebts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -896,7 +895,6 @@ export default function DebtsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           <div className="flex items-center bg-bg-secondary p-1 rounded-lg">
             <button
               onClick={() => setViewMode('plan')}

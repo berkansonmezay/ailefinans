@@ -6,7 +6,7 @@ import { fetchApi } from '../lib/api';
 
 const { width } = Dimensions.get('window');
 
-export const TransactionsScreen = ({ navigation }: any) => {
+export const TransactionsScreen = ({ navigation, route }: any) => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -34,6 +34,20 @@ export const TransactionsScreen = ({ navigation }: any) => {
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentCount, setInstallmentCount] = useState('2');
   const [firstInstallmentDate, setFirstInstallmentDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Handle route params when navigating from Dashboard (e.g. Gelir Ekle / Gider Ekle)
+  useEffect(() => {
+    if (route?.params?.openModal) {
+      if (route.params.initialType === 'INCOME') {
+        setType('INCOME');
+      } else if (route.params.initialType === 'EXPENSE') {
+        setType('EXPENSE');
+      }
+      setModalVisible(true);
+      // Clear params so returning to Transactions screen doesn't unexpectedly re-open modal
+      navigation.setParams({ openModal: undefined, initialType: undefined });
+    }
+  }, [route?.params]);
 
   const loadData = async () => {
     try {
@@ -421,8 +435,19 @@ export const TransactionsScreen = ({ navigation }: any) => {
                 onChangeText={setDate}
               />
 
-              <Text style={styles.inputLabel}>Harcama Yeri</Text>
+              <Text style={styles.inputLabel}>
+                {type === 'EXPENSE' ? 'Harcama Yeri / Hesap' : 'Yatırılan Hesap / Kaynak'}
+              </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20, flexGrow: 0 }}>
+                {accounts.map(a => (
+                  <TouchableOpacity 
+                    key={a.id} 
+                    style={[styles.catChip, merchantId === a.id && styles.catChipActive, { marginRight: 8 }]}
+                    onPress={() => setMerchantId(a.id)}
+                  >
+                    <Text style={[styles.catChipText, merchantId === a.id && styles.catChipTextActive]}>🏦 {a.name}</Text>
+                  </TouchableOpacity>
+                ))}
                 {merchants.map(m => (
                   <TouchableOpacity 
                     key={m.id} 

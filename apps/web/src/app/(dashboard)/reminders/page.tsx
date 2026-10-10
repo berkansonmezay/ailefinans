@@ -18,7 +18,6 @@ import { fetchApi } from '@/lib/api';
 import { useConfirm } from '@/components/providers/ConfirmProvider';
 import { toast } from 'react-hot-toast';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 interface Reminder {
   id: string;
@@ -34,7 +33,7 @@ interface Reminder {
 
 export default function RemindersPage() {
   const { confirm } = useConfirm();
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -284,7 +283,6 @@ export default function RemindersPage() {
               className="w-full bg-bg-card border border-border rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
             />
           </div>
-          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
         </div>
         <div className="flex gap-2 w-full lg:w-auto">
           <button 

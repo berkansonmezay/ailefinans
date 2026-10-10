@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 // ========================
 // TYPES
@@ -101,7 +100,7 @@ const CLAIM_STATUSES = [
 
 export default function WarrantiesAndInvoicesPage() {
   const { confirm } = useConfirm();
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [activeTab, setActiveTab] = useState<'warranties' | 'invoices' | 'services' | 'claims'>('warranties');
   const [stats, setStats] = useState<Stats>({ total: 0, active: 0, expiring: 0, expired: 0, openClaims: 0, totalValue: 0 });
   const [showGuide, setShowGuide] = useState(false);
@@ -834,7 +833,6 @@ export default function WarrantiesAndInvoicesPage() {
               />
             </div>
             <div className="flex gap-2 flex-wrap items-center">
-              <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}

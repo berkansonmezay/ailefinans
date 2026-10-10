@@ -30,13 +30,20 @@ export class DashboardController {
   async getMonthlyChart(
     @ActiveTenant() tenantId: string,
     @Query("months") months?: string,
+    @Query("year") year?: string,
   ) {
     return success(
       await this.service.getMonthlyChart(
         tenantId,
         months ? parseInt(months) : 6,
+        year ? parseInt(year) : undefined,
       ),
     );
+  }
+
+  @Get("available-years")
+  async getAvailableYears(@ActiveTenant() tenantId: string) {
+    return success(await this.service.getAvailableYears(tenantId));
   }
 
   @Get("compare-years")

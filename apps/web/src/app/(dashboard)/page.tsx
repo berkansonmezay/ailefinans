@@ -56,7 +56,19 @@ export default function DashboardPage() {
   const currentYear = new Date().getFullYear();
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [hideAmounts, setHideAmounts] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchApi<number[]>('/dashboard/available-years')
+      .then((res) => {
+        const years = Array.isArray(res) ? res : ((res as any)?.data || []);
+        if (Array.isArray(years) && years.length > 0) {
+          setAvailableYears(years);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -297,9 +309,11 @@ export default function DashboardPage() {
               onChange={(e) => setSelectedYear(e.target.value)}
               className="bg-transparent text-xs font-semibold text-text-primary border-none focus:ring-0 outline-none cursor-pointer pr-1"
             >
-              <option value={(currentYear - 2).toString()}>{currentYear - 2}</option>
-              <option value={(currentYear - 1).toString()}>{currentYear - 1}</option>
-              <option value={currentYear.toString()}>{currentYear}</option>
+              {availableYears.map((y) => (
+                <option key={y} value={y.toString()}>
+                  {y}
+                </option>
+              ))}
             </select>
           </div>
 

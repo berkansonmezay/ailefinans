@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/auth';
-import { Bell, Search, User as UserIcon, LogOut, Check, Moon, Sun, Plus } from 'lucide-react';
+import { Bell, Search, User as UserIcon, LogOut, Check, Moon, Sun, Plus, Minimize2, Maximize2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ import { fetchApi } from '@/lib/api';
 import clsx from 'clsx';
 import { QuickAddModal } from '@/components/shared/QuickAddModal';
 import { getAvatarUrl } from '@/lib/utils';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
 
 interface Notification {
   id: string;
@@ -23,6 +24,7 @@ export function Header() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [mounted, setMounted] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   
@@ -142,10 +144,6 @@ export function Header() {
   return (
     <header className="h-[var(--header-height)] bg-bg-primary/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-20">
       <div className="flex items-center flex-1">
-        {/* Placeholder to keep right side items pushed to the right, or we can just let justify-between handle it */}
-      </div>
-
-      <div className="flex items-center gap-4">
         {user?.activeTenantName && (
           <div className="relative hidden md:block" ref={tenantDropdownRef}>
             {(Array.isArray(myTenants) && myTenants.length > 1) ? (
@@ -161,7 +159,7 @@ export function Header() {
                 </button>
                 
                 {isTenantDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50">
+                  <div className="absolute left-0 mt-2 w-56 bg-bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50">
                     <div className="p-3 border-b border-border bg-bg-card">
                       <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Aile Hesaplarım</p>
                     </div>
@@ -196,6 +194,9 @@ export function Header() {
             )}
           </div>
         )}
+      </div>
+
+      <div className="flex items-center gap-4">
 
         {/* Hızlı Ekle Button */}
         <div className="relative hidden sm:block">
@@ -284,6 +285,20 @@ export function Header() {
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
         )}
+
+        {/* Ekrana Sığdır Toggle */}
+        <button
+          onClick={toggleFitMode}
+          className={clsx(
+            "p-2 rounded-full transition-colors cursor-pointer",
+            isFitMode
+              ? "text-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
+              : "text-text-muted hover:text-text-primary hover:bg-bg-card"
+          )}
+          title={isFitMode ? "Ekrana Sığdır: Açık (Geniş görünüme geçmek için tıklayın)" : "Ekrana Sığdır: Kapalı (Sütunları daraltıp ekrana sığdırmak için tıklayın)"}
+        >
+          {isFitMode ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+        </button>
 
         <div className="h-6 w-px bg-border mx-2 hidden md:block"></div>
 

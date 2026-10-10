@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { AuthContext } from '../context/AuthContext';
 import { fetchApi, getAvatarUrl } from '../lib/api';
 
@@ -25,9 +26,26 @@ export const ProfileScreen = ({ navigation }: any) => {
     setUploadingAvatar(true);
     try {
       let base64Data = asset.base64;
-      if (!base64Data && asset.uri) {
+      let finalUri = asset.uri;
+
+      // Resize and compress to 400x400 JPEG (~30-50 KB) to prevent memory leaks and upload failures
+      try {
+        const manipResult = await ImageManipulator.manipulateAsync(
+          asset.uri,
+          [{ resize: { width: 400, height: 400 } }],
+          { compress: 0.75, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        );
+        finalUri = manipResult.uri;
+        if (manipResult.base64) {
+          base64Data = manipResult.base64;
+        }
+      } catch (manipErr) {
+        console.warn('ImageManipulator warning, falling back to original asset:', manipErr);
+      }
+
+      if (!base64Data && finalUri) {
         try {
-          const resp = await fetch(asset.uri);
+          const resp = await fetch(finalUri);
           const blob = await resp.blob();
           base64Data = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
@@ -46,20 +64,19 @@ export const ProfileScreen = ({ navigation }: any) => {
 
       let res: any;
       if (base64Data) {
-        // Send as pure JSON Base64 - avoids React Native / Expo FormDataPart bugs completely!
         res = await fetchApi<any>('/auth/avatar', {
           method: 'POST',
           body: JSON.stringify({
             base64: base64Data,
-            mimeType: asset.mimeType || 'image/jpeg',
+            mimeType: 'image/jpeg',
           }),
         });
       } else {
         const formData = new FormData();
         formData.append('file', {
-          uri: asset.uri,
+          uri: finalUri,
           name: asset.fileName || `avatar_${Date.now()}.jpg`,
-          type: asset.mimeType || 'image/jpeg',
+          type: 'image/jpeg',
         } as any);
 
         res = await fetchApi<any>('/auth/avatar', {

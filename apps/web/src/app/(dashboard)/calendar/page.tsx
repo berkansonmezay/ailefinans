@@ -9,7 +9,6 @@ import { CalendarDayDetail } from '@/components/shared/CalendarDayDetail';
 import { CalendarLegend } from '@/components/shared/CalendarLegend';
 import { CalendarSummaryBar } from '@/components/shared/CalendarSummaryBar';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 interface CalendarItem {
   id: string;
@@ -71,7 +70,7 @@ function getWeekDays(date: Date): Date[] {
 }
 
 export default function CalendarPage() {
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -205,10 +204,8 @@ export default function CalendarPage() {
           </p>
         </div>
         
-        {/* Controls: Fit Mode Toggle + View mode toggle */}
+        {/* Controls: View mode toggle */}
         <div className="flex items-center gap-2 flex-wrap">
-          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
-
           <div className="flex items-center bg-bg-secondary rounded-xl p-1 border border-border">
             <button
               onClick={() => setViewMode('month')}

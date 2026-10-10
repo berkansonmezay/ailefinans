@@ -14,11 +14,10 @@ import { CryptoSellModal } from '@/components/crypto/CryptoSellModal';
 import { CryptoTransactionsModal } from '@/components/crypto/CryptoTransactionsModal';
 import { CryptoEditModal } from '@/components/crypto/CryptoEditModal';
 import { useTableFitMode } from '@/hooks/useTableFitMode';
-import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 export default function CryptosPage() {
   const { confirm } = useConfirm();
-  const { isFitMode, toggleFitMode } = useTableFitMode();
+  const { isFitMode } = useTableFitMode();
   const [cryptos, setCryptos] = useState<CryptoItem[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -233,7 +232,6 @@ export default function CryptosPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
-          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
           {[
             { id: 'ALL', label: 'Tümü' },
             { id: 'PROFIT', label: 'Kârda Olanlar' },

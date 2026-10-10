@@ -10,13 +10,15 @@ import {
   StatusBar,
   RefreshControl,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-gifted-charts';
 import { fetchApi } from '../lib/api';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const MONTH_NAMES = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
@@ -62,6 +64,27 @@ export const OverviewScreen = ({ navigation }: any) => {
   const currentMonthIdx = new Date().getMonth(); // 0-indexed
   const [selectedMonth, setSelectedMonth] = useState<string>('all'); // 'all' or '0'..'11'
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+  const [isYearPickerVisible, setIsYearPickerVisible] = useState<boolean>(false);
+
+  const loadAvailableYears = useCallback(async () => {
+    try {
+      const res = await fetchApi<any>('/dashboard/available-years');
+      const years = Array.isArray(res) ? res : ((res as any)?.data || []);
+      if (Array.isArray(years) && years.length > 0) {
+        setAvailableYears(years);
+        if (!years.includes(selectedYear)) {
+          setSelectedYear(years[0]);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load available years:', e);
+    }
+  }, [selectedYear]);
+
+  useEffect(() => {
+    loadAvailableYears();
+  }, [loadAvailableYears]);
 
   const { startDate, endDate } = useMemo(() => {
     if (selectedMonth === 'all') {
@@ -140,7 +163,7 @@ export const OverviewScreen = ({ navigation }: any) => {
         marketRes,
       ] = await Promise.allSettled([
         fetchApi<any>(`/dashboard/kpis?startDate=${startDate}&endDate=${endDate}`),
-        fetchApi<any[]>('/dashboard/monthly-chart?months=6'),
+        fetchApi<any[]>(`/dashboard/monthly-chart?months=12&year=${selectedYear}`),
         fetchApi<any[]>(`/dashboard/category-breakdown?startDate=${startDate}&endDate=${endDate}&type=EXPENSE`),
         fetchApi<any>('/accounts?pageSize=100'),
         fetchApi<any>('/stocks/summary'),
@@ -227,7 +250,7 @@ export const OverviewScreen = ({ navigation }: any) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, selectedYear]);
 
   useEffect(() => {
     loadData();
@@ -355,13 +378,19 @@ export const OverviewScreen = ({ navigation }: any) => {
                 styles.filterChip,
                 selectedMonth === 'all' && styles.filterChipActive,
               ]}
-              onPress={() => setSelectedMonth('all')}
+              onPress={() => {
+                if (selectedMonth === 'all') {
+                  setIsYearPickerVisible(true);
+                } else {
+                  setSelectedMonth('all');
+                }
+              }}
               activeOpacity={0.7}
             >
               <Ionicons
                 name="calendar"
-                size={12}
-                color={selectedMonth === 'all' ? '#ffffff' : '#64748b'}
+                size={13}
+                color={selectedMonth === 'all' ? '#ffffff' : '#3b82f6'}
               />
               <Text
                 style={[
@@ -371,50 +400,89 @@ export const OverviewScreen = ({ navigation }: any) => {
               >
                 Tüm Yıl ({selectedYear})
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                selectedMonth === String(currentMonthIdx) && styles.filterChipActive,
-              ]}
-              onPress={() => setSelectedMonth(String(currentMonthIdx))}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedMonth === String(currentMonthIdx) && styles.filterChipTextActive,
-                ]}
+              <TouchableOpacity
+                hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
+                onPress={() => setIsYearPickerVisible(true)}
               >
-                Bu Ay ({MONTH_NAMES[currentMonthIdx]})
-              </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={13}
+                  color={selectedMonth === 'all' ? '#ffffff' : '#64748b'}
+                  style={{ marginLeft: 1 }}
+                />
+              </TouchableOpacity>
             </TouchableOpacity>
 
-            {MONTH_NAMES.map((name, idx) => {
-              if (idx === currentMonthIdx) return null;
-              const isSelected = selectedMonth === String(idx);
-              return (
+            {selectedYear === currentYear ? (
+              <>
                 <TouchableOpacity
-                  key={idx}
                   style={[
                     styles.filterChip,
-                    isSelected && styles.filterChipActive,
+                    selectedMonth === String(currentMonthIdx) && styles.filterChipActive,
                   ]}
-                  onPress={() => setSelectedMonth(String(idx))}
+                  onPress={() => setSelectedMonth(String(currentMonthIdx))}
                   activeOpacity={0.7}
                 >
                   <Text
                     style={[
                       styles.filterChipText,
-                      isSelected && styles.filterChipTextActive,
+                      selectedMonth === String(currentMonthIdx) && styles.filterChipTextActive,
                     ]}
                   >
-                    {name}
+                    Bu Ay ({MONTH_NAMES[currentMonthIdx]})
                   </Text>
                 </TouchableOpacity>
-              );
-            })}
+
+                {MONTH_NAMES.map((name, idx) => {
+                  if (idx === currentMonthIdx) return null;
+                  const isSelected = selectedMonth === String(idx);
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[
+                        styles.filterChip,
+                        isSelected && styles.filterChipActive,
+                      ]}
+                      onPress={() => setSelectedMonth(String(idx))}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          isSelected && styles.filterChipTextActive,
+                        ]}
+                      >
+                        {name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            ) : (
+              MONTH_NAMES.map((name, idx) => {
+                const isSelected = selectedMonth === String(idx);
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.filterChip,
+                      isSelected && styles.filterChipActive,
+                    ]}
+                    onPress={() => setSelectedMonth(String(idx))}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        isSelected && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </ScrollView>
 
           {/* KPI Cards */}
@@ -479,7 +547,9 @@ export const OverviewScreen = ({ navigation }: any) => {
           <View style={styles.chartContainer}>
             <View style={styles.chartHeaderRow}>
               <Text style={styles.chartTitle}>Aylık Gelir & Gider Analizi</Text>
-              <Text style={styles.chartSubtitle}>Son 6 Ay</Text>
+              <Text style={styles.chartSubtitle}>
+                {selectedYear === currentYear ? 'Son 12 Ay' : `${selectedYear} Yılı`}
+              </Text>
             </View>
             <BarChart
               data={barData}
@@ -515,7 +585,9 @@ export const OverviewScreen = ({ navigation }: any) => {
               <View style={styles.chartEmptyNote}>
                 <Ionicons name="information-circle-outline" size={15} color="#94a3b8" />
                 <Text style={styles.chartEmptyNoteText}>
-                  Son 6 aya ait henüz finansal işlem kaydı bulunmuyor.
+                  {selectedYear === currentYear
+                    ? 'Bu döneme ait henüz finansal işlem kaydı bulunmuyor.'
+                    : `${selectedYear} yılına ait henüz finansal işlem kaydı bulunmuyor.`}
                 </Text>
               </View>
             )}
@@ -642,6 +714,98 @@ export const OverviewScreen = ({ navigation }: any) => {
           </View>
         </ScrollView>
       )}
+
+      {/* Year Picker Modal */}
+      <Modal
+        visible={isYearPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsYearPickerVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setIsYearPickerVisible(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <View style={styles.modalHeaderIconContainer}>
+                  <Ionicons name="calendar" size={18} color="#3b82f6" />
+                </View>
+                <View>
+                  <Text style={styles.modalTitle}>Yıl Seçimi</Text>
+                  <Text style={styles.modalSubtitle}>Veritabanında tanımlı yıllar</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setIsYearPickerVisible(false)}
+              >
+                <Ionicons name="close" size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalYearList} showsVerticalScrollIndicator={false}>
+              {availableYears.map((year) => {
+                const isSelected = year === selectedYear;
+                const isCurrent = year === currentYear;
+
+                return (
+                  <TouchableOpacity
+                    key={year}
+                    style={[
+                      styles.yearOptionCard,
+                      isSelected && styles.yearOptionCardActive,
+                    ]}
+                    onPress={() => {
+                      setSelectedYear(year);
+                      setSelectedMonth('all');
+                      setIsYearPickerVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.yearOptionLeft}>
+                      <View
+                        style={[
+                          styles.yearIconContainer,
+                          isSelected && styles.yearIconContainerActive,
+                        ]}
+                      >
+                        <Ionicons
+                          name="calendar-outline"
+                          size={18}
+                          color={isSelected ? '#ffffff' : '#3b82f6'}
+                        />
+                      </View>
+                      <View>
+                        <Text
+                          style={[
+                            styles.yearOptionText,
+                            isSelected && styles.yearOptionTextActive,
+                          ]}
+                        >
+                          {year} Yılı
+                        </Text>
+                        {isCurrent && (
+                          <View style={styles.currentYearBadge}>
+                            <Text style={styles.currentYearBadgeText}>Mevcut Yıl</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    {isSelected ? (
+                      <Ionicons name="checkmark-circle" size={22} color="#3b82f6" />
+                    ) : (
+                      <View style={styles.radioEmpty} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -836,4 +1000,125 @@ const styles = StyleSheet.create({
   assetInfo: { flex: 1 },
   assetTitle: { fontSize: 11, fontWeight: '700', color: '#64748b', marginBottom: 4 },
   assetValue: { fontSize: 18, fontWeight: '900', color: '#1e293b' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    maxHeight: height * 0.6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  modalHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalHeaderIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#e0f2fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalYearList: {
+    marginTop: 14,
+  },
+  yearOptionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: '#f8fafc',
+    marginBottom: 10,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+  },
+  yearOptionCardActive: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#3b82f6',
+  },
+  yearOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  yearIconContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  yearIconContainerActive: {
+    backgroundColor: '#3b82f6',
+  },
+  yearOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  yearOptionTextActive: {
+    color: '#1d4ed8',
+    fontWeight: '700',
+  },
+  currentYearBadge: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 3,
+  },
+  currentYearBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#1d4ed8',
+  },
+  radioEmpty: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#cbd5e1',
+  },
 });
