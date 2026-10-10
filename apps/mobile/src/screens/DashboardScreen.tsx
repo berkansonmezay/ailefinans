@@ -65,7 +65,7 @@ const ALL_MENU_SERVICES = [
   { id: 'reminders', title: 'Hatırlatıcılar', icon: 'notifications-outline', color: '#f97316', route: 'Reminders' },
   { id: 'reports', title: 'Raporlar', icon: 'bar-chart-outline', color: '#06b6d4', route: 'Reports' },
   { id: 'warranties', title: 'Garanti & Fatura', icon: 'shield-checkmark-outline', color: '#10b981', route: 'Warranties' },
-  { id: 'invoices', title: 'Fatura Tarama (AI)', icon: 'scan-outline', color: '#ec4899', route: 'InvoiceScanner' },
+  { id: 'invoices', title: 'Fatura Tarama (AI)', icon: 'scan-outline', color: '#ec4899', route: 'InvoiceScanner', badge: 'BETA' },
 ];
 
 export const DashboardScreen = ({ navigation }: any) => {
@@ -333,7 +333,7 @@ export const DashboardScreen = ({ navigation }: any) => {
             </View>
           </TouchableOpacity>
 
-          <Text style={styles.userName}>{displayName} 👋</Text>
+          <Text style={styles.userName}>{displayName}</Text>
         </View>
 
         <View style={styles.headerRight}>
@@ -760,6 +760,11 @@ export const DashboardScreen = ({ navigation }: any) => {
                     }}
                     activeOpacity={0.7}
                   >
+                    {(s as any).badge && (
+                      <View style={styles.moreCardBadge}>
+                        <Text style={styles.moreCardBadgeText}>{(s as any).badge}</Text>
+                      </View>
+                    )}
                     <View style={[styles.moreIconCircle, { backgroundColor: `${s.color}15` }]}>
                       <Ionicons name={s.icon as any} size={22} color={s.color} />
                     </View>
@@ -1360,6 +1365,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.02,
     shadowRadius: 4,
     elevation: 1,
+    position: 'relative',
+  },
+  moreCardBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+    borderWidth: 0.8,
+    borderRadius: 5,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    zIndex: 10,
+  },
+  moreCardBadgeText: {
+    fontSize: 7.5,
+    fontWeight: '800',
+    color: '#d97706',
+    letterSpacing: 0.3,
   },
   moreIconCircle: {
     width: 44,

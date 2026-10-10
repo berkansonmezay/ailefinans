@@ -319,7 +319,12 @@ export default function FaturaUploadPage() {
       {/* Header (Exact styling from Garanti & Fatura page) */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Akıllı Belge Tarama (AI OCR)</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-text-primary tracking-tight">Akıllı Belge Tarama (AI OCR)</h1>
+            <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+              BETA
+            </span>
+          </div>
           <p className="text-text-muted mt-1">
             Fatura, fiş veya garanti belgenizi yükleyin; sistem bilgileri otomatik çıkarsın ve ilgili ekleme ekranına aktarsın.
           </p>

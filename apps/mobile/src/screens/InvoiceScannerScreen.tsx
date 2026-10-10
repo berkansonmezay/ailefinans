@@ -490,7 +490,12 @@ export const InvoiceScannerScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Fatura & Belge AI Tarayıcı</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Fatura & Belge AI Tarayıcı</Text>
+          <View style={styles.betaBadge}>
+            <Text style={styles.betaBadgeText}>BETA</Text>
+          </View>
+        </View>
         <View style={{ width: 24 }} />
       </View>
 
@@ -961,7 +966,26 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   backButton: { padding: 4 },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#0f172a' },
+  betaBadge: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+    borderWidth: 0.8,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+  },
+  betaBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#d97706',
+    letterSpacing: 0.4,
+  },
   scrollContent: { padding: 16, paddingBottom: 60 },
 
   typeSelector: {

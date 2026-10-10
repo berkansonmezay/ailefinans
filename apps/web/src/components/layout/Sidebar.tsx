@@ -43,7 +43,7 @@ const menuItems = [
   { key: 'calendar', name: 'Takvim', href: '/calendar', icon: Calendar },
   { key: 'reports', name: 'Raporlar', href: '/reports', icon: BarChart3 },
   { key: 'warranties', name: 'Garanti & Fatura', href: '/warranties', icon: ShieldCheck },
-  { key: 'invoices', name: 'Fatura Tarama (AI)', href: '/fatura', icon: FileText },
+  { key: 'invoices', name: 'Fatura Tarama (AI)', href: '/fatura', icon: FileText, badge: 'BETA' },
   { key: 'settings', name: 'Ayarlar', href: '/settings', icon: Settings },
   { key: 'guide', name: 'Yardım', href: '/guide', icon: HelpCircle },
 ];
@@ -83,7 +83,12 @@ export function Sidebar() {
               )}
             >
               <item.icon size={18} className={isActive ? 'text-text-primary' : 'text-text-muted'} />
-              {item.name}
+              <span className="flex-1 truncate">{item.name}</span>
+              {'badge' in item && item.badge && (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}

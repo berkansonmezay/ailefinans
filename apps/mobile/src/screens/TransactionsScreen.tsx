@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Switch, Dimensions, StatusBar } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { 
+  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
+  Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Dimensions, StatusBar,
+  Alert
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchApi } from '../lib/api';
@@ -10,12 +14,15 @@ const { width } = Dimensions.get('window');
 export const TransactionsScreen = ({ navigation, route }: any) => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [accounts, setAccounts] = useState<any[]>([]);
   const [merchants, setMerchants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [editingTx, setEditingTx] = useState<any | null>(null);
+  const [actionModalVisible, setActionModalVisible] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<any | null>(null);
   const { overlayKeyboardStyle, maxContentHeight } = useModalKeyboard();
 
   // Filters State
@@ -40,13 +47,22 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
   // Handle route params when navigating from Dashboard (e.g. Gelir Ekle / Gider Ekle)
   useEffect(() => {
     if (route?.params?.openModal) {
+      setEditingTx(null);
+      setAmount('');
+      setDescription('');
+      setCategoryId('');
+      setMerchantId('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setIsInstallment(false);
+      setInstallmentCount('2');
+      setFirstInstallmentDate(new Date().toISOString().split('T')[0]);
+      setHasSubmitted(false);
       if (route.params.initialType === 'INCOME') {
         setType('INCOME');
       } else if (route.params.initialType === 'EXPENSE') {
         setType('EXPENSE');
       }
       setModalVisible(true);
-      // Clear params so returning to Transactions screen doesn't unexpectedly re-open modal
       navigation.setParams({ openModal: undefined, initialType: undefined });
     }
   }, [route?.params]);
@@ -54,22 +70,19 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [expRes, incRes, catRes, accRes, merRes] = await Promise.all([
+      const [expRes, incRes, catRes, merRes] = await Promise.all([
         fetchApi<any>('/expenses').catch(() => []),
         fetchApi<any>('/incomes').catch(() => []),
         fetchApi<any>('/categories').catch(() => []),
-        fetchApi<any>('/accounts').catch(() => []),
         fetchApi<any>('/merchants').catch(() => []),
       ]);
 
       const expArray = Array.isArray(expRes) ? expRes : (expRes.items || expRes.data || []);
       const incArray = Array.isArray(incRes) ? incRes : (incRes.items || incRes.data || []);
       const catArray = Array.isArray(catRes) ? catRes : (catRes.items || catRes.data || []);
-      const accArray = Array.isArray(accRes) ? accRes : (accRes.items || accRes.data || []);
       const merArray = Array.isArray(merRes) ? merRes : (merRes.items || merRes.data || []);
 
       setCategories(catArray);
-      setAccounts(accArray);
       setMerchants(merArray);
 
       const expList = expArray.map((t: any) => ({ ...t, type: 'EXPENSE' }));
@@ -85,7 +98,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
       const populatedTx = allTx.map((tx: any) => ({
         ...tx,
         category: catArray.find((c: any) => c.id === tx.categoryId),
-        merchant: merArray.find((m: any) => m.id === tx.merchantId) || accArray.find((a: any) => a.id === (tx.accountId || tx.merchantId)),
+        merchant: merArray.find((m: any) => m.id === tx.merchantId) || (tx.source ? { name: tx.source } : null),
       }));
 
       setTransactions(populatedTx);
@@ -96,8 +109,73 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
     }
   };
 
+  const closeModal = () => {
+    setModalVisible(false);
+    setEditingTx(null);
+    setHasSubmitted(false);
+    setIsInstallment(false);
+  };
+
+  const handleTransactionPress = (tx: any) => {
+    setSelectedTx(tx);
+    setActionModalVisible(true);
+  };
+
+  const handleOpenEdit = (tx: any) => {
+    setActionModalVisible(false);
+    setEditingTx(tx);
+    setType(tx.type);
+    setAmount(String(tx.amount || ''));
+    setDescription(tx.description || '');
+    setCategoryId(tx.categoryId || tx.category?.id || '');
+
+    const matchedMerchant = merchants.find(
+      (m: any) => m.id === tx.merchantId || m.name === tx.source || m.name === tx.merchant?.name
+    );
+    setMerchantId(tx.merchantId || matchedMerchant?.id || '');
+
+    const rawDate = tx.transactionDate || tx.date;
+    try {
+      setDate(rawDate ? new Date(rawDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+    } catch {
+      setDate(new Date().toISOString().split('T')[0]);
+    }
+
+    setIsInstallment(false);
+    setHasSubmitted(false);
+    setModalVisible(true);
+  };
+
+  const handleDeleteTransaction = (tx: any) => {
+    if (!tx) return;
+    Alert.alert(
+      'İşlemi Sil',
+      'Bu işlemi silmek istediğinize emin misiniz? Bütçe ve hesap bakiyeniz güncellenecektir.',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Evet, Sil',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const endpoint = tx.type === 'EXPENSE' ? `/expenses/${tx.id}` : `/incomes/${tx.id}`;
+              await fetchApi(endpoint, { method: 'DELETE' });
+              setActionModalVisible(false);
+              if (modalVisible) setModalVisible(false);
+              setEditingTx(null);
+              await loadData();
+              Alert.alert('Başarılı', 'İşlem silindi.');
+            } catch (error: any) {
+              Alert.alert('Hata', error.message || 'İşlem silinirken bir hata oluştu.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
-    if(modalVisible) {
+    if (modalVisible && !editingTx) {
       setAmount('');
       setDescription('');
       setCategoryId('');
@@ -106,14 +184,27 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
       setIsInstallment(false);
       setInstallmentCount('2');
       setFirstInstallmentDate(new Date().toISOString().split('T')[0]);
+      setHasSubmitted(false);
     }
-  }, [modalVisible]);
+  }, [modalVisible, editingTx]);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const filteredTransactions = React.useMemo(() => {
+  const filteredCategories = useMemo(() => {
+    return categories.filter(c => c.type === type);
+  }, [categories, type]);
+
+  const selectedMerchant = useMemo(() => {
+    return merchants.find(m => m.id === merchantId);
+  }, [merchants, merchantId]);
+
+  const selectedCategory = useMemo(() => {
+    return filteredCategories.find(c => c.id === categoryId);
+  }, [filteredCategories, categoryId]);
+
+  const filteredTransactions = useMemo(() => {
     return transactions.filter(tx => {
       // Search
       if (searchQuery) {
@@ -130,10 +221,10 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
         return false;
       }
 
-      // Merchant/Account
+      // Merchant
       if (filterMerchantId !== 'Tümü') {
-        const txAcc = tx.accountId || tx.merchantId || tx.merchant?.id;
-        if (txAcc !== filterMerchantId) return false;
+        const txMerId = tx.merchantId || tx.merchant?.id;
+        if (txMerId !== filterMerchantId) return false;
       }
 
       // Vade (Date)
@@ -158,7 +249,7 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
     });
   }, [transactions, searchQuery, filterCategoryId, filterMerchantId, filterVade]);
 
-  const totals = React.useMemo(() => {
+  const totals = useMemo(() => {
     let income = 0;
     let expense = 0;
     
@@ -180,37 +271,42 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
   const parseAmountValue = (val: any) => {
     if (val === undefined || val === null || val === '') return NaN;
     if (typeof val === 'number') return val;
-    const normalized = String(val).replace(/s/g, '').replace(',', '.');
+    const normalized = String(val).replace(/\s/g, '').replace(',', '.');
     return parseFloat(normalized);
   };
 
+  const isExpense = type === 'EXPENSE';
+  const themeColor = isExpense ? '#e53e3e' : '#10b981';
+
   const handleSubmit = async () => {
+    setHasSubmitted(true);
     const parsedAmount = parseAmountValue(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       alert('Lütfen geçerli bir tutar girin');
       return;
     }
 
-    if (type === 'EXPENSE') {
-      if (!merchantId) {
-        alert('Kayıt tamamlanamaz: Lütfen Harcama Yeri / Hesap seçiniz.');
-        return;
-      }
-      if (!categoryId) {
-        alert('Kayıt tamamlanamaz: Lütfen bir Harcama Kategorisi seçiniz.');
-        return;
-      }
+    if (!merchantId) {
+      alert(isExpense 
+        ? 'Kayıt tamamlanamaz: Lütfen Harcama Yeri seçiniz.' 
+        : 'Kayıt tamamlanamaz: Lütfen Gelir Kaynağı seçiniz.');
+      return;
+    }
+    if (!categoryId) {
+      alert(isExpense 
+        ? 'Kayıt tamamlanamaz: Lütfen bir Harcama Kategorisi seçiniz.' 
+        : 'Kayıt tamamlanamaz: Lütfen bir Gelir Kategorisi seçiniz.');
+      return;
     }
 
     try {
       setIsSubmitting(true);
       const isMerchant = merchants.some(m => m.id === merchantId);
-      const isAccount = accounts.some(a => a.id === merchantId);
       
       let payloads: any[] = [];
       const generateInstallmentsId = () => Math.random().toString(36).substring(2, 15);
       
-      if (isInstallment && type === 'EXPENSE') {
+      if (isInstallment && !editingTx) {
         const count = parseInt(installmentCount);
         if (isNaN(count) || count < 2) throw new Error('Geçersiz taksit sayısı');
         
@@ -225,7 +321,9 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
             amount: installmentAmount,
             categoryId: categoryId || null,
             transactionDate: installmentDate.toISOString(),
-            description: description ? `${description} (${i+1}. Taksit / ${count})` : `Taksit ${i+1}/${count}`,
+            description: description 
+              ? `${description} (${i+1}. Taksit / ${count})` 
+              : (isExpense ? `Taksitli Gider (${i+1}/${count})` : `Taksitli Gelir (${i+1}/${count})`),
             _planId: planId,
           });
         }
@@ -238,7 +336,46 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
         });
       }
 
-      if (type === 'EXPENSE') {
+      if (editingTx) {
+        if (isExpense) {
+          const finalPayload = {
+            amount: parsedAmount,
+            categoryId: categoryId || null,
+            transactionDate: new Date(date).toISOString(),
+            description: description || null,
+            merchantId: isMerchant ? merchantId : null,
+          };
+          if (editingTx.type === 'EXPENSE') {
+            await fetchApi(`/expenses/${editingTx.id}`, { method: 'PUT', body: JSON.stringify(finalPayload) });
+          } else {
+            await fetchApi(`/incomes/${editingTx.id}`, { method: 'DELETE' });
+            await fetchApi('/expenses', { method: 'POST', body: JSON.stringify(finalPayload) });
+          }
+        } else {
+          const selectedM = merchants.find(m => m.id === merchantId);
+          const finalPayload = {
+            amount: parsedAmount,
+            categoryId: categoryId || null,
+            transactionDate: new Date(date).toISOString(),
+            description: description || null,
+            source: selectedM?.name || description || 'Gelir',
+            merchantId: isMerchant ? merchantId : null,
+          };
+          if (editingTx.type === 'INCOME') {
+            await fetchApi(`/incomes/${editingTx.id}`, { method: 'PUT', body: JSON.stringify(finalPayload) });
+          } else {
+            await fetchApi(`/expenses/${editingTx.id}`, { method: 'DELETE' });
+            await fetchApi('/incomes', { method: 'POST', body: JSON.stringify(finalPayload) });
+          }
+        }
+
+        closeModal();
+        await loadData();
+        Alert.alert('Başarılı', 'İşlem başarıyla güncellendi.');
+        return;
+      }
+
+      if (isExpense) {
         if (isInstallment) {
           const count = parseInt(installmentCount);
           await fetchApi('/debts', {
@@ -253,7 +390,6 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
               firstPaymentDate: new Date(firstInstallmentDate).toISOString(),
               startDate: new Date().toISOString(),
               categoryId: categoryId || null,
-              accountId: isAccount ? merchantId : null,
               merchantId: isMerchant ? merchantId : null,
               currency: 'TRY'
             })
@@ -261,25 +397,32 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
         } else {
           for (const payload of payloads) {
             const { _planId, ...rest } = payload;
-            const finalPayload = { ...rest, merchantId: isMerchant ? merchantId : null, accountId: isAccount ? merchantId : null };
+            const finalPayload = { ...rest, merchantId: isMerchant ? merchantId : null };
             await fetchApi('/expenses', { method: 'POST', body: JSON.stringify(finalPayload) });
           }
         }
       } else {
-        const selectedMerchant = merchants.find(m => m.id === merchantId);
-        const selectedAccount = accounts.find(a => a.id === merchantId);
+        const selectedM = merchants.find(m => m.id === merchantId);
         for (const payload of payloads) {
           const { _planId, ...rest } = payload;
-          const finalPayload = { ...rest, source: selectedMerchant?.name || selectedAccount?.name || description || 'Gelir', parentId: isAccount ? merchantId : null };
+          const finalPayload = { 
+            ...rest, 
+            source: selectedM?.name || description || 'Gelir', 
+            parentId: _planId || null 
+          };
           await fetchApi('/incomes', { method: 'POST', body: JSON.stringify(finalPayload) });
         }
       }
 
-      setModalVisible(false);
+      closeModal();
       await loadData();
+      const successMsg = isInstallment
+        ? (isExpense ? 'Taksitli gider başarıyla eklendi.' : 'Taksitli gelir başarıyla eklendi.')
+        : (isExpense ? 'Gider başarıyla eklendi.' : 'Gelir başarıyla eklendi.');
+      Alert.alert('Başarılı', successMsg);
     } catch (error) {
       console.error('Kaydetme hatası', error);
-      alert('Kaydedilirken bir hata oluştu.');
+      Alert.alert('Hata', 'Kaydedilirken bir hata oluştu.');
     } finally {
       setIsSubmitting(false);
     }
@@ -359,7 +502,11 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
           keyExtractor={(item, index) => item.id || String(index)}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => handleTransactionPress(item)}
+              activeOpacity={0.7}
+            >
               <View style={styles.cardIcon}>
                 <Ionicons 
                   name={item.type === 'INCOME' ? "arrow-down-circle" : "arrow-up-circle"} 
@@ -368,15 +515,18 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
                 />
               </View>
               <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>{item.description || 'İşimsiz İşlem'}</Text>
+                <Text style={styles.cardTitle}>{item.description || 'İsimsiz İşlem'}</Text>
                 <Text style={styles.cardSubtitle}>
-                  {item.category?.name || 'Kategorisiz'} • {formatDate(item.transactionDate || item.date)}
+                  {item.category?.name || 'Kategorisiz'} • {item.merchant?.name ? `${item.merchant.name} • ` : ''}{formatDate(item.transactionDate || item.date)}
                 </Text>
               </View>
-              <Text style={[styles.cardAmount, { color: item.type === 'INCOME' ? '#10b981' : '#f43f5e' }]}>
-                {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
-              </Text>
-            </View>
+              <View style={styles.cardAmountContainer}>
+                <Text style={[styles.cardAmount, { color: item.type === 'INCOME' ? '#10b981' : '#f43f5e' }]}>
+                  {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color="#cbd5e1" style={{ marginTop: 2 }} />
+              </View>
+            </TouchableOpacity>
           )}
           ListEmptyComponent={
             <Text style={styles.emptyText}>Henüz bir işlem bulunmuyor.</Text>
@@ -385,153 +535,466 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
       )}
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={() => {
+          setEditingTx(null);
+          setType('EXPENSE');
+          setAmount('');
+          setDescription('');
+          setCategoryId('');
+          setMerchantId('');
+          setDate(new Date().toISOString().split('T')[0]);
+          setIsInstallment(false);
+          setHasSubmitted(false);
+          setModalVisible(true);
+        }}
+        activeOpacity={0.8}
+      >
         <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
 
-      {/* New Transaction Modal */}
+      {/* New / Edit Transaction Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <View style={[styles.modalOverlay, overlayKeyboardStyle]}>
           <KeyboardAvoidingView 
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={[styles.modalContent, { maxHeight: maxContentHeight }]}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Yeni İşlem</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
-              </TouchableOpacity>
+            {/* Dynamic Colored Header */}
+            <View style={[styles.modalHeaderThemed, { backgroundColor: themeColor }]}>
+              <View style={styles.modalHeaderTop}>
+                <Text style={styles.modalTitleWhite}>{editingTx ? 'İşlemi Düzenle' : 'Hızlı İşlem Ekle'}</Text>
+                <TouchableOpacity onPress={closeModal} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="close" size={24} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Type Switcher (Gider / Gelir) */}
+              <View style={styles.tabContainerThemed}>
+                <TouchableOpacity 
+                  style={[styles.tabButtonThemed, isExpense && styles.tabButtonThemedActive]}
+                  onPress={() => setType('EXPENSE')}
+                >
+                  <Ionicons name="trending-down" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={[styles.tabTextThemed, isExpense && styles.tabTextThemedActive]}>Gider</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.tabButtonThemed, !isExpense && styles.tabButtonThemedActive]}
+                  onPress={() => setType('INCOME')}
+                >
+                  <Ionicons name="trending-up" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+                  <Text style={[styles.tabTextThemed, !isExpense && styles.tabTextThemedActive]}>Gelir</Text>
+                </TouchableOpacity>
+              </View>
             </View>
             
             <ScrollView 
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-              style={{ flexShrink: 1 }}
-              contentContainerStyle={{ paddingBottom: 24 }}
+              style={{ flexShrink: 1, paddingHorizontal: 20, paddingTop: 16 }}
+              contentContainerStyle={{ paddingBottom: 28 }}
             >
-              {/* Type Toggle */}
-              <View style={styles.toggleContainer}>
-                <TouchableOpacity 
-                  style={[styles.toggleBtn, type === 'EXPENSE' && styles.toggleBtnActiveExp]}
-                  onPress={() => setType('EXPENSE')}
-                >
-                  <Text style={[styles.toggleText, type === 'EXPENSE' && styles.toggleTextActive]}>Gider</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.toggleBtn, type === 'INCOME' && styles.toggleBtnActiveInc]}
-                  onPress={() => setType('INCOME')}
-                >
-                  <Text style={[styles.toggleText, type === 'INCOME' && styles.toggleTextActive]}>Gelir</Text>
-                </TouchableOpacity>
+              {/* Row: Amount + Payment Option (Tek Çekim / Taksitli) */}
+              <View style={{ marginBottom: 16 }}>
+                <View style={styles.amountHeaderRow}>
+                  <Text style={styles.fieldLabel}>Tutar (₺)</Text>
+                  {!editingTx && (
+                    <View style={styles.paymentTypeToggle}>
+                      <TouchableOpacity 
+                        style={[styles.paymentTypeBtn, !isInstallment && styles.paymentTypeBtnActive]}
+                        onPress={() => setIsInstallment(false)}
+                      >
+                        <Text style={[styles.paymentTypeBtnText, !isInstallment && styles.paymentTypeBtnTextActive]}>
+                          Tek Çekim
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.paymentTypeBtn, isInstallment && styles.paymentTypeBtnActive]}
+                        onPress={() => setIsInstallment(true)}
+                      >
+                        <Text style={[styles.paymentTypeBtnText, isInstallment && styles.paymentTypeBtnTextActive]}>
+                          # Taksitli
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+
+                {/* Big Centered Amount Input */}
+                <TextInput 
+                  style={styles.amountInput} 
+                  keyboardType="numeric" 
+                  placeholder="0.00" 
+                  placeholderTextColor="#94a3b8"
+                  value={amount}
+                  onChangeText={setAmount}
+                  autoFocus={!editingTx}
+                />
               </View>
 
-              <Text style={styles.inputLabel}>Tutar (₺)</Text>
-              <TextInput 
-                style={styles.input} 
-                keyboardType="numeric" 
-                placeholder="0.00" 
-                value={amount}
-                onChangeText={setAmount}
-              />
+              {/* Harcama Yeri (Gider) / Gelir Kaynağı (Gelir) (* Zorunlu) - Sağa Sola Kaydırma */}
+              <View style={{ marginBottom: 16 }}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.fieldLabel}>
+                    {isExpense ? 'Harcama Yeri' : 'Gelir Kaynağı'}
+                  </Text>
+                  <Text style={styles.requiredBadge}>* Zorunlu</Text>
+                  {selectedMerchant && (
+                    <View style={[styles.activeSelectionBadge, { backgroundColor: isExpense ? '#fef2f2' : '#ecfdf5', borderColor: isExpense ? '#fca5a5' : '#6ee7b7' }]}>
+                      <Text style={[styles.activeSelectionBadgeText, { color: isExpense ? '#b91c1c' : '#047857' }]} numberOfLines={1}>
+                        {selectedMerchant.name}
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
-              <Text style={styles.inputLabel}>Tarih</Text>
-              <TextInput 
-                style={styles.input} 
-                placeholder="YYYY-AA-GG (Örn: 2026-09-18)" 
-                value={date}
-                onChangeText={setDate}
-              />
-
-              <Text style={styles.inputLabel}>
-                {type === 'EXPENSE' ? 'Harcama Yeri / Hesap' : 'Yatırılan Hesap / Kaynak'}
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20, flexGrow: 0 }}>
-                {accounts.map(a => (
-                  <TouchableOpacity 
-                    key={a.id} 
-                    style={[styles.catChip, merchantId === a.id && styles.catChipActive, { marginRight: 8 }]}
-                    onPress={() => setMerchantId(a.id)}
-                  >
-                    <Text style={[styles.catChipText, merchantId === a.id && styles.catChipTextActive]}>🏦 {a.name}</Text>
-                  </TouchableOpacity>
-                ))}
-                {merchants.map(m => (
-                  <TouchableOpacity 
-                    key={m.id} 
-                    style={[styles.catChip, merchantId === m.id && styles.catChipActive, { marginRight: 8 }]}
-                    onPress={() => setMerchantId(m.id)}
-                  >
-                    <Text style={[styles.catChipText, merchantId === m.id && styles.catChipTextActive]}>🏪 {m.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <Text style={styles.inputLabel}>Açıklama</Text>
-              <TextInput 
-                style={styles.input} 
-                placeholder="Market, Maaş vb." 
-                value={description}
-                onChangeText={setDescription}
-              />
-
-              <Text style={styles.inputLabel}>Kategori</Text>
-              <View style={styles.catGrid}>
-                {categories.filter(c => c.type === type).slice(0,10).map(c => (
-                  <TouchableOpacity 
-                    key={c.id} 
-                    style={[styles.catChip, categoryId === c.id && styles.catChipActive]}
-                    onPress={() => setCategoryId(c.id)}
-                  >
-                    <Text style={[styles.catChipText, categoryId === c.id && styles.catChipTextActive]}>{c.name}</Text>
-                  </TouchableOpacity>
-                ))}
+                {/* Horizontal Swipeable Chips (No broken/fake dropdown box) */}
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false} 
+                  style={[
+                    styles.chipsScrollView, 
+                    hasSubmitted && !merchantId && styles.chipsScrollViewError
+                  ]} 
+                  contentContainerStyle={{ gap: 8, paddingVertical: 4, paddingHorizontal: 2 }}
+                >
+                  {merchants.map(m => {
+                    const isSelected = merchantId === m.id;
+                    return (
+                      <TouchableOpacity 
+                        key={m.id} 
+                        style={[
+                          styles.chipItem, 
+                          isSelected && (isExpense ? styles.chipItemActiveExp : styles.chipItemActiveInc)
+                        ]}
+                        onPress={() => setMerchantId(isSelected ? '' : m.id)}
+                        activeOpacity={0.7}
+                      >
+                        {isSelected && (
+                          <Ionicons 
+                            name="checkmark-circle" 
+                            size={16} 
+                            color={isExpense ? '#e11d48' : '#059669'} 
+                            style={{ marginRight: 4 }} 
+                          />
+                        )}
+                        <Text style={[styles.chipItemText, isSelected && styles.chipItemTextActive]}>
+                          {m.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {merchants.length === 0 && (
+                    <Text style={{ fontSize: 12, color: '#94a3b8', paddingVertical: 6 }}>
+                      {isExpense ? 'Kayıtlı harcama yeri bulunmuyor.' : 'Kayıtlı gelir kaynağı bulunmuyor.'}
+                    </Text>
+                  )}
+                </ScrollView>
+                {hasSubmitted && !merchantId && (
+                  <Text style={styles.fieldErrorHint}>
+                    Lütfen sağa-sola kaydırarak bir {isExpense ? 'harcama yeri' : 'gelir kaynağı'} seçiniz.
+                  </Text>
+                )}
               </View>
 
-              {type === 'EXPENSE' && (
-                <>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <Text style={[styles.inputLabel, { marginBottom: 0 }]}>Taksitli mi?</Text>
-                    <Switch value={isInstallment} onValueChange={setIsInstallment} />
+              {/* Kategori (* Zorunlu) - Sağa Sola Kaydırma */}
+              <View style={{ marginBottom: 16 }}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.fieldLabel}>Kategori</Text>
+                  <Text style={styles.requiredBadge}>* Zorunlu</Text>
+                  {selectedCategory && (
+                    <View style={[styles.activeSelectionBadge, { backgroundColor: isExpense ? '#fef2f2' : '#ecfdf5', borderColor: isExpense ? '#fca5a5' : '#6ee7b7' }]}>
+                      <Text style={[styles.activeSelectionBadgeText, { color: isExpense ? '#b91c1c' : '#047857' }]} numberOfLines={1}>
+                        {selectedCategory.name}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Horizontal Swipeable Category Chips */}
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false} 
+                  style={[
+                    styles.chipsScrollView, 
+                    hasSubmitted && !categoryId && styles.chipsScrollViewError
+                  ]} 
+                  contentContainerStyle={{ gap: 8, paddingVertical: 4, paddingHorizontal: 2 }}
+                >
+                  {filteredCategories.map(c => {
+                    const isSelected = categoryId === c.id;
+                    return (
+                      <TouchableOpacity 
+                        key={c.id} 
+                        style={[
+                          styles.chipItem, 
+                          isSelected && (isExpense ? styles.chipItemActiveExp : styles.chipItemActiveInc)
+                        ]}
+                        onPress={() => setCategoryId(isSelected ? '' : c.id)}
+                        activeOpacity={0.7}
+                      >
+                        {isSelected && (
+                          <Ionicons 
+                            name="checkmark-circle" 
+                            size={16} 
+                            color={isExpense ? '#e11d48' : '#059669'} 
+                            style={{ marginRight: 4 }} 
+                          />
+                        )}
+                        <Text style={[styles.chipItemText, isSelected && styles.chipItemTextActive]}>
+                          {c.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {filteredCategories.length === 0 && (
+                    <Text style={{ fontSize: 12, color: '#94a3b8', paddingVertical: 6 }}>Kategori bulunmuyor.</Text>
+                  )}
+                </ScrollView>
+                {hasSubmitted && !categoryId && (
+                  <Text style={styles.fieldErrorHint}>
+                    Lütfen sağa-sola kaydırarak bir kategori seçiniz.
+                  </Text>
+                )}
+              </View>
+
+              {/* Row: Date & Description */}
+              <View style={styles.rowTwoCols}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Tarih</Text>
+                  <View style={styles.inputWithIcon}>
+                    <TextInput 
+                      style={styles.textInputCompact} 
+                      placeholder="YYYY-AA-GG" 
+                      placeholderTextColor="#94a3b8"
+                      value={date}
+                      onChangeText={setDate}
+                    />
+                    <Ionicons name="calendar-outline" size={18} color="#64748b" style={styles.inputIconRight} />
                   </View>
+                </View>
 
-                  {isInstallment && (
-                    <>
-                      <Text style={styles.inputLabel}>Taksit Sayısı</Text>
+                <View style={{ flex: 1.4 }}>
+                  <Text style={styles.fieldLabel}>Açıklama</Text>
+                  <TextInput 
+                    style={styles.textInputCompact} 
+                    placeholder="İşlem açıklaması..." 
+                    placeholderTextColor="#94a3b8"
+                    value={description}
+                    onChangeText={setDescription}
+                  />
+                </View>
+              </View>
+
+              {/* Installments Section (Shown when Taksitli is active, for both Gider and Gelir) */}
+              {isInstallment && (
+                <View style={styles.installmentBox}>
+                  <Text style={styles.installmentBoxTitle}>
+                    {isExpense ? 'Taksitli Gider Bilgileri' : 'Taksitli Gelir Bilgileri'}
+                  </Text>
+                  <View style={styles.rowTwoCols}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.installmentSubLabel}>Taksit Sayısı</Text>
                       <TextInput 
-                        style={styles.input} 
+                        style={styles.installmentInput} 
                         keyboardType="numeric" 
                         placeholder="Örn: 3" 
+                        placeholderTextColor="#94a3b8"
                         value={installmentCount}
                         onChangeText={setInstallmentCount}
                       />
-                      <Text style={styles.inputLabel}>İlk Taksit Tarihi</Text>
+                    </View>
+                    <View style={{ flex: 1.2 }}>
+                      <Text style={styles.installmentSubLabel}>İlk Taksit Tarihi</Text>
                       <TextInput 
-                        style={styles.input} 
+                        style={styles.installmentInput} 
                         placeholder="YYYY-AA-GG" 
+                        placeholderTextColor="#94a3b8"
                         value={firstInstallmentDate}
                         onChangeText={setFirstInstallmentDate}
                       />
-                    </>
+                    </View>
+                  </View>
+                  {parseAmountValue(amount) > 0 && parseInt(installmentCount) > 1 && (
+                    <View style={[styles.installmentPreviewRow, { borderColor: `${themeColor}40`, backgroundColor: `${themeColor}10` }]}>
+                      <Ionicons name="calendar-outline" size={16} color={themeColor} />
+                      <Text style={[styles.installmentPreviewText, { color: themeColor }]}>
+                        Aylık Taksit: {formatCurrency(parseAmountValue(amount) / parseInt(installmentCount))} x {installmentCount} Ay
+                      </Text>
+                    </View>
                   )}
-                </>
+                </View>
               )}
 
-              <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={isSubmitting}>
+              {/* Dynamic Submit Button */}
+              <TouchableOpacity 
+                style={[styles.themedSubmitBtn, { backgroundColor: themeColor }]} 
+                onPress={handleSubmit} 
+                disabled={isSubmitting}
+                activeOpacity={0.85}
+              >
                 {isSubmitting ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.submitBtnText}>Kaydet</Text>
+                  <Text style={styles.themedSubmitBtnText}>
+                    {editingTx 
+                      ? 'Değişiklikleri Kaydet' 
+                      : isInstallment 
+                        ? (isExpense ? 'Taksitli Gider Ekle' : 'Taksitli Gelir Ekle')
+                        : (isExpense ? 'Gider Ekle' : 'Gelir Ekle')
+                    }
+                  </Text>
                 )}
               </TouchableOpacity>
+
+              {editingTx && (
+                <TouchableOpacity 
+                  style={styles.deleteInFormBtn}
+                  onPress={() => handleDeleteTransaction(editingTx)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#e11d48" style={{ marginRight: 6 }} />
+                  <Text style={styles.deleteInFormBtnText}>Bu İşlemi Sil</Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </Modal>
 
+      {/* Transaction Actions / Detail Bottom Modal */}
+      <Modal
+        visible={actionModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setActionModalVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.actionModalBackdrop} 
+          activeOpacity={1} 
+          onPress={() => setActionModalVisible(false)}
+        >
+          <View style={styles.actionSheetContainer} onStartShouldSetResponder={() => true}>
+            {/* Drag Handle */}
+            <View style={styles.sheetHandle} />
+
+            {/* Header */}
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetHeaderTitle}>İşlem Detayı</Text>
+              <TouchableOpacity 
+                onPress={() => setActionModalVisible(false)}
+                style={styles.sheetCloseBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedTx && (
+              <>
+                {/* Hero Info */}
+                <View style={styles.sheetHero}>
+                  <View style={[
+                    styles.sheetIconCircle, 
+                    { backgroundColor: selectedTx.type === 'INCOME' ? '#dcfce7' : '#ffe4e6' }
+                  ]}>
+                    <Ionicons 
+                      name={selectedTx.type === 'INCOME' ? "arrow-down" : "arrow-up"} 
+                      size={28} 
+                      color={selectedTx.type === 'INCOME' ? "#10b981" : "#f43f5e"} 
+                    />
+                  </View>
+
+                  <Text style={[
+                    styles.sheetAmount,
+                    { color: selectedTx.type === 'INCOME' ? '#10b981' : '#f43f5e' }
+                  ]}>
+                    {selectedTx.type === 'INCOME' ? '+' : '-'}{formatCurrency(selectedTx.amount)}
+                  </Text>
+
+                  <Text style={styles.sheetTitle}>
+                    {selectedTx.description || (selectedTx.type === 'INCOME' ? 'Gelir İşlemi' : 'Gider İşlemi')}
+                  </Text>
+
+                  <View style={[
+                    styles.sheetTypeBadge,
+                    { 
+                      backgroundColor: selectedTx.type === 'INCOME' ? '#ecfdf5' : '#fff1f2',
+                      borderColor: selectedTx.type === 'INCOME' ? '#a7f3d0' : '#fecdd3' 
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.sheetTypeBadgeText,
+                      { color: selectedTx.type === 'INCOME' ? '#059669' : '#e11d48' }
+                    ]}>
+                      {selectedTx.type === 'INCOME' ? 'Gelir Kaydı' : 'Gider Kaydı'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Details List */}
+                <View style={styles.sheetDetailsCard}>
+                  <View style={styles.sheetDetailRow}>
+                    <Text style={styles.sheetDetailLabel}>
+                      {selectedTx.type === 'EXPENSE' ? 'Harcama Yeri' : 'Gelir Kaynağı'}
+                    </Text>
+                    <Text style={styles.sheetDetailValue}>
+                      {selectedTx.merchant?.name || selectedTx.source || '-'}
+                    </Text>
+                  </View>
+                  <View style={styles.sheetDivider} />
+
+                  <View style={styles.sheetDetailRow}>
+                    <Text style={styles.sheetDetailLabel}>Kategori</Text>
+                    <Text style={styles.sheetDetailValue}>
+                      {selectedTx.category?.name || 'Kategorisiz'}
+                    </Text>
+                  </View>
+                  <View style={styles.sheetDivider} />
+
+                  <View style={styles.sheetDetailRow}>
+                    <Text style={styles.sheetDetailLabel}>Tarih</Text>
+                    <Text style={styles.sheetDetailValue}>
+                      {new Date(selectedTx.transactionDate || selectedTx.date).toLocaleDateString('tr-TR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.sheetActions}>
+                  <TouchableOpacity 
+                    style={styles.sheetEditBtn}
+                    onPress={() => handleOpenEdit(selectedTx)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="create-outline" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+                    <Text style={styles.sheetEditBtnText}>İşlemi Düzenle</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.sheetDeleteBtn}
+                    onPress={() => handleDeleteTransaction(selectedTx)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#e11d48" style={{ marginRight: 8 }} />
+                    <Text style={styles.sheetDeleteBtnText}>İşlemi Sil</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Filter Modal */}
       <Modal visible={isFilterModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.filterModalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filtreler</Text>
               <TouchableOpacity onPress={() => setIsFilterModalVisible(false)}>
@@ -540,62 +1003,54 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>VADE</Text>
+              <Text style={styles.filterSectionLabel}>VADE</Text>
               <View style={styles.catGrid}>
                 {['Bugün', 'Bu Hafta', '15 Gün', 'Bu Ay', 'Geçen Ay', 'Geçmiş'].map(vade => (
                   <TouchableOpacity 
                     key={vade} 
-                    style={[styles.catChip, filterVade === vade && styles.catChipActive]}
+                    style={[styles.filterChip, filterVade === vade && styles.filterChipActive]}
                     onPress={() => setFilterVade(vade === filterVade ? '' : vade)}
                   >
-                    <Text style={[styles.catChipText, filterVade === vade && styles.catChipTextActive]}>{vade}</Text>
+                    <Text style={[styles.filterChipText, filterVade === vade && styles.filterChipTextActive]}>{vade}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.inputLabel}>KATEGORİ</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24, flexGrow: 0 }}>
+              <Text style={styles.filterSectionLabel}>KATEGORİ</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20, flexGrow: 0 }}>
                 <TouchableOpacity 
-                  style={[styles.catChip, filterCategoryId === 'Tümü' && styles.catChipActive, { marginRight: 8 }]}
+                  style={[styles.filterChip, filterCategoryId === 'Tümü' && styles.filterChipActive, { marginRight: 8 }]}
                   onPress={() => setFilterCategoryId('Tümü')}
                 >
-                  <Text style={[styles.catChipText, filterCategoryId === 'Tümü' && styles.catChipTextActive]}>Tümü</Text>
+                  <Text style={[styles.filterChipText, filterCategoryId === 'Tümü' && styles.filterChipTextActive]}>Tümü</Text>
                 </TouchableOpacity>
                 {categories.map(c => (
                   <TouchableOpacity 
                     key={c.id} 
-                    style={[styles.catChip, filterCategoryId === c.id && styles.catChipActive, { marginRight: 8 }]}
+                    style={[styles.filterChip, filterCategoryId === c.id && styles.filterChipActive, { marginRight: 8 }]}
                     onPress={() => setFilterCategoryId(c.id)}
                   >
-                    <Text style={[styles.catChipText, filterCategoryId === c.id && styles.catChipTextActive]}>{c.name}</Text>
+                    <Text style={[styles.filterChipText, filterCategoryId === c.id && styles.filterChipTextActive]}>{c.name}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
 
-              <Text style={styles.inputLabel}>HARCAMA YERİ / HESAP</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 32, flexGrow: 0 }}>
+              {/* Harcama Yeri (Only Merchants, No Accounts!) */}
+              <Text style={styles.filterSectionLabel}>HARCAMA YERİ</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 28, flexGrow: 0 }}>
                 <TouchableOpacity 
-                  style={[styles.catChip, filterMerchantId === 'Tümü' && styles.catChipActive, { marginRight: 8 }]}
+                  style={[styles.filterChip, filterMerchantId === 'Tümü' && styles.filterChipActive, { marginRight: 8 }]}
                   onPress={() => setFilterMerchantId('Tümü')}
                 >
-                  <Text style={[styles.catChipText, filterMerchantId === 'Tümü' && styles.catChipTextActive]}>Tümü</Text>
+                  <Text style={[styles.filterChipText, filterMerchantId === 'Tümü' && styles.filterChipTextActive]}>Tümü</Text>
                 </TouchableOpacity>
                 {merchants.map(m => (
                   <TouchableOpacity 
                     key={m.id} 
-                    style={[styles.catChip, filterMerchantId === m.id && styles.catChipActive, { marginRight: 8 }]}
+                    style={[styles.filterChip, filterMerchantId === m.id && styles.filterChipActive, { marginRight: 8 }]}
                     onPress={() => setFilterMerchantId(m.id)}
                   >
-                    <Text style={[styles.catChipText, filterMerchantId === m.id && styles.catChipTextActive]}>🏪 {m.name}</Text>
-                  </TouchableOpacity>
-                ))}
-                {accounts.map(a => (
-                  <TouchableOpacity 
-                    key={a.id} 
-                    style={[styles.catChip, filterMerchantId === a.id && styles.catChipActive, { marginRight: 8 }]}
-                    onPress={() => setFilterMerchantId(a.id)}
-                  >
-                    <Text style={[styles.catChipText, filterMerchantId === a.id && styles.catChipTextActive]}>🏦 {a.name}</Text>
+                    <Text style={[styles.filterChipText, filterMerchantId === m.id && styles.filterChipTextActive]}>🏪 {m.name}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -629,8 +1084,11 @@ export const TransactionsScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f8fafc',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -760,81 +1218,511 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    padding: 24,
-    maxHeight: '90%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
   },
+  filterModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    maxHeight: '85%',
+  },
+
+  /* Themed Header for QuickAddModal */
+  modalHeaderThemed: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+  modalHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalTitleWhite: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  tabContainerThemed: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.12)',
+    borderRadius: 14,
+    padding: 4,
+    gap: 6,
+  },
+  tabButtonThemed: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
+  },
+  tabButtonThemedActive: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  tabTextThemed: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+  },
+  tabTextThemedActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+
+  /* Field Labels */
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+    flexWrap: 'wrap',
+  },
+  requiredBadge: {
+    color: '#ef4444',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  activeSelectionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginLeft: 4,
+  },
+  activeSelectionBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  fieldErrorHint: {
+    fontSize: 11,
+    color: '#ef4444',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+
+  /* Amount Row */
+  amountHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  paymentTypeToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  paymentTypeBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  paymentTypeBtnActive: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  paymentTypeBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  paymentTypeBtnTextActive: {
+    color: '#1e293b',
+    fontWeight: '700',
+  },
+  amountInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1e293b',
+    textAlign: 'center',
+  },
+
+  /* Chips Horizontal ScrollView */
+  chipsScrollView: {
+    paddingVertical: 2,
+  },
+  chipsScrollViewError: {
+    backgroundColor: '#fff5f5',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    padding: 4,
+  },
+
+  /* Chip Items */
+  chipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+  },
+  chipItemActiveExp: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#ef4444',
+  },
+  chipItemActiveInc: {
+    backgroundColor: '#d1fae5',
+    borderColor: '#10b981',
+  },
+  chipItemText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  chipItemTextActive: {
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+
+  /* 2 Cols Row */
+  rowTwoCols: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  inputWithIcon: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  inputIconRight: {
+    position: 'absolute',
+    right: 12,
+  },
+  textInputCompact: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: '#1e293b',
+    fontWeight: '500',
+  },
+
+  /* Installment Box */
+  installmentBox: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 16,
+  },
+  installmentBoxTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748b',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  installmentSubLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748b',
+    marginBottom: 4,
+  },
+  installmentInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: '#1e293b',
+    fontWeight: '600',
+  },
+  installmentPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 10,
+    gap: 8,
+  },
+  installmentPreviewText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  /* Themed Submit Button */
+  themedSubmitBtn: {
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  themedSubmitBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  /* Filter Modal Items */
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: '#0f172a' },
-  
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  toggleBtnActiveExp: { backgroundColor: '#f43f5e', shadowColor: '#f43f5e', shadowOpacity: 0.3, shadowRadius: 4, shadowOffset:{width:0,height:2} },
-  toggleBtnActiveInc: { backgroundColor: '#10b981', shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 4, shadowOffset:{width:0,height:2} },
-  toggleText: { fontWeight: '600', color: '#64748b' },
-  toggleTextActive: { color: '#fff' },
-
-  inputLabel: { fontSize: 13, fontWeight: '700', color: '#475569', marginBottom: 8, textTransform: 'uppercase' },
-  input: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
     marginBottom: 20,
-    color: '#0f172a',
   },
-  
+  modalTitle: { 
+    fontSize: 18, 
+    fontWeight: '800', 
+    color: '#0f172a' 
+  },
+  filterSectionLabel: { 
+    fontSize: 12, 
+    fontWeight: '800', 
+    color: '#64748b', 
+    marginBottom: 8, 
+    letterSpacing: 0.5,
+  },
   catGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 32,
+    marginBottom: 20,
   },
-  catChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
     backgroundColor: '#f1f5f9',
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  catChipActive: {
+  filterChipActive: {
     backgroundColor: '#e0e7ff',
     borderColor: '#818cf8',
   },
-  catChipText: { color: '#475569', fontWeight: '500', fontSize: 13 },
-  catChipTextActive: { color: '#4f46e5', fontWeight: '700' },
-
+  filterChipText: { 
+    color: '#475569', 
+    fontWeight: '500', 
+    fontSize: 13 
+  },
+  filterChipTextActive: { 
+    color: '#4f46e5', 
+    fontWeight: '700' 
+  },
   submitBtn: {
     backgroundColor: '#6366f1',
-    padding: 18,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 14,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  submitBtnText: { 
+    color: '#fff', 
+    fontSize: 15, 
+    fontWeight: '700' 
+  },
+  cardAmountContainer: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  deleteInFormBtn: {
+    marginTop: 12,
+    backgroundColor: '#fff1f2',
+    borderColor: '#fecdd3',
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 14,
+  },
+  deleteInFormBtnText: {
+    color: '#e11d48',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  actionModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'flex-end',
+  },
+  actionSheetContainer: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  sheetHandle: {
+    width: 38,
+    height: 4.5,
+    backgroundColor: '#cbd5e1',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  sheetHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  sheetCloseBtn: {
+    padding: 4,
+  },
+  sheetHero: {
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  sheetIconCircle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  sheetAmount: {
+    fontSize: 26,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  sheetTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  sheetTypeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  sheetTypeBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  sheetDetailsCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  sheetDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  sheetDetailLabel: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  sheetDetailValue: {
+    fontSize: 13,
+    color: '#0f172a',
+    fontWeight: '600',
+  },
+  sheetDivider: {
+    height: 1,
+    backgroundColor: '#e2e8f0',
+    marginVertical: 4,
+  },
+  sheetActions: {
+    gap: 10,
+  },
+  sheetEditBtn: {
+    backgroundColor: '#4f46e5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  sheetEditBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  sheetDeleteBtn: {
+    backgroundColor: '#fff1f2',
+    borderColor: '#fecdd3',
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 14,
+  },
+  sheetDeleteBtnText: {
+    color: '#e11d48',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });

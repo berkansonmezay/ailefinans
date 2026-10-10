@@ -145,13 +145,15 @@ export function QuickAddModal({
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       return toast.error('Lütfen geçerli bir tutar girin');
     }
-    if (isExpense) {
-      if (!merchantId) {
-        return toast.error('Kayıt tamamlanamaz: Lütfen Harcama Yeri seçiniz.');
-      }
-      if (!categoryId) {
-        return toast.error('Kayıt tamamlanamaz: Lütfen bir Harcama Kategorisi seçiniz.');
-      }
+    if (!merchantId) {
+      return toast.error(isExpense 
+        ? 'Kayıt tamamlanamaz: Lütfen Harcama Yeri seçiniz.' 
+        : 'Kayıt tamamlanamaz: Lütfen Gelir Kaynağı seçiniz.');
+    }
+    if (!categoryId) {
+      return toast.error(isExpense 
+        ? 'Kayıt tamamlanamaz: Lütfen bir Harcama Kategorisi seçiniz.' 
+        : 'Kayıt tamamlanamaz: Lütfen bir Gelir Kategorisi seçiniz.');
     }
     
     setLoading(true);
@@ -372,17 +374,17 @@ export function QuickAddModal({
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Harcama Yeri {isExpense && <span className="text-rose-500 font-bold text-[10px]">* Zorunlu</span>}
+                {isExpense ? 'Harcama Yeri' : 'Gelir Kaynağı'} <span className="text-rose-500 font-bold text-[10px]">* Zorunlu</span>
               </label>
               <div className="relative">
                 <select 
                   className={`w-full appearance-none bg-white border rounded-lg px-3 py-2 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 transition-shadow ${
-                    isExpense && !merchantId ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
+                    !merchantId ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
                   }`}
                   value={merchantId}
                   onChange={(e) => setMerchantId(e.target.value)}
                 >
-                  <option value="">Seçiniz {isExpense ? '(Zorunlu)' : ''}</option>
+                  <option value="">Seçiniz (Zorunlu)</option>
                   {merchants.map(m => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
