@@ -213,9 +213,10 @@ export function Header() {
         <div className="relative" ref={notifRef}>
           <button 
             onClick={() => setIsNotifOpen(!isNotifOpen)}
-            className="relative p-2 rounded-full hover:bg-bg-card transition-colors text-text-muted hover:text-text-primary"
+            className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-bg-card transition-colors text-text-muted hover:text-text-primary"
+            title="Bildirimler"
           >
-            <Bell size={20} />
+            <Bell size={19} />
             {unreadCount > 0 && (
               <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-text-primary border-2 border-bg-primary">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -279,10 +280,10 @@ export function Header() {
         {mounted && (
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="p-2 rounded-full hover:bg-bg-card transition-colors text-text-muted hover:text-text-primary"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-bg-card transition-colors text-text-muted hover:text-text-primary"
             title="Temayı Değiştir"
           >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
           </button>
         )}
 
@@ -290,14 +291,14 @@ export function Header() {
         <button
           onClick={toggleFitMode}
           className={clsx(
-            "p-2 rounded-full transition-colors cursor-pointer",
+            "w-9 h-9 flex items-center justify-center rounded-full transition-colors cursor-pointer hover:bg-bg-card",
             isFitMode
-              ? "text-blue-500 bg-blue-500/10 hover:bg-blue-500/20"
-              : "text-text-muted hover:text-text-primary hover:bg-bg-card"
+              ? "text-blue-500 hover:text-blue-400"
+              : "text-text-muted hover:text-text-primary"
           )}
           title={isFitMode ? "Ekrana Sığdır: Açık (Geniş görünüme geçmek için tıklayın)" : "Ekrana Sığdır: Kapalı (Sütunları daraltıp ekrana sığdırmak için tıklayın)"}
         >
-          {isFitMode ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+          {isFitMode ? <Minimize2 size={19} /> : <Maximize2 size={19} />}
         </button>
 
         <div className="h-6 w-px bg-border mx-2 hidden md:block"></div>
