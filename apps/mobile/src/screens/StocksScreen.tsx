@@ -186,7 +186,7 @@ export const StocksScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Hisselerim</Text>
+        <Text style={styles.headerTitle}>Hisse Senetleri</Text>
         <View style={{ width: 24 }} />
       </View>
 

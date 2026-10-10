@@ -34,7 +34,7 @@ const menuItems = [
   { key: 'transactions', name: 'İşlemler', href: '/transactions', icon: ArrowLeftRight },
   { key: 'debts', name: 'Taksitli Borçlar', href: '/debts', icon: CreditCard },
   { key: 'receivables', name: 'Taksitli Alacaklar', href: '/receivables', icon: Wallet },
-  { key: 'stocks', name: 'Hisselerim', href: '/stocks', icon: TrendingUp },
+  { key: 'stocks', name: 'Hisse Senetleri', href: '/stocks', icon: TrendingUp },
   { key: 'crypto', name: 'Kripto Varlıklar', href: '/crypto', icon: Bitcoin },
   { key: 'savings', name: 'Altın & Döviz', href: '/savings', icon: Coins },
   { key: 'accounts', name: 'Hesaplar', href: '/accounts', icon: Banknote },

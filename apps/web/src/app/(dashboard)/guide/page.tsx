@@ -35,7 +35,7 @@ const modules = [
     icon: TrendingUp,
     color: 'amber',
     title: 'Yatırım ve Tasarruf',
-    description: '**Hisselerim:** BIST üzerinden hisse senetlerinizi maliyet ve adet belirterek ekleyin; canlı fiyatlar otomatik güncellenir. **Kripto:** BTC-USD gibi sembollerle portföyünüzü gerçek zamanlı takip edin. **Altın & Döviz:** Kur hareketlerine göre anlık kar/zararınızı görün.',
+    description: '**Hisse Senetleri:** BIST üzerinden hisse senetlerinizi maliyet ve adet belirterek ekleyin; canlı fiyatlar otomatik güncellenir. **Kripto:** BTC-USD gibi sembollerle portföyünüzü gerçek zamanlı takip edin. **Altın & Döviz:** Kur hareketlerine göre anlık kar/zararınızı görün.',
     tip: 'Yahoo Finance entegrasyonu ile canlı fiyat verisi otomatik çekilir.',
     borderColor: 'border-l-amber-500',
     iconBg: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',

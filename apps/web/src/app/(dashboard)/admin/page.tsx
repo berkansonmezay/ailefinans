@@ -111,7 +111,7 @@ const MENU_PACKAGES = [
     description: 'Yatırım portföyleri (Hisse, Kripto, Döviz/Altın) ve AI Fatura Tarama',
     menus: [
       { key: 'savings', name: 'Altın & Döviz', description: 'Kıymetli maden ve döviz birikimleri' },
-      { key: 'stocks', name: 'Hisselerim', description: 'Borsa ve hisse senedi takibi' },
+      { key: 'stocks', name: 'Hisse Senetleri', description: 'Borsa ve hisse senedi takibi' },
       { key: 'crypto', name: 'Kripto Varlıklar', description: 'Kripto para portföyü' },
       { key: 'invoices', name: 'Fatura Tarama (AI)', description: 'Fiş ve fatura okuma (Yapay Zeka)' },
     ],

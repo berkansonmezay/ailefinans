@@ -46,7 +46,7 @@ const QUICK_SERVICES = [
   { id: 'debts', title: 'Taksitli Borçlar', icon: 'card-outline', route: 'Debts' },
   { id: 'receivables', title: 'Taksitli Alacaklar', icon: 'receipt-outline', route: 'Receivables' },
   { id: 'savings', title: 'Altın & Döviz', icon: 'cube-outline', route: 'Savings' },
-  { id: 'stocks', title: 'Hisselerim', icon: 'trending-up-outline', route: 'Stocks' },
+  { id: 'stocks', title: 'Hisse Senetleri', icon: 'trending-up-outline', route: 'Stocks' },
   { id: 'crypto', title: 'Kripto Varlıklar', icon: 'logo-bitcoin', route: 'Crypto' },
   { id: 'subscriptions', title: 'Abonelikler', icon: 'sync-outline', route: 'Subscriptions' },
 ];
@@ -58,7 +58,7 @@ const ALL_MENU_SERVICES = [
   { id: 'receivables', title: 'Taksitli Alacaklar', icon: 'receipt-outline', color: '#10b981', route: 'Receivables' },
   { id: 'accounts', title: 'Hesaplar', icon: 'wallet-outline', color: '#14b8a6', route: 'Accounts' },
   { id: 'savings', title: 'Altın & Döviz', icon: 'cube-outline', color: '#eab308', route: 'Savings' },
-  { id: 'stocks', title: 'Hisselerim', icon: 'trending-up-outline', color: '#3b82f6', route: 'Stocks' },
+  { id: 'stocks', title: 'Hisse Senetleri', icon: 'trending-up-outline', color: '#3b82f6', route: 'Stocks' },
   { id: 'crypto', title: 'Kripto Varlıklar', icon: 'logo-bitcoin', color: '#f59e0b', route: 'Crypto' },
   { id: 'subscriptions', title: 'Abonelikler', icon: 'sync-outline', color: '#a855f7', route: 'Subscriptions' },
   { id: 'calendar', title: 'Takvim', icon: 'calendar-outline', color: '#6366f1', route: 'Calendar' },
