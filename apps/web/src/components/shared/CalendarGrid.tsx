@@ -27,6 +27,7 @@ interface CalendarGridProps {
     receivables: boolean;
     reminders: boolean;
   };
+  isFitMode?: boolean;
 }
 
 const DAYS_TR = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
@@ -76,6 +77,7 @@ export function CalendarGrid({
   onDateChange,
   onDaySelect,
   filters,
+  isFitMode = false,
 }: CalendarGridProps) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -109,27 +111,27 @@ export function CalendarGrid({
   return (
     <div className="bg-bg-card border border-border rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
+      <div className={`flex items-center justify-between border-b border-border ${isFitMode ? 'px-4 py-2.5' : 'px-5 py-4'}`}>
+        <div className="flex items-center gap-2">
           <button
             onClick={goToPrevMonth}
-            className="p-2 rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary"
+            className={`rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary ${isFitMode ? 'p-1.5' : 'p-2'}`}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className={isFitMode ? 'w-4 h-4' : 'w-5 h-5'} />
           </button>
-          <h2 className="text-lg font-bold text-text-primary min-w-[180px] text-center">
+          <h2 className={`font-bold text-text-primary text-center ${isFitMode ? 'text-base min-w-[150px]' : 'text-lg min-w-[180px]'}`}>
             {MONTHS_TR[month]} {year}
           </h2>
           <button
             onClick={goToNextMonth}
-            className="p-2 rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary"
+            className={`rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary ${isFitMode ? 'p-1.5' : 'p-2'}`}
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className={isFitMode ? 'w-4 h-4' : 'w-5 h-5'} />
           </button>
         </div>
         <button
           onClick={goToToday}
-          className="px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent-light rounded-lg transition-colors"
+          className={`font-medium text-accent hover:bg-accent-light rounded-lg transition-colors ${isFitMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'}`}
         >
           Bugün
         </button>
@@ -140,7 +142,7 @@ export function CalendarGrid({
         {DAYS_TR.map(day => (
           <div
             key={day}
-            className="py-2.5 text-center text-xs font-semibold text-text-muted uppercase tracking-wider"
+            className={`text-center font-semibold text-text-muted uppercase tracking-wider ${isFitMode ? 'py-1.5 text-[11px]' : 'py-2.5 text-xs'}`}
           >
             {day}
           </div>
@@ -170,8 +172,9 @@ export function CalendarGrid({
               key={idx}
               onClick={() => onDaySelect(cell.date)}
               className={`
-                relative min-h-[85px] p-1.5 border-r border-b border-border text-left 
+                relative border-r border-b border-border text-left 
                 transition-all duration-150 group
+                ${isFitMode ? 'min-h-[58px] p-1' : 'min-h-[85px] p-1.5'}
                 ${!cell.isCurrentMonth ? 'opacity-30' : ''}
                 ${isSelected ? 'bg-accent/10 ring-1 ring-inset ring-accent/30' : 'hover:bg-bg-card-hover'}
                 ${isToday ? 'bg-accent/5' : ''}
@@ -181,7 +184,8 @@ export function CalendarGrid({
               {/* Day number */}
               <span
                 className={`
-                  inline-flex items-center justify-center w-7 h-7 text-sm font-medium rounded-full
+                  inline-flex items-center justify-center font-medium rounded-full
+                  ${isFitMode ? 'w-5.5 h-5.5 text-xs' : 'w-7 h-7 text-sm'}
                   ${isToday ? 'bg-accent text-white font-bold' : ''}
                   ${isSelected && !isToday ? 'bg-accent/20 text-accent font-bold' : ''}
                   ${!isToday && !isSelected ? 'text-text-primary' : ''}
@@ -246,13 +250,15 @@ export function CalendarGrid({
                   {dayItems.length > 0 && (
                     <div className="hidden lg:block">
                       <span
-                        className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-md truncate max-w-full leading-tight"
+                        className={`inline-block font-medium truncate max-w-full leading-tight ${
+                          isFitMode ? 'text-[9px] px-1 py-0 rounded' : 'text-[10px] px-1.5 py-0.5 rounded-md'
+                        }`}
                         style={{
                           backgroundColor: dayItems[0].color + '20',
                           color: dayItems[0].color,
                         }}
                       >
-                        {dayItems[0].title.length > 16 ? dayItems[0].title.slice(0, 16) + '…' : dayItems[0].title}
+                        {dayItems[0].title.length > (isFitMode ? 12 : 16) ? dayItems[0].title.slice(0, isFitMode ? 12 : 16) + '…' : dayItems[0].title}
                       </span>
                       {dayItems.length > 1 && (
                         <span className="text-[9px] text-text-muted ml-0.5">

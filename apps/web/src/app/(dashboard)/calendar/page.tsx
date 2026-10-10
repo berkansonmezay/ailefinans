@@ -8,6 +8,8 @@ import { CalendarGrid } from '@/components/shared/CalendarGrid';
 import { CalendarDayDetail } from '@/components/shared/CalendarDayDetail';
 import { CalendarLegend } from '@/components/shared/CalendarLegend';
 import { CalendarSummaryBar } from '@/components/shared/CalendarSummaryBar';
+import { useTableFitMode } from '@/hooks/useTableFitMode';
+import { FitModeToggle } from '@/components/ui/FitModeToggle';
 
 interface CalendarItem {
   id: string;
@@ -69,6 +71,7 @@ function getWeekDays(date: Date): Date[] {
 }
 
 export default function CalendarPage() {
+  const { isFitMode, toggleFitMode } = useTableFitMode();
   const [currentDate, setCurrentDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -192,69 +195,79 @@ export default function CalendarPage() {
   }, [filteredItems]);
 
   return (
-    <div className="space-y-4">
+    <div className={isFitMode ? 'space-y-3' : 'space-y-4'}>
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary tracking-tight">Finansal Takvim</h1>
-          <p className="text-text-muted mt-1">
+          <h1 className={`font-bold text-text-primary tracking-tight ${isFitMode ? 'text-2xl' : 'text-3xl'}`}>Finansal Takvim</h1>
+          <p className={`text-text-muted ${isFitMode ? 'text-xs mt-0.5' : 'text-sm mt-1'}`}>
             Taksitli borçlar, alacaklar ve hatırlatmalarınızı takvim üzerinde takip edin.
           </p>
         </div>
         
-        {/* View mode toggle */}
-        <div className="flex items-center bg-bg-secondary rounded-xl p-1 border border-border">
-          <button
-            onClick={() => setViewMode('month')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              viewMode === 'month'
-                ? 'bg-bg-card text-text-primary shadow-sm'
-                : 'text-text-muted hover:text-text-primary'
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-            Ay
-          </button>
-          <button
-            onClick={() => setViewMode('week')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              viewMode === 'week'
-                ? 'bg-bg-card text-text-primary shadow-sm'
-                : 'text-text-muted hover:text-text-primary'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            Hafta
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              viewMode === 'list'
-                ? 'bg-bg-card text-text-primary shadow-sm'
-                : 'text-text-muted hover:text-text-primary'
-            }`}
-          >
-            <List className="w-4 h-4" />
-            Liste
-          </button>
+        {/* Controls: Fit Mode Toggle + View mode toggle */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <FitModeToggle isFitMode={isFitMode} onToggle={toggleFitMode} />
+
+          <div className="flex items-center bg-bg-secondary rounded-xl p-1 border border-border">
+            <button
+              onClick={() => setViewMode('month')}
+              className={`flex items-center gap-1.5 rounded-lg font-medium transition-all ${
+                isFitMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'
+              } ${
+                viewMode === 'month'
+                  ? 'bg-bg-card text-text-primary shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              <LayoutGrid className={isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+              Ay
+            </button>
+            <button
+              onClick={() => setViewMode('week')}
+              className={`flex items-center gap-1.5 rounded-lg font-medium transition-all ${
+                isFitMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'
+              } ${
+                viewMode === 'week'
+                  ? 'bg-bg-card text-text-primary shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              <Calendar className={isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+              Hafta
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1.5 rounded-lg font-medium transition-all ${
+                isFitMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'
+              } ${
+                viewMode === 'list'
+                  ? 'bg-bg-card text-text-primary shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              <List className={isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
+              Liste
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Summary Bar */}
-      <CalendarSummaryBar summary={summary} loading={loading} />
+      <CalendarSummaryBar summary={summary} loading={loading} isFitMode={isFitMode} />
 
       {/* Guide Banner */}
-      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 sm:p-5">
+      <div className={`bg-emerald-500/10 border border-emerald-500/20 rounded-2xl ${isFitMode ? 'p-3' : 'p-4 sm:p-5'}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-500">
-              <Info className="w-5 h-5" />
+            <div className={`rounded-xl bg-emerald-500/20 text-emerald-500 ${isFitMode ? 'p-1.5' : 'p-2'}`}>
+              <Info className={isFitMode ? 'w-4 h-4' : 'w-5 h-5'} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-text-primary">
+              <h3 className={`font-bold text-text-primary ${isFitMode ? 'text-sm' : 'text-base'}`}>
                 Finansal Takvim & Vade Takip Rehberi
               </h3>
-              <p className="text-xs text-text-muted mt-0.5">
+              <p className={`text-text-muted ${isFitMode ? 'text-[11px]' : 'text-xs mt-0.5'}`}>
                 Borç taksitleri, tahsil edilecek alacaklar ve hatırlatmalarınızı gün gün izleyin.
               </p>
             </div>
@@ -295,11 +308,12 @@ export default function CalendarPage() {
         filters={filters}
         onFilterChange={setFilters}
         counts={filterCounts}
+        isFitMode={isFitMode}
       />
 
       {/* Main Content */}
       {viewMode === 'month' && (
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-5">
+        <div className={`grid grid-cols-1 ${isFitMode ? 'xl:grid-cols-[1fr_330px] gap-3' : 'xl:grid-cols-[1fr_380px] gap-5'}`}>
           {/* Calendar Grid */}
           <CalendarGrid
             currentDate={currentDate}
@@ -308,6 +322,7 @@ export default function CalendarPage() {
             onDateChange={handleDateChange}
             onDaySelect={handleDaySelect}
             filters={filters}
+            isFitMode={isFitMode}
           />
 
           {/* Day Detail Panel */}
@@ -317,6 +332,7 @@ export default function CalendarPage() {
                 date={selectedDate}
                 items={selectedDayItems}
                 onClose={() => setSelectedDate(null)}
+                isFitMode={isFitMode}
               />
             </div>
           )}
@@ -330,15 +346,16 @@ export default function CalendarPage() {
             date={selectedDate}
             items={selectedDayItems}
             onClose={() => setSelectedDate(null)}
+            isFitMode={isFitMode}
           />
         </div>
       )}
 
       {/* Week View */}
       {viewMode === 'week' && (
-        <div className="space-y-4">
+        <div className={isFitMode ? 'space-y-3' : 'space-y-4'}>
           {/* Week Navigation */}
-          <div className="flex items-center justify-between bg-bg-card border border-border rounded-2xl px-5 py-3">
+          <div className={`flex items-center justify-between bg-bg-card border border-border rounded-2xl ${isFitMode ? 'px-4 py-2' : 'px-5 py-3'}`}>
             <button
               onClick={() => {
                 const prev = new Date(weekDays[0]);
@@ -346,11 +363,11 @@ export default function CalendarPage() {
                 setSelectedDate(prev);
                 setCurrentDate(new Date(prev.getFullYear(), prev.getMonth(), 1));
               }}
-              className="p-2 rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary"
+              className={`rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary ${isFitMode ? 'p-1.5' : 'p-2'}`}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className={isFitMode ? 'w-4 h-4' : 'w-5 h-5'} />
             </button>
-            <h3 className="text-base font-bold text-text-primary">
+            <h3 className={`font-bold text-text-primary ${isFitMode ? 'text-sm' : 'text-base'}`}>
               {weekDays[0].getDate()} {MONTHS_TR[weekDays[0].getMonth()]} – {weekDays[6].getDate()} {MONTHS_TR[weekDays[6].getMonth()]} {weekDays[6].getFullYear()}
             </h3>
             <button
@@ -360,14 +377,14 @@ export default function CalendarPage() {
                 setSelectedDate(next);
                 setCurrentDate(new Date(next.getFullYear(), next.getMonth(), 1));
               }}
-              className="p-2 rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary"
+              className={`rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary ${isFitMode ? 'p-1.5' : 'p-2'}`}
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className={isFitMode ? 'w-4 h-4' : 'w-5 h-5'} />
             </button>
           </div>
 
           {/* Week Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+          <div className={`grid grid-cols-1 md:grid-cols-7 ${isFitMode ? 'gap-2' : 'gap-3'}`}>
             {weekDays.map(day => {
               const key = dateKey(day);
               const dayItems = itemsByDate.get(key) || [];
@@ -385,20 +402,20 @@ export default function CalendarPage() {
                   `}
                   onClick={() => handleDaySelect(day)}
                 >
-                  <div className={`px-3 py-2 border-b border-border ${isToday ? 'bg-accent/10' : 'bg-bg-secondary/50'}`}>
+                  <div className={`border-b border-border ${isToday ? 'bg-accent/10' : 'bg-bg-secondary/50'} ${isFitMode ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}>
                     <p className="text-xs font-medium text-text-muted">{DAYS_FULL_TR[day.getDay()]}</p>
-                    <p className={`text-lg font-bold ${isToday ? 'text-accent' : 'text-text-primary'}`}>
+                    <p className={`font-bold ${isToday ? 'text-accent' : 'text-text-primary'} ${isFitMode ? 'text-base' : 'text-lg'}`}>
                       {day.getDate()}
                     </p>
                   </div>
-                  <div className="p-2 space-y-1.5 min-h-[60px]">
+                  <div className={`${isFitMode ? 'p-1.5 space-y-1 min-h-[48px]' : 'p-2 space-y-1.5 min-h-[60px]'}`}>
                     {dayItems.length === 0 && (
                       <p className="text-xs text-text-muted text-center py-2">—</p>
                     )}
-                    {dayItems.slice(0, 4).map(item => (
+                    {dayItems.slice(0, isFitMode ? 5 : 4).map(item => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium"
+                        className={`flex items-center gap-1.5 rounded-lg font-medium ${isFitMode ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]'}`}
                         style={{
                           backgroundColor: item.color + '15',
                           color: item.color,
@@ -408,8 +425,8 @@ export default function CalendarPage() {
                         <span className="truncate">{item.title}</span>
                       </div>
                     ))}
-                    {dayItems.length > 4 && (
-                      <p className="text-[10px] text-text-muted text-center">+{dayItems.length - 4} daha</p>
+                    {dayItems.length > (isFitMode ? 5 : 4) && (
+                      <p className="text-[10px] text-text-muted text-center">+{dayItems.length - (isFitMode ? 5 : 4)} daha</p>
                     )}
                   </div>
                 </div>
@@ -423,6 +440,7 @@ export default function CalendarPage() {
               date={selectedDate}
               items={selectedDayItems}
               onClose={() => setSelectedDate(null)}
+              isFitMode={isFitMode}
             />
           )}
         </div>
@@ -431,9 +449,9 @@ export default function CalendarPage() {
       {/* List View */}
       {viewMode === 'list' && (
         <div className="bg-bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-border">
-            <h3 className="text-lg font-bold text-text-primary">Yaklaşan Ödemeler ve Hatırlatmalar</h3>
-            <p className="text-sm text-text-muted mt-0.5">Bugünden itibaren sıralı görünüm</p>
+          <div className={`border-b border-border ${isFitMode ? 'px-4 py-2.5' : 'px-5 py-4'}`}>
+            <h3 className={`font-bold text-text-primary ${isFitMode ? 'text-base' : 'text-lg'}`}>Yaklaşan Ödemeler ve Hatırlatmalar</h3>
+            <p className={`text-text-muted mt-0.5 ${isFitMode ? 'text-xs' : 'text-sm'}`}>Bugünden itibaren sıralı görünüm</p>
           </div>
           
           <div className="divide-y divide-border">
@@ -453,35 +471,36 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-bg-card-hover transition-colors"
+                    className={`flex items-center hover:bg-bg-card-hover transition-colors ${isFitMode ? 'gap-3 px-4 py-2' : 'gap-4 px-5 py-3.5'}`}
                   >
                     {/* Date pill */}
                     <div className={`
-                      shrink-0 w-14 text-center py-2 rounded-xl
+                      shrink-0 text-center rounded-xl
+                      ${isFitMode ? 'w-11 py-1' : 'w-14 py-2'}
                       ${isToday ? 'bg-accent/10' : 'bg-bg-secondary'}
                     `}>
-                      <p className={`text-lg font-bold ${isToday ? 'text-accent' : 'text-text-primary'}`}>
+                      <p className={`font-bold ${isToday ? 'text-accent' : 'text-text-primary'} ${isFitMode ? 'text-base' : 'text-lg'}`}>
                         {itemDate.getDate()}
                       </p>
-                      <p className="text-[10px] font-medium text-text-muted uppercase">
+                      <p className={`font-medium text-text-muted uppercase ${isFitMode ? 'text-[9px]' : 'text-[10px]'}`}>
                         {MONTHS_TR[itemDate.getMonth()].slice(0, 3)}
                       </p>
                     </div>
 
                     {/* Type indicator */}
                     <div
-                      className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      className={`rounded-lg flex items-center justify-center shrink-0 ${isFitMode ? 'w-7 h-7 text-sm' : 'w-9 h-9 text-base'}`}
                       style={{ backgroundColor: item.color + '20', color: item.color }}
                     >
-                      {item.type === 'DEBT_INSTALLMENT' && <span className="text-base">💳</span>}
-                      {item.type === 'RECEIVABLE_INSTALLMENT' && <span className="text-base">💰</span>}
-                      {item.type === 'REMINDER' && <span className="text-base">🔔</span>}
+                      {item.type === 'DEBT_INSTALLMENT' && <span>💳</span>}
+                      {item.type === 'RECEIVABLE_INSTALLMENT' && <span>💰</span>}
+                      {item.type === 'REMINDER' && <span>🔔</span>}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-text-primary truncate">{item.title}</p>
-                      <p className="text-xs text-text-muted truncate">
+                      <p className={`font-semibold text-text-primary truncate ${isFitMode ? 'text-xs' : 'text-sm'}`}>{item.title}</p>
+                      <p className={`text-text-muted truncate ${isFitMode ? 'text-[11px]' : 'text-xs'}`}>
                         {item.type === 'DEBT_INSTALLMENT' && 'Borç Taksiti'}
                         {item.type === 'RECEIVABLE_INSTALLMENT' && 'Alacak Taksiti'}
                         {item.type === 'REMINDER' && 'Hatırlatma'}
@@ -492,7 +511,7 @@ export default function CalendarPage() {
                     {/* Amount & Status */}
                     <div className="text-right shrink-0">
                       {item.amount && item.amount > 0 && (
-                        <p className="text-sm font-bold" style={{ color: item.color }}>
+                        <p className={`font-bold ${isFitMode ? 'text-xs' : 'text-sm'}`} style={{ color: item.color }}>
                           {item.type === 'RECEIVABLE_INSTALLMENT' ? '+' : '-'}{formatCurrency(item.amount, item.currency)}
                         </p>
                       )}

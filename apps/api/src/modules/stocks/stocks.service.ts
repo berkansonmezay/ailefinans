@@ -43,6 +43,7 @@ export class StocksService {
         name: shortName,
         currentPrice,
         totalValue,
+        currentValue: totalValue,
         totalCost,
         pnlAmount,
         pnlPercentage,

@@ -15,6 +15,7 @@ interface CalendarLegendProps {
     receivables: number;
     reminders: number;
   };
+  isFitMode?: boolean;
 }
 
 const LEGEND_ITEMS = [
@@ -51,13 +52,13 @@ const LEGEND_ITEMS = [
   },
 ];
 
-export function CalendarLegend({ filters, onFilterChange, counts }: CalendarLegendProps) {
+export function CalendarLegend({ filters, onFilterChange, counts, isFitMode = false }: CalendarLegendProps) {
   const toggleFilter = (key: keyof typeof filters) => {
     onFilterChange({ ...filters, [key]: !filters[key] });
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={`flex flex-wrap ${isFitMode ? 'gap-1.5' : 'gap-2'}`}>
       {LEGEND_ITEMS.map(item => {
         const isActive = filters[item.key];
         const count = counts[item.key];
@@ -68,15 +69,16 @@ export function CalendarLegend({ filters, onFilterChange, counts }: CalendarLege
             key={item.key}
             onClick={() => toggleFilter(item.key)}
             className={`
-              flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium
+              flex items-center gap-1.5 rounded-xl border font-medium
               transition-all duration-200
+              ${isFitMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-2 text-sm'}
               ${isActive
                 ? 'border-border bg-bg-card text-text-primary shadow-sm'
                 : 'border-transparent bg-bg-secondary/50 text-text-muted opacity-60 hover:opacity-80'
               }
             `}
           >
-            <Icon className="w-4 h-4" style={{ color: item.colors[0].color }} />
+            <Icon className={isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} style={{ color: item.colors[0].color }} />
             <span>{item.label}</span>
             {count > 0 && (
               <span

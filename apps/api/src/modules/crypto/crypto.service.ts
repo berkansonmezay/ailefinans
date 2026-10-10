@@ -69,6 +69,7 @@ export class CryptoService {
         name: shortName,
         currentPrice,
         totalValue,
+        currentValue: totalValue,
         totalCost,
         pnlAmount,
         pnlPercentage,

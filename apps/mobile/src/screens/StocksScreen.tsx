@@ -203,7 +203,7 @@ export const StocksScreen = ({ navigation }: any) => {
           renderItem={({ item }) => {
             const itemTitle = item.symbol || item.name || 'İsimsiz Hisse';
             const itemQuantity = item.quantity || 0;
-            const itemAmount = item.currentValue || 0;
+            const itemAmount = item.totalValue ?? item.currentValue ?? (item.currentPrice && item.quantity ? item.currentPrice * item.quantity : 0);
             const itemPnL = item.pnlAmount || 0;
             const itemPnLPercentage = item.pnlPercentage || 0;
             const isProfit = itemPnL >= 0;
@@ -218,7 +218,9 @@ export const StocksScreen = ({ navigation }: any) => {
                     </View>
                     <View>
                       <Text style={styles.cardTitle}>{itemTitle}</Text>
-                      <Text style={styles.cardSubtitle}>{itemQuantity} Adet</Text>
+                      <Text style={styles.cardSubtitle}>
+                        {itemQuantity} Adet{item.currentPrice ? ` • ₺${Number(item.currentPrice).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.cardValueSection}>

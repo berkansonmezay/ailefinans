@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import { fetchApi, getAvatarUrl } from '../lib/api';
 
 const { width } = Dimensions.get('window');
@@ -47,6 +48,7 @@ const MENU_ITEMS = [
 
 export const DashboardScreen = ({ navigation }: any) => {
   const { user, setUser } = useContext(AuthContext);
+  const { unreadCount } = useNotifications();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -128,11 +130,17 @@ export const DashboardScreen = ({ navigation }: any) => {
         </View>
 
         <View style={styles.rightIconsContainer}>
-          <TouchableOpacity style={styles.bellContainer}>
+          <TouchableOpacity 
+            style={styles.bellContainer}
+            onPress={() => navigation.navigate('Notifications')}
+            activeOpacity={0.7}
+          >
             <Ionicons name="notifications-outline" size={24} color="#111827" />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>10</Text>
-            </View>
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.settingsContainer}

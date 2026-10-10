@@ -168,8 +168,8 @@ export const CryptoScreen = ({ navigation }: any) => {
           ListHeaderComponent={renderHeader}
           renderItem={({ item }) => {
             const itemTitle = item.symbol || item.name || 'İsimsiz Kripto';
-            const itemSubtitle = item.quantity ? `${item.quantity} Adet` : '0 Adet';
-            const itemAmount = item.currentValue || 0;
+            const itemSubtitle = item.quantity ? `${item.quantity} Adet${item.currentPrice ? ` • $${Number(item.currentPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}` : '0 Adet';
+            const itemAmount = item.totalValue ?? item.currentValue ?? (item.currentPrice && item.quantity ? item.currentPrice * item.quantity : 0);
             const pnl = item.pnlAmount || 0;
             const pnlPct = item.pnlPercentage || 0;
             const isProfit = pnl >= 0;

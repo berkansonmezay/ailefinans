@@ -1,13 +1,16 @@
 import React, { useContext } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
+import { NotificationProvider } from './src/context/NotificationContext';
+import { InAppNotificationBanner } from './src/components/InAppNotificationBanner';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
+import { NotificationsScreen } from './src/screens/NotificationsScreen';
 import { OverviewScreen } from './src/screens/OverviewScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { ReportsScreen } from './src/screens/ReportsScreen';
@@ -24,6 +27,8 @@ import { WarrantiesScreen } from './src/screens/WarrantiesScreen';
 import { InvoiceScannerScreen } from './src/screens/InvoiceScannerScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+
+export const navigationRef = createNavigationContainerRef<any>();
 
 const Stack = createNativeStackNavigator();
 
@@ -47,6 +52,7 @@ const AppNavigator = () => {
         // Giriş Yapmış Kullanıcı
         <>
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="Overview" component={OverviewScreen} />
           <Stack.Screen name="Transactions" component={TransactionsScreen} />
           <Stack.Screen name="Reports" component={ReportsScreen} />
@@ -73,10 +79,28 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <AppNavigator />
-        </NavigationContainer>
+        <NotificationProvider>
+          <NavigationContainer ref={navigationRef}>
+            <StatusBar style="dark" />
+            <AppNavigator />
+            <InAppNotificationBanner
+              onPressNotification={(item) => {
+                if (navigationRef.isReady()) {
+                  const routes: Record<string, string> = {
+                    'INSTALLMENT_DUE': 'Debts',
+                    'INSTALLMENT_OVERDUE': 'Debts',
+                    'SUBSCRIPTION_RENEWAL': 'Subscriptions',
+                    'PAYMENT_REMINDER': 'Reminders',
+                    'REMINDER': 'Reminders',
+                    'WARRANTY_EXPIRING': 'Warranties',
+                  };
+                  const target = routes[item.type] || 'Notifications';
+                  navigationRef.navigate(target);
+                }
+              }}
+            />
+          </NavigationContainer>
+        </NotificationProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

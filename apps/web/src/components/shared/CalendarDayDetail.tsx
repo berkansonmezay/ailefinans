@@ -20,6 +20,7 @@ interface CalendarDayDetailProps {
   date: Date;
   items: CalendarItem[];
   onClose: () => void;
+  isFitMode?: boolean;
 }
 
 const MONTHS_TR = [
@@ -101,7 +102,7 @@ function getTypeLabel(type: string) {
   }
 }
 
-export function CalendarDayDetail({ date, items, onClose }: CalendarDayDetailProps) {
+export function CalendarDayDetail({ date, items, onClose, isFitMode = false }: CalendarDayDetailProps) {
   const debtItems = items.filter(i => i.type === 'DEBT_INSTALLMENT');
   const recvItems = items.filter(i => i.type === 'RECEIVABLE_INSTALLMENT');
   const remItems = items.filter(i => i.type === 'REMINDER');
@@ -112,26 +113,26 @@ export function CalendarDayDetail({ date, items, onClose }: CalendarDayDetailPro
   return (
     <div className="bg-bg-card border border-border rounded-2xl overflow-hidden h-full flex flex-col">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+      <div className={`border-b border-border flex items-center justify-between ${isFitMode ? 'px-4 py-2.5' : 'px-5 py-4'}`}>
         <div>
-          <h3 className="text-lg font-bold text-text-primary">
+          <h3 className={`font-bold text-text-primary ${isFitMode ? 'text-base' : 'text-lg'}`}>
             {date.getDate()} {MONTHS_TR[date.getMonth()]} {date.getFullYear()}
           </h3>
-          <p className="text-sm text-text-muted mt-0.5">
+          <p className={`text-text-muted mt-0.5 ${isFitMode ? 'text-xs' : 'text-sm'}`}>
             {DAYS_FULL_TR[date.getDay()]} • {items.length} öğe
           </p>
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary"
+          className={`rounded-xl hover:bg-bg-secondary transition-colors text-text-muted hover:text-text-primary ${isFitMode ? 'p-1.5' : 'p-2'}`}
         >
-          <X className="w-5 h-5" />
+          <X className={isFitMode ? 'w-4 h-4' : 'w-5 h-5'} />
         </button>
       </div>
 
       {/* Summary mini-bar */}
       {(totalDebt > 0 || totalRecv > 0) && (
-        <div className="px-5 py-3 border-b border-border flex gap-4 flex-wrap">
+        <div className={`border-b border-border flex flex-wrap ${isFitMode ? 'px-4 py-2 gap-3' : 'px-5 py-3 gap-4'}`}>
           {totalDebt > 0 && (
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
@@ -150,7 +151,7 @@ export function CalendarDayDetail({ date, items, onClose }: CalendarDayDetailPro
       )}
 
       {/* Items */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className={`flex-1 overflow-y-auto ${isFitMode ? 'p-3 space-y-2' : 'p-4 space-y-3'}`}>
         {items.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-14 h-14 rounded-2xl bg-bg-secondary flex items-center justify-center mx-auto mb-3">
@@ -167,22 +168,22 @@ export function CalendarDayDetail({ date, items, onClose }: CalendarDayDetailPro
                   <CreditCard className="w-3.5 h-3.5" />
                   Borç Taksitleri ({debtItems.length})
                 </h4>
-                <div className="space-y-2">
+                <div className={isFitMode ? 'space-y-1.5' : 'space-y-2'}>
                   {debtItems.map(item => (
                     <div
                       key={item.id}
-                      className="p-3 rounded-xl border border-border bg-bg-secondary/50 hover:bg-bg-card-hover transition-colors"
+                      className={`rounded-xl border border-border bg-bg-secondary/50 hover:bg-bg-card-hover transition-colors ${isFitMode ? 'p-2' : 'p-3'}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2.5 min-w-0">
                           <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                            className={`rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isFitMode ? 'w-7 h-7' : 'w-8 h-8'}`}
                             style={{ backgroundColor: item.color + '20', color: item.color }}
                           >
-                            <CreditCard className="w-4 h-4" />
+                            <CreditCard className={isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-text-primary truncate">{item.title}</p>
+                            <p className={`font-semibold text-text-primary truncate ${isFitMode ? 'text-xs' : 'text-sm'}`}>{item.title}</p>
                             {item.meta.creditor && (
                               <p className="text-xs text-text-muted truncate">{item.meta.creditor}</p>
                             )}
@@ -192,7 +193,7 @@ export function CalendarDayDetail({ date, items, onClose }: CalendarDayDetailPro
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-bold" style={{ color: item.status === 'PAID' ? '#64748b' : item.color }}>
+                          <p className={`font-bold ${isFitMode ? 'text-xs' : 'text-sm'}`} style={{ color: item.status === 'PAID' ? '#64748b' : item.color }}>
                             {item.amount ? formatCurrency(item.amount, item.currency) : ''}
                           </p>
                           <div className="mt-1">{getStatusBadge(item.status)}</div>
@@ -211,29 +212,29 @@ export function CalendarDayDetail({ date, items, onClose }: CalendarDayDetailPro
                   <ArrowDownCircle className="w-3.5 h-3.5" />
                   Alacak Taksitleri ({recvItems.length})
                 </h4>
-                <div className="space-y-2">
+                <div className={isFitMode ? 'space-y-1.5' : 'space-y-2'}>
                   {recvItems.map(item => (
                     <div
                       key={item.id}
-                      className="p-3 rounded-xl border border-border bg-bg-secondary/50 hover:bg-bg-card-hover transition-colors"
+                      className={`rounded-xl border border-border bg-bg-secondary/50 hover:bg-bg-card-hover transition-colors ${isFitMode ? 'p-2' : 'p-3'}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2.5 min-w-0">
                           <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                            className={`rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isFitMode ? 'w-7 h-7' : 'w-8 h-8'}`}
                             style={{ backgroundColor: item.color + '20', color: item.color }}
                           >
-                            <ArrowDownCircle className="w-4 h-4" />
+                            <ArrowDownCircle className={isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-text-primary truncate">{item.title}</p>
+                            <p className={`font-semibold text-text-primary truncate ${isFitMode ? 'text-xs' : 'text-sm'}`}>{item.title}</p>
                             {item.meta.debtorName && (
                               <p className="text-xs text-text-muted truncate">{item.meta.debtorName}</p>
                             )}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-bold" style={{ color: item.status === 'COLLECTED' ? '#64748b' : item.color }}>
+                          <p className={`font-bold ${isFitMode ? 'text-xs' : 'text-sm'}`} style={{ color: item.status === 'COLLECTED' ? '#64748b' : item.color }}>
                             {item.amount ? formatCurrency(item.amount, item.currency) : ''}
                           </p>
                           <div className="mt-1">{getStatusBadge(item.status)}</div>
@@ -252,22 +253,22 @@ export function CalendarDayDetail({ date, items, onClose }: CalendarDayDetailPro
                   <BellRing className="w-3.5 h-3.5" />
                   Hatırlatmalar ({remItems.length})
                 </h4>
-                <div className="space-y-2">
+                <div className={isFitMode ? 'space-y-1.5' : 'space-y-2'}>
                   {remItems.map(item => (
                     <div
                       key={item.id}
-                      className="p-3 rounded-xl border border-border bg-bg-secondary/50 hover:bg-bg-card-hover transition-colors"
+                      className={`rounded-xl border border-border bg-bg-secondary/50 hover:bg-bg-card-hover transition-colors ${isFitMode ? 'p-2' : 'p-3'}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2.5 min-w-0">
                           <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                            className={`rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isFitMode ? 'w-7 h-7' : 'w-8 h-8'}`}
                             style={{ backgroundColor: item.color + '20', color: item.color }}
                           >
-                            <BellRing className="w-4 h-4" />
+                            <BellRing className={isFitMode ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-text-primary truncate">{item.title}</p>
+                            <p className={`font-semibold text-text-primary truncate ${isFitMode ? 'text-xs' : 'text-sm'}`}>{item.title}</p>
                             {item.description && (
                               <p className="text-xs text-text-muted truncate">{item.description}</p>
                             )}
@@ -284,7 +285,7 @@ export function CalendarDayDetail({ date, items, onClose }: CalendarDayDetailPro
                         </div>
                         <div className="text-right shrink-0">
                           {item.amount && item.amount > 0 && (
-                            <p className="text-sm font-bold" style={{ color: item.color }}>
+                            <p className={`font-bold ${isFitMode ? 'text-xs' : 'text-sm'}`} style={{ color: item.color }}>
                               {formatCurrency(item.amount, item.currency)}
                             </p>
                           )}
